@@ -19,21 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-      <body className={`${inter.className} bg-background text-foreground`}>
-        {/*
-          ThemeProvider might not be strictly necessary if we're hardcoding dark theme,
-          but good practice if you want to toggle later.
-          For this specific request, we're forcing dark theme.
-        */}
-        {/* <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        > */}
-        {children}
-        {/* </ThemeProvider> */}
-      </body>
+      <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>{children}</body>
     </html>
   )
 }

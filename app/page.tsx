@@ -13,7 +13,7 @@ import MainFooter from "@/components/main-footer"
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#0A192F] text-gray-100">
+    <div className="flex flex-col min-h-screen bg-c9n-blue-dark text-gray-200">
       <AnnouncementBar />
       <HeaderNav />
       <main className="flex-grow">

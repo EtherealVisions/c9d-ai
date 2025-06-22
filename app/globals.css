@@ -4,65 +4,73 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Define light theme variables if needed, or keep dark as default */
+    --background: 220 40% 5%; /* #0A192F approx */
+    --foreground: 210 20% 90%; /* Light gray for text */
+
+    --card: 220 30% 10%;
+    --card-foreground: 210 20% 90%;
+
+    --popover: 220 40% 5%;
+    --popover-foreground: 210 20% 90%;
+
+    --primary: 160 70% 50%; /* Teal #2CE4B8 approx */
+    --primary-foreground: 220 40% 5%; /* Dark blue for text on teal */
+
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 20% 60%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 220 40% 5%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    /* Custom dark theme variables */
-    --dark-background: 220 40% 5%; /* #0A192F approx */
-    --dark-foreground: 210 20% 90%; /* Light gray for text */
-    --dark-card: 220 30% 10%;
-    --dark-card-foreground: 210 20% 90%;
-    --dark-popover: 220 40% 5%;
-    --dark-popover-foreground: 210 20% 90%;
-    --dark-primary: 160 70% 50%; /* Teal #2CE4B8 approx */
-    --dark-primary-foreground: 220 40% 5%; /* Dark blue for text on teal */
-    --dark-secondary: 220 20% 20%;
-    --dark-secondary-foreground: 210 20% 90%;
-    --dark-muted: 220 20% 15%;
-    --dark-muted-foreground: 210 20% 60%;
-    --dark-accent: 160 70% 50%;
-    --dark-accent-foreground: 220 40% 5%;
-    --dark-border: 220 20% 25%;
-    --dark-input: 220 20% 25%;
-    --dark-ring: 160 70% 50%;
+
+    --border: 220 20% 25%; /* Slightly lighter border for dark theme */
+    --input: 220 20% 25%;
+    --ring: 160 70% 50%; /* Teal for rings */
+
+    --radius: 0.5rem;
+
+    /* Default mouse position for cards if JS hasn't run or for SSR */
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --glow-color: rgba(255, 255, 255, 0.1);
   }
 
+  /* Ensure .dark class applies these variables if you plan to toggle themes.
+     If always dark, these can be merged into :root. */
   .dark {
-    --background: var(--dark-background);
-    --foreground: var(--dark-foreground);
-    --card: var(--dark-card);
-    --card-foreground: var(--dark-card-foreground);
-    --popover: var(--dark-popover);
-    --popover-foreground: var(--dark-popover-foreground);
-    --primary: var(--dark-primary);
-    --primary-foreground: var(--dark-primary-foreground);
-    --secondary: var(--dark-secondary);
-    --secondary-foreground: var(--dark-secondary-foreground);
-    --muted: var(--dark-muted);
-    --muted-foreground: var(--dark-muted-foreground);
-    --accent: var(--dark-accent);
-    --accent-foreground: var(--dark-accent-foreground);
-    --destructive: 0 62.8% 30.6%; /* Keep destructive as is or adapt */
+    --background: 220 40% 5%; /* #0A192F approx */
+    --foreground: 210 20% 90%;
+
+    --card: 220 30% 10%;
+    --card-foreground: 210 20% 90%;
+
+    --popover: 220 40% 5%;
+    --popover-foreground: 210 20% 90%;
+
+    --primary: 160 70% 50%;
+    --primary-foreground: 220 40% 5%;
+
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 20% 60%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 220 40% 5%;
+
+    --destructive: 0 72.2% 50.6%; /* Brighter destructive for dark theme */
     --destructive-foreground: 210 40% 98%;
-    --border: var(--dark-border);
-    --input: var(--dark-input);
-    --ring: var(--dark-ring);
+
+    --border: 220 20% 25%;
+    --input: 220 20% 25%;
+    --ring: 160 70% 50%;
   }
 }
 
@@ -72,10 +80,30 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Apply a default dark background directly if not using ThemeProvider */
+    @apply bg-c9n-blue-dark text-gray-200;
   }
 }
 
 /* Custom utility for radial gradient */
 .bg-radial-gradient {
   background-image: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+/* Animated Gradient Background */
+.animated-gradient-bg {
+  background: linear-gradient(-45deg, #0a192f, #300d4f, #0f203a, #7b2cbf);
+  background-size: 400% 400%;
+  animation: gradient-wave 15s ease infinite;
+}
+
+/* Styles for the interactive card glow effect */
+/*
+  The glow is now handled by a div inside InteractiveCard component,
+  styled directly with inline styles for dynamic mouse position and color.
+  No extra CSS needed here for the glow itself, but you could add base styles
+  for .interactive-card if needed beyond Tailwind classes.
+*/
+.interactive-card {
+  /* Base styles for the card if any, e.g., perspective for 3D effects */
 }
