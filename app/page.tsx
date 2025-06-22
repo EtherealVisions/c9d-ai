@@ -123,8 +123,8 @@ export default function C9dLandingPage() {
           </Button>
           <div className="mt-16 md:mt-20 max-w-4xl mx-auto">
             <img
-              src="/abstract-neon-social-ai.png"
-              alt="Abstract representation of coordinated social connections with a neon aesthetic"
+              src="/hero-global-network.png"
+              alt="A striking visualization of a global network representing intelligent coordinated decisions."
               className="rounded-lg shadow-2xl shadow-cyan-500/20 aspect-[2/1] object-cover"
             />
           </div>
