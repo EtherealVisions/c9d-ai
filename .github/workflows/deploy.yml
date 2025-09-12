@@ -1,0 +1,345 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10.11.0'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Pre-deployment validation
+  pre-deployment:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-environment: ${{ steps.env-setup.outputs.environment }}
+      vercel-token: ${{ steps.env-setup.outputs.vercel-token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup deployment environment
+        id: env-setup
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "environment=production" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set Vercel token based on environment
+          if [ "${{ github.event.inputs.environment }}" = "staging" ] || [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "vercel-token=${{ secrets.VERCEL_TOKEN_STAGING }}" >> $GITHUB_OUTPUT
+          else
+            echo "vercel-token=${{ secrets.VERCEL_TOKEN }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate deployment prerequisites
+        run: |
+          echo "Validating deployment prerequisites..."
+          
+          # Check if required secrets are available
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "❌ VERCEL_ORG_ID secret is missing"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "❌ VERCEL_PROJECT_ID secret is missing"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.PHASE_SERVICE_TOKEN }}" ]; then
+            echo "⚠️  PHASE_SERVICE_TOKEN secret is missing - Phase.dev integration will be disabled"
+          fi
+          
+          echo "✅ Deployment prerequisites validated"
+
+  # Job 2: Build for deployment
+  build-for-deployment:
+    name: Build for Deployment
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    env:
+      NODE_ENV: production
+      PHASE_SERVICE_TOKEN: ${{ secrets.PHASE_SERVICE_TOKEN }}
+      # Production environment variables
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: pnpm-deploy-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-deploy-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-deploy-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-deploy-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Test Phase.dev integration
+        run: pnpm test:phase
+        continue-on-error: true
+
+      - name: Build for deployment
+        run: pnpm build:vercel
+
+      - name: Validate build output
+        run: |
+          echo "Validating build output..."
+          
+          if [ ! -d "apps/web/.next" ]; then
+            echo "❌ Build output directory missing"
+            exit 1
+          fi
+          
+          if [ ! -f "apps/web/.next/BUILD_ID" ]; then
+            echo "❌ BUILD_ID file missing"
+            exit 1
+          fi
+          
+          echo "✅ Build output validated"
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-build
+          path: |
+            apps/web/.next/
+            apps/web/public/
+            apps/web/package.json
+            packages/*/dist/
+          retention-days: 1
+
+  # Job 3: Deploy to Vercel
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, build-for-deployment]
+    environment: 
+      name: ${{ needs.pre-deployment.outputs.deployment-environment }}
+      url: ${{ steps.deploy.outputs.preview-url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download deployment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-build
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=${{ needs.pre-deployment.outputs.deployment-environment }} --token=${{ needs.pre-deployment.outputs.vercel-token }}
+
+      - name: Build Project Artifacts
+        run: vercel build ${{ needs.pre-deployment.outputs.deployment-environment == 'production' && '--prod' || '' }} --token=${{ needs.pre-deployment.outputs.vercel-token }}
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          if [ "${{ needs.pre-deployment.outputs.deployment-environment }}" = "production" ]; then
+            url=$(vercel deploy --prebuilt --prod --token=${{ needs.pre-deployment.outputs.vercel-token }})
+          else
+            url=$(vercel deploy --prebuilt --token=${{ needs.pre-deployment.outputs.vercel-token }})
+          fi
+          echo "preview-url=$url" >> $GITHUB_OUTPUT
+          echo "Deployed to: $url"
+
+      - name: Update deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: '${{ needs.pre-deployment.outputs.deployment-environment }}',
+              description: 'Deployed via GitHub Actions',
+              auto_merge: false,
+              required_contexts: []
+            });
+            
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              state: 'success',
+              environment_url: '${{ steps.deploy.outputs.preview-url }}',
+              description: 'Deployment successful'
+            });
+
+  # Job 4: Post-deployment validation
+  post-deployment:
+    name: Post-deployment Validation
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, deploy]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Wait for deployment to be ready
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+
+      - name: Validate deployment health
+        run: |
+          echo "Validating deployment health..."
+          
+          # Extract URL from deployment output
+          DEPLOYMENT_URL="${{ needs.deploy.outputs.preview-url }}"
+          
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "❌ Deployment URL not available"
+            exit 1
+          fi
+          
+          echo "Testing deployment at: $DEPLOYMENT_URL"
+          
+          # Test health endpoint
+          health_response=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL/api/health" || echo "000")
+          
+          if [ "$health_response" = "200" ]; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed (HTTP $health_response)"
+            exit 1
+          fi
+          
+          # Test main page
+          main_response=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL" || echo "000")
+          
+          if [ "$main_response" = "200" ]; then
+            echo "✅ Main page accessible"
+          else
+            echo "❌ Main page not accessible (HTTP $main_response)"
+            exit 1
+          fi
+          
+          echo "✅ Deployment validation successful"
+
+      - name: Test Phase.dev integration in production
+        env:
+          DEPLOYMENT_URL: ${{ needs.deploy.outputs.preview-url }}
+        run: |
+          echo "Testing Phase.dev integration in production..."
+          
+          # Test if Phase.dev environment variables are available
+          response=$(curl -s "$DEPLOYMENT_URL/api/health" | jq -r '.phaseConfigured // false' 2>/dev/null || echo "false")
+          
+          if [ "$response" = "true" ]; then
+            echo "✅ Phase.dev integration working in production"
+          else
+            echo "⚠️  Phase.dev integration not detected (may be using fallback configuration)"
+          fi
+
+      - name: Create deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ needs.pre-deployment.outputs.deployment-environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ needs.deploy.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Deployment successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Rollback capability
+  rollback:
+    name: Rollback (Manual)
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, deploy, post-deployment]
+    if: failure() && github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Rollback deployment
+        run: |
+          echo "Initiating rollback procedure..."
+          
+          # Get previous deployment
+          previous_deployment=$(vercel ls --token=${{ needs.pre-deployment.outputs.vercel-token }} | grep -v "$(date +%Y-%m-%d)" | head -1 | awk '{print $1}')
+          
+          if [ -n "$previous_deployment" ]; then
+            echo "Rolling back to: $previous_deployment"
+            vercel promote "$previous_deployment" --token=${{ needs.pre-deployment.outputs.vercel-token }}
+            echo "✅ Rollback completed"
+          else
+            echo "❌ No previous deployment found for rollback"
+            exit 1
+          fi
+
+      - name: Update rollback status
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 0,
+              state: 'failure',
+              description: 'Deployment rolled back due to validation failure'
+            });

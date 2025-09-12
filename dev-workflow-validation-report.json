@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-09-12T03:16:43.309Z",
+  "results": {
+    "pnpmSetup": true,
+    "workspaceStructure": true,
+    "turboConfig": true,
+    "packageLinking": true,
+    "dependencyResolution": false,
+    "buildProcess": true,
+    "devServer": true,
+    "hotReloading": false,
+    "phaseIntegration": false
+  },
+  "errors": [
+    "Dependency resolution: spawnSync /bin/sh ENOBUFS",
+    "Phase.dev integration: Command failed: pnpm run test:phase"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 6,
+    "failed": 3,
+    "success": false
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-09-12T03:20:29.654Z",
+  "error": {
+    "message": "Missing required environment variables: DATABASE_URL, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
+  },
+  "environment": {
+    "nodeVersion": "v22.15.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cwd": "/Users/brwilburn/Developer/users/EtherealVisions/c9d-ai"
+  },
+  "system": {
+    "memoryUsage": {
+      "rss": 31883264,
+      "heapTotal": 5324800,
+      "heapUsed": 4224952,
+      "external": 1548798,
+      "arrayBuffers": 10515
+    },
+    "uptime": 0.009707,
+    "pid": 35077
+  },
+  "configuration": {
+    "phaseConfigured": true,
+    "requiredEnvVars": {
+      "DATABASE_URL": false,
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": false,
+      "CLERK_SECRET_KEY": false,
+      "NEXT_PUBLIC_SUPABASE_URL": false,
+      "SUPABASE_SERVICE_ROLE_KEY": false
+    }
+  },
+  "buildInfo": {
+    "turboVersion": null,
+    "pnpmVersion": "10.11.0",
+    "nextVersion": "15.2.4"
+  }
+}

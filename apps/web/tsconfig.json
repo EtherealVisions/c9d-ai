@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"],
+      "@c9d/ui": ["../../packages/ui/src"],
+      "@c9d/ui/*": ["../../packages/ui/src/*"],
+      "@c9d/config": ["../../packages/config/src"],
+      "@c9d/config/*": ["../../packages/config/src/*"],
+      "@c9d/types": ["../../packages/types/src"],
+      "@c9d/types/*": ["../../packages/types/src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

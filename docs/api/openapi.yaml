@@ -1,0 +1,1220 @@
+openapi: 3.0.3
+info:
+  title: Account Management & Organizational Modeling API
+  description: |
+    Comprehensive API for user account management, organizational modeling, and role-based access control.
+    
+    This API provides endpoints for:
+    - User authentication and profile management
+    - Organization creation and management
+    - Member invitation and role management
+    - Permission checking and authorization
+    - Audit logging and security monitoring
+    
+    ## Authentication
+    
+    This API uses Clerk for authentication. Include the session token in the Authorization header:
+    ```
+    Authorization: Bearer <session_token>
+    ```
+    
+    ## Rate Limiting
+    
+    API requests are rate limited to prevent abuse:
+    - 100 requests per minute for authenticated users
+    - 10 requests per minute for unauthenticated requests
+    
+    ## Error Handling
+    
+    All errors follow a consistent format with appropriate HTTP status codes and detailed error messages.
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Development server
+
+security:
+  - ClerkAuth: []
+
+paths:
+  # User Management Endpoints
+  /users/me:
+    get:
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      summary: Update current user profile
+      description: Update the authenticated user's profile information
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/me/organizations:
+    get:
+      summary: Get user's organizations
+      description: Retrieve all organizations the authenticated user belongs to
+      tags:
+        - Users
+        - Organizations
+      responses:
+        '200':
+          description: Organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserOrganization'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Organization Management Endpoints
+  /organizations:
+    get:
+      summary: List organizations
+      description: Retrieve organizations accessible to the authenticated user
+      tags:
+        - Organizations
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          description: Search term for organization name or description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      summary: Create organization
+      description: Create a new organization with the authenticated user as owner
+      tags:
+        - Organizations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCreateRequest'
+      responses:
+        '201':
+          description: Organization created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Organization name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organizationId}:
+    get:
+      summary: Get organization details
+      description: Retrieve detailed information about a specific organization
+      tags:
+        - Organizations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Organization details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      summary: Update organization
+      description: Update organization details (requires admin permissions)
+      tags:
+        - Organizations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpdateRequest'
+      responses:
+        '200':
+          description: Organization updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      summary: Delete organization
+      description: Delete an organization (requires owner permissions)
+      tags:
+        - Organizations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '204':
+          description: Organization deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Member Management Endpoints
+  /organizations/{organizationId}/members:
+    get:
+      summary: List organization members
+      description: Retrieve all members of an organization
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - name: role
+          in: query
+          description: Filter by role
+          schema:
+            type: string
+            enum: [owner, admin, member]
+        - name: status
+          in: query
+          description: Filter by membership status
+          schema:
+            type: string
+            enum: [active, inactive, pending]
+      responses:
+        '200':
+          description: Members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organizationId}/members/{userId}:
+    get:
+      summary: Get member details
+      description: Retrieve details of a specific organization member
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Member details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      summary: Update member role
+      description: Update a member's role in the organization
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Member role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      summary: Remove member
+      description: Remove a member from the organization
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Member removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Invitation Management Endpoints
+  /organizations/{organizationId}/invitations:
+    get:
+      summary: List invitations
+      description: Retrieve all pending invitations for an organization
+      tags:
+        - Invitations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - name: status
+          in: query
+          description: Filter by invitation status
+          schema:
+            type: string
+            enum: [pending, accepted, declined, expired]
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Invitation'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      summary: Send invitation
+      description: Send an invitation to join the organization
+      tags:
+        - Invitations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCreateRequest'
+      responses:
+        '201':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: User already invited or is a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /invitations/{invitationId}/accept:
+    post:
+      summary: Accept invitation
+      description: Accept an invitation to join an organization
+      tags:
+        - Invitations
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: Unique identifier for the invitation
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Invitation expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /invitations/{invitationId}/decline:
+    post:
+      summary: Decline invitation
+      description: Decline an invitation to join an organization
+      tags:
+        - Invitations
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: Unique identifier for the invitation
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Permission and Authorization Endpoints
+  /organizations/{organizationId}/permissions/check:
+    post:
+      summary: Check permissions
+      description: Check if the authenticated user has specific permissions in the organization
+      tags:
+        - Permissions
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionCheckRequest'
+      responses:
+        '200':
+          description: Permission check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCheckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organizationId}/roles:
+    get:
+      summary: List available roles
+      description: Retrieve all available roles in the organization
+      tags:
+        - Roles
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Audit and Security Endpoints
+  /organizations/{organizationId}/audit-logs:
+    get:
+      summary: Get audit logs
+      description: Retrieve audit logs for the organization
+      tags:
+        - Audit
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - name: action
+          in: query
+          description: Filter by action type
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: Filter by user ID
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Filter by start date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Filter by end date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Audit logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Health Check Endpoint
+  /health:
+    get:
+      summary: Health check
+      description: Check the health status of the API
+      tags:
+        - System
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '503':
+          description: API is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+components:
+  securitySchemes:
+    ClerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk session token
+
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      description: Unique identifier for the organization
+      schema:
+        type: string
+        format: uuid
+    
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Unique identifier for the user
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the user
+        clerkUserId:
+          type: string
+          description: Clerk user identifier
+        email:
+          type: string
+          format: email
+          description: User's email address
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+        avatarUrl:
+          type: string
+          format: uri
+          description: URL to user's avatar image
+        preferences:
+          type: object
+          description: User preferences and settings
+        createdAt:
+          type: string
+          format: date-time
+          description: When the user was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the user was last updated
+      required:
+        - id
+        - clerkUserId
+        - email
+        - createdAt
+        - updatedAt
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+        preferences:
+          type: object
+          description: User preferences and settings
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the organization
+        name:
+          type: string
+          description: Organization name
+        slug:
+          type: string
+          description: URL-friendly organization identifier
+        description:
+          type: string
+          description: Organization description
+        settings:
+          type: object
+          description: Organization settings and configuration
+        metadata:
+          type: object
+          description: Additional organization metadata
+        createdAt:
+          type: string
+          format: date-time
+          description: When the organization was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the organization was last updated
+      required:
+        - id
+        - name
+        - slug
+        - createdAt
+        - updatedAt
+
+    OrganizationCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Organization name
+        description:
+          type: string
+          maxLength: 500
+          description: Organization description
+        settings:
+          type: object
+          description: Organization settings and configuration
+      required:
+        - name
+
+    OrganizationUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Organization name
+        description:
+          type: string
+          maxLength: 500
+          description: Organization description
+        settings:
+          type: object
+          description: Organization settings and configuration
+
+    UserOrganization:
+      allOf:
+        - $ref: '#/components/schemas/Organization'
+        - type: object
+          properties:
+            role:
+              type: string
+              enum: [owner, admin, member]
+              description: User's role in the organization
+            permissions:
+              type: array
+              items:
+                type: string
+              description: User's permissions in the organization
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the membership
+        user:
+          $ref: '#/components/schemas/User'
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          type: string
+          enum: [active, inactive, pending]
+          description: Membership status
+        joinedAt:
+          type: string
+          format: date-time
+          description: When the user joined the organization
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the membership was last updated
+      required:
+        - id
+        - user
+        - role
+        - status
+        - joinedAt
+        - updatedAt
+
+    MemberUpdateRequest:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+          description: New role ID for the member
+        status:
+          type: string
+          enum: [active, inactive]
+          description: New membership status
+      required:
+        - roleId
+
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the invitation
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization ID
+        email:
+          type: string
+          format: email
+          description: Invitee's email address
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          type: string
+          enum: [pending, accepted, declined, expired]
+          description: Invitation status
+        invitedBy:
+          $ref: '#/components/schemas/User'
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the invitation expires
+        createdAt:
+          type: string
+          format: date-time
+          description: When the invitation was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the invitation was last updated
+      required:
+        - id
+        - organizationId
+        - email
+        - role
+        - status
+        - invitedBy
+        - expiresAt
+        - createdAt
+        - updatedAt
+
+    InvitationCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the person to invite
+        roleId:
+          type: string
+          format: uuid
+          description: Role ID to assign to the invitee
+        message:
+          type: string
+          maxLength: 500
+          description: Optional message to include with the invitation
+      required:
+        - email
+        - roleId
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the role
+        name:
+          type: string
+          description: Role name
+        description:
+          type: string
+          description: Role description
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions granted by this role
+        isSystem:
+          type: boolean
+          description: Whether this is a system-defined role
+        createdAt:
+          type: string
+          format: date-time
+          description: When the role was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the role was last updated
+      required:
+        - id
+        - name
+        - permissions
+        - isSystem
+        - createdAt
+        - updatedAt
+
+    PermissionCheckRequest:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions to check
+      required:
+        - permissions
+
+    PermissionCheckResponse:
+      type: object
+      properties:
+        results:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Map of permission names to boolean results
+        role:
+          $ref: '#/components/schemas/Role'
+      required:
+        - results
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the audit log entry
+        userId:
+          type: string
+          format: uuid
+          description: ID of the user who performed the action
+        organizationId:
+          type: string
+          format: uuid
+          description: ID of the organization
+        action:
+          type: string
+          description: Action that was performed
+        resourceType:
+          type: string
+          description: Type of resource affected
+        resourceId:
+          type: string
+          description: ID of the resource affected
+        metadata:
+          type: object
+          description: Additional metadata about the action
+        ipAddress:
+          type: string
+          description: IP address of the user
+        userAgent:
+          type: string
+          description: User agent string
+        createdAt:
+          type: string
+          format: date-time
+          description: When the action was performed
+      required:
+        - id
+        - userId
+        - organizationId
+        - action
+        - resourceType
+        - createdAt
+
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Overall health status
+        timestamp:
+          type: string
+          format: date-time
+          description: When the health check was performed
+        version:
+          type: string
+          description: API version
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [healthy, unhealthy]
+            auth:
+              type: string
+              enum: [healthy, unhealthy]
+            cache:
+              type: string
+              enum: [healthy, unhealthy]
+          description: Status of individual services
+      required:
+        - status
+        - timestamp
+        - version
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        requestId:
+          type: string
+          description: Unique request identifier for debugging
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+      required:
+        - code
+        - message
+        - requestId
+        - timestamp
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of items
+        totalPages:
+          type: integer
+          description: Total number of pages
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VALIDATION_ERROR
+            message: Invalid input provided
+            details:
+              field: name
+              issue: Name is required
+            requestId: req_123456789
+            timestamp: "2023-12-07T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: Authentication required
+            requestId: req_123456789
+            timestamp: "2023-12-07T10:30:00Z"
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: Insufficient permissions to perform this action
+            requestId: req_123456789
+            timestamp: "2023-12-07T10:30:00Z"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: The requested resource was not found
+            requestId: req_123456789
+            timestamp: "2023-12-07T10:30:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: An unexpected error occurred
+            requestId: req_123456789
+            timestamp: "2023-12-07T10:30:00Z"
+
+tags:
+  - name: Users
+    description: User account management
+  - name: Organizations
+    description: Organization management
+  - name: Members
+    description: Organization member management
+  - name: Invitations
+    description: Member invitation management
+  - name: Permissions
+    description: Permission checking and authorization
+  - name: Roles
+    description: Role management
+  - name: Audit
+    description: Audit logging and security monitoring
+  - name: System
+    description: System health and status

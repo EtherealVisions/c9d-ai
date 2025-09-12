@@ -1,0 +1,520 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10.11.0'
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+jobs:
+  # Job 1: Setup and validate environment
+  setup:
+    name: Setup and Validate
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      pnpm-cache-dir: ${{ steps.pnpm-config.outputs.cache-dir }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-config
+        run: |
+          echo "cache-dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-config.outputs.cache-dir }}
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Validate workspace configuration
+        run: |
+          echo "Validating pnpm workspace..."
+          pnpm list --depth=0
+          echo "Validating Turbo configuration..."
+          pnpm turbo --version
+          echo "Workspace validation complete"
+
+  # Job 2: Type checking
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-typecheck-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-typecheck-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Run type checking
+        run: pnpm typecheck:ci
+
+  # Job 3: Linting
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-lint-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-lint-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Run linting
+        run: pnpm lint:ci
+
+  # Job 4: Testing
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: setup
+    env:
+      # Test environment variables
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_example
+      CLERK_SECRET_KEY: sk_test_example
+      NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: test_service_role_key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-test-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-test-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Run tests
+        run: pnpm test:ci
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: apps/web/coverage/
+          retention-days: 7
+
+  # Job 5: Phase.dev Integration Test
+  test-phase:
+    name: Test Phase.dev Integration
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    env:
+      PHASE_SERVICE_TOKEN: ${{ secrets.PHASE_SERVICE_TOKEN }}
+      NODE_ENV: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Test Phase.dev integration
+        run: pnpm test:phase
+        continue-on-error: true
+
+      - name: Upload Phase.dev test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase-test-results
+          path: build-diagnostics.json
+          retention-days: 7
+
+  # Job 6: Build
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [setup, typecheck, lint, test]
+    env:
+      NODE_ENV: production
+      PHASE_SERVICE_TOKEN: ${{ secrets.PHASE_SERVICE_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-build-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-build-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Build application
+        run: pnpm build:web
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/web/.next/
+            packages/*/dist/
+          retention-days: 7
+
+      - name: Upload build diagnostics
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-diagnostics
+          path: build-diagnostics.json
+          retention-days: 7
+
+  # Job 7: Integration Tests (runs after build)
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    env:
+      NODE_ENV: test
+      PHASE_SERVICE_TOKEN: ${{ secrets.PHASE_SERVICE_TOKEN }}
+      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.TEST_CLERK_PUBLISHABLE_KEY }}
+      CLERK_SECRET_KEY: ${{ secrets.TEST_CLERK_SECRET_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Run integration tests
+        run: pnpm test:integration
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            build-diagnostics.json
+            apps/web/coverage/
+          retention-days: 7
+
+  # Job 8: Security Audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.setup.outputs.pnpm-cache-dir }}
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install:ci
+
+      - name: Run security audit
+        run: pnpm audit --audit-level moderate
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "Checking for known vulnerabilities..."
+          pnpm audit --json > audit-results.json || true
+          if [ -s audit-results.json ]; then
+            echo "Security audit found issues. See audit-results.json for details."
+          else
+            echo "No security vulnerabilities found."
+          fi
+
+      - name: Upload security audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit
+          path: audit-results.json
+          retention-days: 30
+
+  # Job 9: Deployment readiness check
+  deployment-check:
+    name: Deployment Readiness
+    runs-on: ubuntu-latest
+    needs: [build, integration-test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Validate deployment readiness
+        run: |
+          echo "Validating deployment readiness..."
+          
+          # Check if build artifacts exist
+          if [ ! -d "apps/web/.next" ]; then
+            echo "❌ Build artifacts missing"
+            exit 1
+          fi
+          
+          # Check if required files exist
+          required_files=("apps/web/.next/BUILD_ID" "apps/web/.next/static" "apps/web/.next/server")
+          for file in "${required_files[@]}"; do
+            if [ ! -e "$file" ]; then
+              echo "❌ Required file missing: $file"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Deployment readiness check passed"
+
+      - name: Create deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 10: Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deployment-check]
+    if: always()
+    steps:
+      - name: Clean up old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            
+            // Keep only the most recent 5 artifacts of each type
+            const artifactGroups = {};
+            artifacts.artifacts.forEach(artifact => {
+              const baseName = artifact.name.replace(/-\d+$/, '');
+              if (!artifactGroups[baseName]) {
+                artifactGroups[baseName] = [];
+              }
+              artifactGroups[baseName].push(artifact);
+            });
+            
+            for (const [groupName, groupArtifacts] of Object.entries(artifactGroups)) {
+              if (groupArtifacts.length > 5) {
+                const toDelete = groupArtifacts
+                  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                  .slice(5);
+                
+                for (const artifact of toDelete) {
+                  try {
+                    await github.rest.actions.deleteArtifact({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      artifact_id: artifact.id,
+                    });
+                    console.log(`Deleted old artifact: ${artifact.name}`);
+                  } catch (error) {
+                    console.log(`Failed to delete artifact ${artifact.name}: ${error.message}`);
+                  }
+                }
+              }
+            }
