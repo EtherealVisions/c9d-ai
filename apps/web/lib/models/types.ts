@@ -14,9 +14,9 @@ export interface BaseEntity {
 export interface User extends BaseEntity {
   clerkUserId: string
   email: string
-  firstName?: string
-  lastName?: string
-  avatarUrl?: string
+  firstName: string | null
+  lastName: string | null
+  avatarUrl: string | null
   preferences: Record<string, any>
 }
 
@@ -24,8 +24,8 @@ export interface User extends BaseEntity {
 export interface Organization extends BaseEntity {
   name: string
   slug: string
-  description?: string
-  avatarUrl?: string
+  description: string | null
+  avatarUrl: string | null
   metadata: Record<string, any>
   settings: Record<string, any>
 }
@@ -43,19 +43,21 @@ export interface Membership extends BaseEntity {
   role?: Role
 }
 
+// Alias for backward compatibility
+export type OrganizationMembership = Membership
+
 // Role entity defining permissions within organizations
 export interface Role extends BaseEntity {
   name: string
-  description?: string
-  organizationId: string
+  description: string | null
+  organizationId: string | null
   isSystemRole: boolean
-  permissions: string[]
 }
 
 // Permission entity defining granular access controls
 export interface Permission extends BaseEntity {
   name: string
-  description?: string
+  description: string | null
   resource: string
   action: string
 }
@@ -77,14 +79,14 @@ export interface Invitation extends BaseEntity {
 
 // Audit log entity for tracking system activities
 export interface AuditLog extends BaseEntity {
-  userId?: string
-  organizationId?: string
+  userId: string | null
+  organizationId: string | null
   action: string
-  resourceType: string
-  resourceId?: string
-  metadata: Record<string, any>
-  ipAddress?: string
-  userAgent?: string
+  resource: string
+  resourceId: string | null
+  details: Record<string, any>
+  ipAddress: string | null
+  userAgent: string | null
   // Optional populated relations
   user?: User
   organization?: Organization
@@ -112,9 +114,9 @@ export interface UserRow {
   id: string
   clerk_user_id: string
   email: string
-  first_name?: string
-  last_name?: string
-  avatar_url?: string
+  first_name: string | null
+  last_name: string | null
+  avatar_url: string | null
   preferences: Record<string, any>
   created_at: string
   updated_at: string
@@ -124,8 +126,8 @@ export interface OrganizationRow {
   id: string
   name: string
   slug: string
-  description?: string
-  avatar_url?: string
+  description: string | null
+  avatar_url: string | null
   metadata: Record<string, any>
   settings: Record<string, any>
   created_at: string
@@ -146,7 +148,7 @@ export interface MembershipRow {
 export interface RoleRow {
   id: string
   name: string
-  description?: string
+  description: string | null
   organization_id: string
   is_system_role: boolean
   permissions: string[]
@@ -157,10 +159,11 @@ export interface RoleRow {
 export interface PermissionRow {
   id: string
   name: string
-  description?: string
+  description: string | null
   resource: string
   action: string
   created_at: string
+  updated_at: string
 }
 
 export interface InvitationRow {
@@ -178,15 +181,16 @@ export interface InvitationRow {
 
 export interface AuditLogRow {
   id: string
-  user_id?: string
-  organization_id?: string
+  user_id: string | null
+  organization_id: string | null
   action: string
-  resource_type: string
-  resource_id?: string
-  metadata: Record<string, any>
-  ip_address?: string
-  user_agent?: string
+  resource: string
+  resource_id: string | null
+  details: Record<string, any>
+  ip_address: string | null
+  user_agent: string | null
   created_at: string
+  updated_at: string
 }
 
 // Type for database query results with relations

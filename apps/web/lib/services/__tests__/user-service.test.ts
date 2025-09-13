@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { UserService } from '../user-service'
 import { createTypedSupabaseClient } from '../../models/database'
-import { userSyncService } from '../user-sync'
+import { UserSyncService } from '../user-sync'
 import type { User } from '../../models/types'
 
 // Mock the database client
@@ -34,7 +34,7 @@ vi.mock('../../models/database', () => ({
 
 // Mock the user sync service
 vi.mock('../user-sync', () => ({
-  userSyncService: {
+  UserSyncService: {
     syncUser: vi.fn()
   }
 }))
@@ -363,13 +363,13 @@ describe('UserService', () => {
         isNew: false,
         error: undefined
       }
-      ;(userSyncService.syncUser as Mock).mockResolvedValue(syncResult)
+      ;(UserSyncService.syncUser as Mock).mockResolvedValue(syncResult)
 
       const result = await userService.syncUserFromClerk(clerkUser)
 
       expect(result.data).toEqual(mockUser)
       expect(result.error).toBeUndefined()
-      expect(userSyncService.syncUser).toHaveBeenCalledWith(clerkUser)
+      expect(UserSyncService.syncUser).toHaveBeenCalledWith(clerkUser)
     })
 
     it('should return error when sync fails', async () => {
@@ -378,7 +378,7 @@ describe('UserService', () => {
         isNew: false,
         error: 'Sync failed'
       }
-      ;(userSyncService.syncUser as Mock).mockResolvedValue(syncResult)
+      ;(UserSyncService.syncUser as Mock).mockResolvedValue(syncResult)
 
       const result = await userService.syncUserFromClerk(clerkUser)
 

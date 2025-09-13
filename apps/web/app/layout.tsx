@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { ClerkProvider } from '@clerk/nextjs'
 import { AuthProvider } from '@/lib/contexts/auth-context'
 import { OrganizationProvider } from '@/lib/contexts/organization-context'
+import { AnalyticsProvider } from '@/components/analytics/vercel-analytics'
 import { getAppConfigSync, initializeAppConfig } from '@/lib/config/init'
 import "./globals.css"
 
@@ -39,22 +40,22 @@ export default async function RootLayout({
       <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
         <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
           {children}
+          <AnalyticsProvider />
         </body>
       </html>
     )
   }
 
   return (
-    <ClerkProvider>
-      <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-        <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
-          <AuthProvider>
-            <OrganizationProvider>
-              {children}
-            </OrganizationProvider>
-          </AuthProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+      <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+        <AuthProvider>
+          <OrganizationProvider>
+            {children}
+          </OrganizationProvider>
+        </AuthProvider>
+        <AnalyticsProvider />
+      </body>
+    </html>
   )
 }

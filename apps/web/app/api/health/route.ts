@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    // Get configuration manager
+    // Get configuration manager - this can throw if config manager fails
     const configManager = getConfigManager();
     
     // Perform comprehensive health check
@@ -53,10 +53,10 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Detailed health check endpoint
- * GET /api/health?detailed=true
+ * Detailed health check implementation
+ * Internal function used by the GET handler
  */
-export async function performHealthCheck(configManager: any) {
+async function performHealthCheck(configManager: any) {
   const checks = [];
   const details: Record<string, any> = {};
 
@@ -277,10 +277,10 @@ export async function performHealthCheck(configManager: any) {
 }
 
 /**
- * Build information endpoint
- * GET /api/health/build
+ * Build information implementation
+ * Internal function for build info
  */
-export async function getBuildInfo() {
+async function getBuildInfo() {
   try {
     const buildErrorHandler = getBuildErrorHandler();
     const diagnostics = buildErrorHandler.generateDiagnosticsReport();

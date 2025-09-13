@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { userSyncService } from '../services/user-sync'
 import type { User } from '../database'
@@ -23,7 +23,7 @@ export function withAuth(
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const { userId } = auth()
+      const { userId } = await auth()
 
       // Check if authentication is required
       if (options.requireAuth && !userId) {
@@ -89,9 +89,9 @@ export function withUserSync(
     if (!req.user) {
       try {
         // Try to get user from Clerk and sync
-        const { currentUser } = auth()
-        if (currentUser) {
-          const syncResult = await userSyncService.syncUser(currentUser)
+        const user = await currentUser()
+        if (user) {
+          const syncResult = await userSyncService.syncUser(user)
           if (syncResult.error) {
             throw new Error(syncResult.error)
           }

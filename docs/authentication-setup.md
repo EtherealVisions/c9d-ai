@@ -52,22 +52,34 @@ async function handler(req: NextRequest) {
 export const GET = withUserSync(handler)
 ```
 
-### 4. Authentication Context Provider
+### 4. Enhanced Authentication Context Provider
 
 **Location**: `lib/contexts/auth-context.tsx`
 
-Provides client-side authentication state management:
-- User authentication status
-- Organization memberships
-- Current organization context
-- Permission management
-- Organization switching
+Provides comprehensive client-side authentication state management with enhanced organization support:
 
-**Hooks Available**:
-- `useAuth()`: Full authentication context
-- `useCurrentUser()`: Current user information
-- `useCurrentOrganization()`: Current organization context
-- `usePermissions()`: Permission checking
+**Core Features**:
+- User authentication status and loading states
+- Multi-organization membership management
+- Current organization context with persistence
+- Role-based permission system
+- Automatic data synchronization with API
+- Organization switching with state management
+
+**Available Hooks**:
+- `useAuth()`: Complete authentication context with all features
+- `useCurrentUser()`: Current user information and loading state
+- `useCurrentOrganization()`: Current organization and membership details
+- `usePermissions()`: Permission checking and role validation
+
+**New Capabilities**:
+- **Organization Persistence**: Remembers selected organization across sessions
+- **Permission Caching**: Efficient permission lookup and validation
+- **Automatic Sync**: Syncs user data when Clerk state changes
+- **Error Handling**: Graceful error handling for API failures
+- **Performance Optimized**: Minimal re-renders and efficient state updates
+
+See [Authentication Context Documentation](./authentication-context.md) for detailed usage examples and API reference.
 
 ### 5. API Endpoints
 
@@ -144,22 +156,37 @@ async function handler(req: NextRequest) {
 export const GET = withAuth(handler)
 ```
 
-### Using Authentication in Components
+### Using Enhanced Authentication in Components
 
 ```typescript
 'use client'
-import { useAuth } from '@/lib/contexts/auth-context'
+import { useAuth, useCurrentUser, useCurrentOrganization } from '@/lib/contexts/auth-context'
 
 export function UserProfile() {
-  const { user, isLoading, switchOrganization, organizations } = useAuth()
+  const { user, isLoading } = useCurrentUser()
+  const { organization, membership } = useCurrentOrganization()
+  const { organizations, switchOrganization } = useAuth()
 
   if (isLoading) return <div>Loading...</div>
   if (!user) return <div>Please sign in</div>
 
   return (
     <div>
-      <h1>Welcome, {user.first_name}!</h1>
-      <select onChange={(e) => switchOrganization(e.target.value)}>
+      <h1>Welcome, {user.firstName} {user.lastName}!</h1>
+      <p>Email: {user.email}</p>
+      
+      {organization && (
+        <div>
+          <h2>Current Organization: {organization.name}</h2>
+          <p>Your Role: {membership?.role}</p>
+        </div>
+      )}
+      
+      <select 
+        value={organization?.id || ''} 
+        onChange={(e) => switchOrganization(e.target.value)}
+      >
+        <option value="">Select Organization</option>
         {organizations.map(org => (
           <option key={org.id} value={org.id}>{org.name}</option>
         ))}
@@ -169,21 +196,58 @@ export function UserProfile() {
 }
 ```
 
-### Checking Permissions
+### Enhanced Permission Checking
 
 ```typescript
 'use client'
 import { usePermissions } from '@/lib/contexts/auth-context'
 
 export function AdminPanel() {
-  const { hasPermission } = usePermissions()
+  const { hasPermission, permissions } = usePermissions()
 
-  if (!hasPermission('admin')) {
+  if (!hasPermission('admin.access')) {
     return <div>Access denied</div>
   }
 
-  return <div>Admin panel content</div>
+  return (
+    <div>
+      <h1>Admin Panel</h1>
+      
+      {hasPermission('users.manage') && (
+        <section>
+          <h2>User Management</h2>
+          <button>Manage Users</button>
+        </section>
+      )}
+      
+      {hasPermission('settings.edit') && (
+        <section>
+          <h2>Settings</h2>
+          <button>Edit Settings</button>
+        </section>
+      )}
+      
+      {hasPermission('billing.view') && (
+        <section>
+          <h2>Billing</h2>
+          <button>View Billing</button>
+        </section>
+      )}
+    </div>
+  )
 }
+
+// Convenience component for permission-based rendering
+export function PermissionGate({ permission, children, fallback = null }) {
+  const { hasPermission } = usePermissions()
+  
+  return hasPermission(permission) ? children : fallback
+}
+
+// Usage
+<PermissionGate permission="billing.view">
+  <BillingSection />
+</PermissionGate>
 ```
 
 ## Security Features

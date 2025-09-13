@@ -90,7 +90,7 @@ export function OrganizationContextIndicator({
           <TooltipTrigger asChild>
             <div className={cn('flex items-center space-x-1', className)}>
               <Avatar className="h-4 w-4">
-                <AvatarImage src={currentOrganization.avatarUrl} />
+                <AvatarImage src={currentOrganization.avatarUrl || undefined} />
                 <AvatarFallback className="text-xs">
                   {getInitials(currentOrganization.name)}
                 </AvatarFallback>
@@ -116,7 +116,7 @@ export function OrganizationContextIndicator({
       <div className={cn('flex items-center space-x-2', className)}>
         <div className="flex items-center space-x-2">
           <Avatar className="h-5 w-5">
-            <AvatarImage src={currentOrganization.avatarUrl} />
+            <AvatarImage src={currentOrganization.avatarUrl || undefined} />
             <AvatarFallback className="text-xs">
               {getInitials(currentOrganization.name)}
             </AvatarFallback>
@@ -157,7 +157,7 @@ export function OrganizationContextIndicator({
   return (
     <div className={cn('flex items-center space-x-3 p-3 bg-muted/50 rounded-lg', className)}>
       <Avatar className="h-8 w-8">
-        <AvatarImage src={currentOrganization.avatarUrl} />
+        <AvatarImage src={currentOrganization.avatarUrl || undefined} />
         <AvatarFallback>
           {getInitials(currentOrganization.name)}
         </AvatarFallback>

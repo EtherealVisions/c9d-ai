@@ -2,8 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useAuth } from './auth-context'
-import { rbacService } from '../services/rbac-service'
-import { organizationService } from '../services/organization-service'
+// Note: Client components should use API calls instead of direct service imports
 import type { Organization, Role, Membership } from '../models/types'
 
 export interface OrganizationContextValue {
@@ -73,11 +72,14 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoading(true)
       
-      // Load user roles and permissions for the organization
-      const [userRoles, userPermissions] = await Promise.all([
-        rbacService.getUserRoles(user.id, organizationId),
-        rbacService.getUserPermissions(user.id, organizationId)
+      // Load user roles and permissions for the organization via API
+      const [rolesResponse, permissionsResponse] = await Promise.all([
+        fetch(`/api/organizations/${organizationId}/roles`),
+        fetch(`/api/organizations/${organizationId}/permissions`)
       ])
+      
+      const userRoles = rolesResponse.ok ? await rolesResponse.json() : { data: [] }
+      const userPermissions = permissionsResponse.ok ? await permissionsResponse.json() : { data: [] }
       
       setRoles(userRoles)
       setPermissions(userPermissions)
@@ -101,11 +103,14 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoading(true)
       
-      // Get organization details
-      const orgResult = await organizationService.getOrganization(organizationId)
-      if (orgResult.error || !orgResult.data) {
-        throw new Error(orgResult.error || 'Organization not found')
+      // Get organization details via API
+      const orgResponse = await fetch(`/api/organizations/${organizationId}`)
+      
+      if (!orgResponse.ok) {
+        throw new Error('Organization not found')
       }
+      
+      const orgResult = await orgResponse.json()
 
       // Update organization state
       setOrganization(orgResult.data)
@@ -132,9 +137,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     try {
       setIsLoading(true)
       
-      // Refresh organization details
-      const orgResult = await organizationService.getOrganization(organization.id)
-      if (orgResult.data) {
+      // Refresh organization details via API
+      const orgResponse = await fetch(`/api/organizations/${organization.id}`)
+      if (orgResponse.ok) {
+        const orgResult = await orgResponse.json()
         setOrganization(orgResult.data)
       }
       

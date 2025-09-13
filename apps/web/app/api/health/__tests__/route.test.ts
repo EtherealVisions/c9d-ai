@@ -88,12 +88,11 @@ describe('/api/health', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    // Mock a failing config manager
-    vi.doMock('@/lib/config/manager', () => ({
-      getConfigManager: vi.fn(() => {
-        throw new Error('Config manager failed');
-      })
-    }));
+    // Import the mocked module and make it throw
+    const { getConfigManager } = await import('@/lib/config/manager');
+    vi.mocked(getConfigManager).mockImplementationOnce(() => {
+      throw new Error('Config manager failed');
+    });
 
     const request = new NextRequest('http://localhost:3000/api/health');
     const response = await GET(request);

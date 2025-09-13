@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BaseError, InternalServerError } from './custom-errors';
+import { BaseError, InternalServerError, ErrorCode } from './custom-errors';
 import { normalizeError, logError } from './error-utils';
 
 /**
@@ -41,19 +41,19 @@ export const formatApiError = (error: BaseError, requestId: string): ApiErrorRes
     error: {
       code: error.code,
       message: error.message,
-      timestamp: error.timestamp,
+      timestamp: error.timestamp.toISOString(),
       requestId,
     },
   };
 
   // Add details if present
-  if (error.details) {
+  if ('details' in error && error.details) {
     response.error.details = error.details;
   }
 
   // Add field errors for validation errors
-  if ('fieldErrors' in error && error.fieldErrors) {
-    response.error.fieldErrors = error.fieldErrors;
+  if ('fieldErrors' in error && error.fieldErrors && typeof error.fieldErrors === 'object') {
+    response.error.fieldErrors = error.fieldErrors as Record<string, string[]>;
   }
 
   return response;
@@ -69,7 +69,7 @@ export const createErrorResponse = (
 ): NextResponse => {
   const errorResponse = formatApiError(error, requestId);
   
-  const responseHeaders = {
+  const responseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-Request-ID': requestId,
     ...headers,
@@ -157,7 +157,7 @@ export const createValidationErrorResponse = (
       public readonly fieldErrors: Record<string, string[]>,
       requestId?: string
     ) {
-      super(message, { fieldErrors }, requestId);
+      super(message, ErrorCode.VALIDATION_ERROR, 400, requestId);
     }
   })(message, fieldErrors, requestId);
 

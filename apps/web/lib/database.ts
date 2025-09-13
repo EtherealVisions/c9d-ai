@@ -18,6 +18,9 @@ export type {
   DatabaseTable
 } from './models'
 
+// Import constants
+import { DATABASE_TABLES } from './models'
+
 export { DATABASE_TABLES } from './models'
 
 // Create Supabase client (will need environment variables)

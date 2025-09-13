@@ -38,10 +38,10 @@ export const invitationStatusSchema = z.enum(['pending', 'accepted', 'expired', 
 export const userSchema = baseEntitySchema.extend({
   clerkUserId: z.string().min(1, 'Clerk user ID is required'),
   email: z.string().email('Invalid email format'),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().min(1).optional(),
-  avatarUrl: z.string().url().optional(),
-  preferences: z.record(z.any()).default({})
+  firstName: z.string().min(1).nullable(),
+  lastName: z.string().min(1).nullable(),
+  avatarUrl: z.string().url().nullable(),
+  preferences: z.record(z.any())
 }) satisfies z.ZodType<User>
 
 export const createUserSchema = userSchema.omit({
@@ -64,10 +64,10 @@ export const organizationSchema = baseEntitySchema.extend({
     .min(1, 'Slug is required')
     .max(50, 'Slug too long')
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  description: z.string().max(500, 'Description too long').optional(),
-  avatarUrl: z.string().url().optional(),
-  metadata: z.record(z.any()).default({}),
-  settings: z.record(z.any()).default({})
+  description: z.string().max(500, 'Description too long').nullable(),
+  avatarUrl: z.string().url().nullable(),
+  metadata: z.record(z.any()),
+  settings: z.record(z.any())
 }) satisfies z.ZodType<Organization>
 
 export const createOrganizationSchema = organizationSchema.omit({
@@ -112,10 +112,9 @@ export const updateMembershipSchema = membershipSchema.partial().omit({
 // Role validation schemas
 export const roleSchema = baseEntitySchema.extend({
   name: z.string().min(1, 'Role name is required').max(50, 'Name too long'),
-  description: z.string().max(200, 'Description too long').optional(),
-  organizationId: z.string().uuid('Invalid organization ID'),
-  isSystemRole: z.boolean().default(false),
-  permissions: z.array(z.string()).default([])
+  description: z.string().max(200, 'Description too long').nullable(),
+  organizationId: z.string().uuid('Invalid organization ID').nullable(),
+  isSystemRole: z.boolean()
 }) satisfies z.ZodType<Role>
 
 export const createRoleSchema = roleSchema.omit({
@@ -135,7 +134,7 @@ export const updateRoleSchema = roleSchema.partial().omit({
 // Permission validation schemas
 export const permissionSchema = baseEntitySchema.extend({
   name: z.string().min(1, 'Permission name is required').max(100, 'Name too long'),
-  description: z.string().max(200, 'Description too long').optional(),
+  description: z.string().max(200, 'Description too long').nullable(),
   resource: z.string().min(1, 'Resource is required').max(50, 'Resource name too long'),
   action: z.string().min(1, 'Action is required').max(50, 'Action name too long')
 }) satisfies z.ZodType<Permission>
@@ -173,14 +172,14 @@ export const updateInvitationSchema = z.object({
 
 // Audit log validation schemas
 export const auditLogSchema = baseEntitySchema.extend({
-  userId: z.string().uuid().optional(),
-  organizationId: z.string().uuid().optional(),
+  userId: z.string().uuid().nullable(),
+  organizationId: z.string().uuid().nullable(),
   action: z.string().min(1, 'Action is required').max(100, 'Action too long'),
-  resourceType: z.string().min(1, 'Resource type is required').max(50, 'Resource type too long'),
-  resourceId: z.string().optional(),
-  metadata: z.record(z.any()).default({}),
-  ipAddress: z.string().ip().optional(),
-  userAgent: z.string().max(500, 'User agent too long').optional()
+  resource: z.string().min(1, 'Resource is required').max(50, 'Resource too long'),
+  resourceId: z.string().nullable(),
+  details: z.record(z.any()),
+  ipAddress: z.string().ip().nullable(),
+  userAgent: z.string().max(500, 'User agent too long').nullable()
 }) satisfies z.ZodType<Omit<AuditLog, 'user' | 'organization'>>
 
 export const createAuditLogSchema = auditLogSchema.omit({
@@ -242,7 +241,8 @@ export const permissionRowSchema = z.object({
   description: z.string().nullable(),
   resource: z.string(),
   action: z.string(),
-  created_at: z.string()
+  created_at: z.string(),
+  updated_at: z.string()
 }) satisfies z.ZodType<PermissionRow>
 
 export const invitationRowSchema = z.object({
@@ -263,12 +263,13 @@ export const auditLogRowSchema = z.object({
   user_id: z.string().uuid().nullable(),
   organization_id: z.string().uuid().nullable(),
   action: z.string(),
-  resource_type: z.string(),
+  resource: z.string(),
   resource_id: z.string().nullable(),
-  metadata: z.record(z.any()),
+  details: z.record(z.any()),
   ip_address: z.string().nullable(),
   user_agent: z.string().nullable(),
-  created_at: z.string()
+  created_at: z.string(),
+  updated_at: z.string()
 }) satisfies z.ZodType<AuditLogRow>
 
 // Validation helper functions

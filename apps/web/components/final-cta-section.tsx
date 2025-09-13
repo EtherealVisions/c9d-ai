@@ -1,38 +1,100 @@
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { CalendarCheckIcon } from "lucide-react"
+'use client'
 
-export default function FinalCtaSection() {
+import React from 'react'
+import { CalendarCheckIcon, Zap, Users } from "lucide-react"
+import { EnhancedCTASection } from "./enhanced-cta-section"
+import { CTASectionConfig } from "@/lib/types/cta"
+
+interface FinalCtaSectionProps {
+  userId?: string
+  enableUrgency?: boolean
+  enableScarcity?: boolean
+}
+
+export default function FinalCtaSection({ 
+  userId, 
+  enableUrgency = false, 
+  enableScarcity = false 
+}: FinalCtaSectionProps) {
+  const ctaConfig: CTASectionConfig = {
+    id: 'final-cta',
+    title: 'Ready to Unlock Your Data\'s Potential?',
+    subtitle: 'Transform Complex Information into Actionable Intelligence',
+    description: 'Connect with our experts to see how C9d.ai can revolutionize your organization\'s approach to data and AI orchestration.',
+    context: 'final',
+    variants: [
+      {
+        id: 'consultation',
+        text: 'Request a Consultation',
+        href: '/request-consultation',
+        variant: 'primary',
+        icon: CalendarCheckIcon,
+        tracking: {
+          event: 'consultation_request',
+          category: 'conversion',
+          label: 'final_cta_consultation',
+          value: 100
+        },
+        weight: 50
+      },
+      {
+        id: 'demo',
+        text: 'Book a Demo',
+        href: '/book-demo',
+        variant: 'primary',
+        icon: Zap,
+        tracking: {
+          event: 'demo_request',
+          category: 'conversion',
+          label: 'final_cta_demo',
+          value: 90
+        },
+        weight: 30
+      },
+      {
+        id: 'trial',
+        text: 'Start Free Trial',
+        href: '/start-trial',
+        variant: 'primary',
+        icon: Users,
+        tracking: {
+          event: 'trial_start',
+          category: 'conversion',
+          label: 'final_cta_trial',
+          value: 80
+        },
+        weight: 20
+      }
+    ],
+    urgency: enableUrgency ? {
+      enabled: true,
+      type: 'limited-time',
+      message: '🔥 Limited Time: Get 3 months free with annual plans',
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      countdownText: 'Offer expires in:'
+    } : undefined,
+    scarcity: enableScarcity ? {
+      enabled: true,
+      type: 'beta-slots',
+      message: '⚡ Only 50 beta access slots remaining',
+      remaining: 12,
+      total: 50
+    } : undefined
+  }
+
+  const abTestConfig = {
+    id: 'final-cta-variants',
+    name: 'Final CTA Variants Test',
+    variants: ctaConfig.variants,
+    trafficSplit: [50, 30, 20], // Consultation: 50%, Demo: 30%, Trial: 20%
+    isActive: true
+  }
+
   return (
-    <section className="py-16 md:py-24 bg-[#0A192F]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-6">
-          Ready to{" "}
-          <span className="bg-clip-text text-transparent bg-purple-pink-gradient">Unlock Your Data's Potential?</span>
-        </h2>
-        <p className="text-lg text-windsurf-gray-light max-w-xl mx-auto mb-10">
-          Connect with our experts to see how C9N.AI can transform complex information into actionable intelligence for
-          your organization.
-        </p>
-        <div className="flex justify-center items-center">
-          <Button
-            size="lg"
-            className="bg-windsurf-pink-hot text-white hover:bg-opacity-90 font-semibold w-full sm:w-auto max-w-xs shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 py-3 px-8 text-lg"
-            asChild
-          >
-            <Link href="/request-consultation">
-              <CalendarCheckIcon className="mr-2 h-5 w-5" />
-              Request a Consultation
-            </Link>
-          </Button>
-        </div>
-        <p className="mt-8 text-sm text-windsurf-gray-medium">
-          Want to learn more first?{" "}
-          <Link href="/features" className="text-c9n-teal hover:underline font-semibold">
-            Explore all features
-          </Link>
-        </p>
-      </div>
-    </section>
+    <EnhancedCTASection
+      config={ctaConfig}
+      abTestConfig={abTestConfig}
+      userId={userId}
+    />
   )
 }

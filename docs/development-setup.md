@@ -106,6 +106,9 @@ c9d-ai/
 │       ├── app/                   # Next.js app directory
 │       ├── components/            # React components
 │       ├── lib/                   # Utility libraries
+│       │   ├── models/            # Data models and transformers
+│       │   ├── services/          # Business logic services
+│       │   └── utils/             # Utility functions
 │       ├── public/                # Static assets
 │       └── package.json           # App dependencies
 ├── packages/                      # Shared packages
@@ -132,6 +135,22 @@ graph TD
     B --> D
     C --> D
 ```
+
+### Data Layer Architecture
+
+The application uses a structured data layer with clear separation between database and application concerns:
+
+- **Models** (`lib/models/types.ts`): TypeScript interfaces for database rows and application models
+- **Transformers** (`lib/models/transformers.ts`): Bidirectional conversion between database and application formats
+- **Services** (`lib/services/`): Business logic and data access layer
+
+Key features:
+- **Type Safety**: Full TypeScript support with strict typing
+- **Null Handling**: Consistent use of nullish coalescing operator (`??`) for better data integrity
+- **Performance**: Efficient transformations with utility functions for arrays and safe operations
+- **Testing**: Comprehensive unit and integration tests for all transformers
+
+See the [Data Layer Documentation](../data-layer.md) for detailed information about models, transformers, and best practices.
 
 ## Package Manager (pnpm)
 
@@ -281,14 +300,17 @@ pnpm dev:packages
 #### Testing Commands
 
 ```bash
-# Run all tests
+# Run all tests once (default behavior)
 pnpm test
 
-# Run tests in watch mode
-pnpm test
-
-# Run tests once
+# Run tests once (explicit)
 pnpm test:run
+
+# Run tests in watch mode (development)
+pnpm test:dev
+
+# Alternative watch mode command
+pnpm test:watch
 
 # Run tests for specific package
 pnpm test --filter=@c9d/web
@@ -468,30 +490,69 @@ packages/ui/
 ### Running Tests
 
 ```bash
-# All tests
+# All tests (run once and exit)
+pnpm test
+
+# Explicit run mode
 pnpm test:run
 
-# Watch mode
-pnpm test
+# Watch mode for development
+pnpm test:dev
+
+# Alternative watch mode
+pnpm test:watch
 
 # Specific package
 pnpm test --filter=@c9d/web
 
+# Analytics-specific tests
+pnpm test --filter=@c9d/web -- analytics
+
 # With UI
 pnpm test:ui
 
-# Coverage
-pnpm test:run --coverage
+# Coverage reporting
+pnpm test:coverage
+
+# Unit tests only
+pnpm test:unit
+
+# Integration tests
+pnpm test:integration
+
+# Performance tests
+pnpm test:performance
+
+# E2E tests
+pnpm test:e2e
 ```
 
 ### Test Configuration
 
-Tests use Vitest with the following configuration:
+Tests use Vitest with comprehensive configuration:
 
-- **Framework**: Vitest
-- **Environment**: jsdom for React components
-- **Setup**: `vitest.setup.ts` for global configuration
-- **Mocking**: Built-in mocking capabilities
+- **Framework**: Vitest with React Testing Library
+- **Environment**: jsdom for React components, node for services
+- **Setup**: `vitest.setup.ts` for global configuration and mocks
+- **Isolation**: Proper cleanup and state reset between tests
+- **Coverage**: 90%+ requirement for new code
+- **Performance**: Parallel execution and efficient mocking
+
+### Test Standards
+
+The project follows strict testing standards:
+
+- **100% Test Success Rate**: All tests must pass without skips or failures
+- **Comprehensive Coverage**: Unit, integration, and E2E tests for all features
+- **Test Isolation**: Each test runs independently with proper cleanup
+- **Mock Strategy**: Comprehensive mocking of browser APIs and external services
+- **Performance Awareness**: Tests execute efficiently and support parallel execution
+
+Key improvements include:
+- Enhanced test isolation with proper state cleanup
+- Comprehensive browser API mocking for analytics
+- Error resilience testing for graceful degradation
+- Performance validation to ensure tests don't impact application speed
 
 ### Writing Tests
 
@@ -733,24 +794,48 @@ Create `c9d-ai.code-workspace`:
 }
 ```
 
-#### Development Optimization
+#### Next.js Configuration
 
-```json
+The Next.js configuration (`apps/web/next.config.mjs`) is optimized for production deployment:
+
+```javascript
 // apps/web/next.config.mjs
 export default {
+  // Build optimizations
   experimental: {
-    optimizePackageImports: ['@c9d/ui', '@c9d/config'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js'
-        }
-      }
-    }
-  }
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  
+  // Output configuration for Vercel
+  output: 'standalone',
+  
+  // Performance settings
+  compress: true,
+  poweredByHeader: false,
+  
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+        ],
+      },
+    ];
+  },
 }
 ```
+
+Key configuration features:
+- **Package Import Optimization**: Reduces bundle size for large icon libraries
+- **Standalone Output**: Optimized for serverless deployment
+- **Security Headers**: Comprehensive security header configuration
+- **Compression**: Enabled for better performance
+- **Cache Control**: Optimized caching for static assets and API routes
 
 ### Continuous Integration
 

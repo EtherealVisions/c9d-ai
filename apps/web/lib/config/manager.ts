@@ -420,7 +420,6 @@ export class CentralizedConfigManager implements ConfigManager {
     this.stopHealthCheckMonitoring();
     this.initialized = false;
     this.config = {};
-    this.cache = {};
     this.lastError = null;
   }
 }

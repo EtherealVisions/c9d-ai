@@ -56,7 +56,7 @@ export default function DashboardClient() {
             {/* Welcome Section */}
             <div className="text-center">
               <h2 className="text-3xl font-bold tracking-tight">
-                Welcome, {user.first_name || user.email}!
+                Welcome, {user.firstName || user.email}!
               </h2>
               <p className="mt-2 text-muted-foreground">
                 Get started by selecting an organization or create a new one.
@@ -122,9 +122,9 @@ export default function DashboardClient() {
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center space-x-4">
-                          {org.avatar_url ? (
+                          {org.avatarUrl ? (
                             <img
-                              src={org.avatar_url}
+                              src={org.avatarUrl}
                               alt={org.name}
                               className="w-10 h-10 rounded-lg object-cover"
                             />

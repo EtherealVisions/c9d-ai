@@ -5,7 +5,7 @@ import { userSyncService } from '@/lib/services/user-sync'
 
 export async function POST(req: NextRequest) {
   // Get the headers
-  const headerPayload = headers()
+  const headerPayload = await headers()
   const svix_id = headerPayload.get('svix-id')
   const svix_timestamp = headerPayload.get('svix-timestamp')
   const svix_signature = headerPayload.get('svix-signature')
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
             { status: 500 }
           )
         }
-        console.log(`User ${eventType}:`, syncResult.user.email)
+        console.log(`User ${eventType}:`, syncResult.user?.email || 'unknown')
         break
 
       case 'user.deleted':

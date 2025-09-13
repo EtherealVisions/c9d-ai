@@ -27,18 +27,18 @@ import type {
 } from './types'
 import {
   transformUserRow,
-  transformOrganizationRow,
-  transformMembershipRow,
-  transformRoleRow,
-  transformPermissionRow,
-  transformInvitationRow,
-  transformAuditLogRow,
   transformUserToRow,
+  transformOrganizationRow,
   transformOrganizationToRow,
+  transformMembershipRow,
   transformMembershipToRow,
+  transformRoleRow,
   transformRoleToRow,
+  transformPermissionRow,
   transformPermissionToRow,
+  transformInvitationRow,
   transformInvitationToRow,
+  transformAuditLogRow,
   transformAuditLogToRow,
   transformRows,
   transformRowSafe
@@ -163,9 +163,10 @@ export class TypedSupabaseClient {
    * Execute a raw query with error handling
    */
   private async executeQuery<T>(
-    queryFn: () => Promise<{ data: T | null; error: any }>
+    queryFn: () => any
   ): Promise<T> {
-    const { data, error } = await queryFn()
+    const result = await queryFn()
+    const { data, error } = result
     
     if (error) {
       throw new DatabaseError(error.message, error.code, error.details)
@@ -210,7 +211,7 @@ export class TypedSupabaseClient {
   }
 
   async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
-    const rowData = transformUserToRow(userData)
+    const rowData = transformUserToRow({ ...userData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -318,7 +319,7 @@ export class TypedSupabaseClient {
   }
 
   async createOrganization(orgData: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>): Promise<Organization> {
-    const rowData = transformOrganizationToRow(orgData)
+    const rowData = transformOrganizationToRow({ ...orgData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -441,7 +442,7 @@ export class TypedSupabaseClient {
   }
 
   async createMembership(membershipData: Omit<Membership, 'id' | 'createdAt' | 'updatedAt' | 'user' | 'organization' | 'role'>): Promise<Membership> {
-    const rowData = transformMembershipToRow(membershipData)
+    const rowData = transformMembershipToRow({ ...membershipData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -514,7 +515,7 @@ export class TypedSupabaseClient {
   }
 
   async createRole(roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>): Promise<Role> {
-    const rowData = transformRoleToRow(roleData)
+    const rowData = transformRoleToRow({ ...roleData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -541,7 +542,7 @@ export class TypedSupabaseClient {
   }
 
   async createPermission(permissionData: Omit<Permission, 'id' | 'createdAt' | 'updatedAt'>): Promise<Permission> {
-    const rowData = transformPermissionToRow(permissionData)
+    const rowData = transformPermissionToRow({ ...permissionData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -623,7 +624,7 @@ export class TypedSupabaseClient {
   }
 
   async createInvitation(invitationData: Omit<Invitation, 'id' | 'createdAt' | 'updatedAt' | 'organization' | 'role' | 'inviter'>): Promise<Invitation> {
-    const rowData = transformInvitationToRow(invitationData)
+    const rowData = transformInvitationToRow({ ...invitationData, id: crypto.randomUUID() })
     
     const data = await this.executeQuery(() =>
       this.client
@@ -670,7 +671,16 @@ export class TypedSupabaseClient {
 
   // Audit log operations
   async createAuditLog(auditData: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt' | 'user' | 'organization'>): Promise<AuditLog> {
-    const rowData = transformAuditLogToRow(auditData)
+    const rowData = transformAuditLogToRow({ 
+      ...auditData, 
+      id: crypto.randomUUID(),
+      details: auditData.details || '',
+      userId: auditData.userId || null,
+      organizationId: auditData.organizationId || null,
+      resourceId: auditData.resourceId || null,
+      ipAddress: auditData.ipAddress || null,
+      userAgent: auditData.userAgent || null
+    })
     
     const data = await this.executeQuery(() =>
       this.client

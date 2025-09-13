@@ -12,7 +12,7 @@ import { membershipService } from '@/lib/services/membership-service'
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -24,8 +24,9 @@ export async function DELETE(
       )
     }
 
-    // Revoke invitation
-    const result = await membershipService.revokeInvitation(params.id, clerkUserId)
+    // Await params and revoke invitation
+    const { id } = await params
+    const result = await membershipService.revokeInvitation(id, clerkUserId)
 
     if (result.error) {
       const statusCode = result.code === 'INVITATION_NOT_FOUND' ? 404 :

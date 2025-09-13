@@ -68,9 +68,9 @@ export class SecurityAuditService {
         userId: enhancedEvent.userId,
         organizationId: enhancedEvent.organizationId,
         action: enhancedEvent.action,
-        resourceType: enhancedEvent.resourceType,
+        resource: enhancedEvent.resourceType,
         resourceId: enhancedEvent.resourceId,
-        metadata: enhancedEvent.metadata,
+        details: enhancedEvent.metadata,
         ipAddress: enhancedEvent.ipAddress,
         userAgent: enhancedEvent.userAgent
       })

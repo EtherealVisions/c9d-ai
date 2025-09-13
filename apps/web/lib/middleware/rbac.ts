@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '../services/rbac-service'
 import { createSupabaseClient } from '../database'
 
@@ -88,7 +88,7 @@ export function withAuth() {
   ): Promise<NextResponse> {
     try {
       // Get authentication from Clerk
-      const { userId: clerkUserId } = auth()
+      const { userId: clerkUserId } = await auth()
       
       if (!clerkUserId) {
         return NextResponse.json(
@@ -129,9 +129,11 @@ export function withRBAC(options: RBACOptions = {}) {
   return function rbacMiddleware(
     handler: (req: AuthenticatedRequest) => Promise<NextResponse>
   ) {
-    return withAuth()(async (request: AuthenticatedRequest): Promise<NextResponse> => {
-      try {
-        if (!request.user) {
+    return async (request: NextRequest): Promise<NextResponse> => {
+      const authMiddleware = withAuth()
+      return authMiddleware(request, async (authRequest: AuthenticatedRequest): Promise<NextResponse> => {
+        try {
+        if (!authRequest.user) {
           return NextResponse.json(
             { error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } },
             { status: 401 }
@@ -158,14 +160,14 @@ export function withRBAC(options: RBACOptions = {}) {
           if (requireAll) {
             // User must have ALL specified permissions
             hasRequiredPermissions = await rbacService.hasAllPermissions(
-              request.user.id,
+              authRequest.user.id,
               organizationId,
               permissions
             )
           } else {
             // User must have ANY of the specified permissions
             hasRequiredPermissions = await rbacService.hasAnyPermission(
-              request.user.id,
+              authRequest.user.id,
               organizationId,
               permissions
             )
@@ -174,7 +176,7 @@ export function withRBAC(options: RBACOptions = {}) {
           // Check for super admin override
           if (!hasRequiredPermissions && allowSuperAdmin) {
             hasRequiredPermissions = await rbacService.hasPermission(
-              request.user.id,
+              authRequest.user.id,
               organizationId,
               'system:admin'
             )
@@ -196,8 +198,8 @@ export function withRBAC(options: RBACOptions = {}) {
 
         // Add RBAC context to request
         if (organizationId) {
-          const rbacContext = await rbacService.getRBACContext(request.user.id, organizationId)
-          request.rbacContext = {
+          const rbacContext = await rbacService.getRBACContext(authRequest.user.id, organizationId)
+          authRequest.rbacContext = {
             userId: rbacContext.userId,
             organizationId: rbacContext.organizationId,
             permissions: rbacContext.userPermissions || [],
@@ -213,14 +215,14 @@ export function withRBAC(options: RBACOptions = {}) {
             .single()
 
           if (orgData) {
-            request.organization = {
+            authRequest.organization = {
               id: orgData.id,
               slug: orgData.slug
             }
           }
         }
 
-        return handler(request)
+        return handler(authRequest)
       } catch (error) {
         console.error('RBAC middleware error:', error)
         return NextResponse.json(
@@ -228,7 +230,8 @@ export function withRBAC(options: RBACOptions = {}) {
           { status: 500 }
         )
       }
-    })
+      })
+    }
   }
 }
 

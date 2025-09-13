@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Hero Section Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes gentle-float {
+            0%, 100% { transform: translate3d(0px, 0px, 0px); }
+            25% { transform: translate3d(15px, -20px, 0px); }
+            50% { transform: translate3d(-20px, 15px, 0px); }
+            75% { transform: translate3d(20px, -15px, 0px); }
+        }
+        
+        @keyframes gradient-wave {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .animate-gentle-float-1 { animation: gentle-float 25s ease-in-out infinite; }
+        .animate-gentle-float-2 { animation: gentle-float 30s ease-in-out infinite reverse; }
+        .animate-gentle-float-3 { animation: gentle-float 22s ease-in-out infinite; }
+        .animate-gradient-wave { animation: gradient-wave 15s ease infinite; }
+        
+        .bg-purple-pink-gradient { background: linear-gradient(to right, #7B2CBF, #E71D73); }
+        .bg-blue-teal-gradient { background: linear-gradient(to right, #00B2FF, #2CE4B8); }
+        .bg-yellow-lime-gradient { background: linear-gradient(to right, #FFD700, #AFFF3C); }
+        .bg-200\% { background-size: 200% 200%; }
+        
+        /* Custom colors */
+        .bg-c9n-blue-dark { background-color: #0A192F; }
+        .bg-windsurf-pink-hot { background-color: #E71D73; }
+        .bg-windsurf-blue-electric { background-color: #00B2FF; }
+        .bg-windsurf-yellow-bright { background-color: #FFD700; }
+        .text-windsurf-gray-light { color: #E0E6ED; }
+        .text-c9n-teal { color: #2CE4B8; }
+        .text-windsurf-yellow-bright { color: #FFD700; }
+    </style>
+</head>
+<body class="bg-c9n-blue-dark text-gray-200">
+    <section class="relative bg-c9n-blue-dark py-20 md:py-32 lg:py-40 overflow-hidden">
+        <!-- Enhanced floating blob animations -->
+        <div class="absolute inset-0 pointer-events-none z-0">
+            <div class="absolute w-72 h-72 sm:w-96 sm:h-96 bg-windsurf-pink-hot rounded-full filter blur-2xl opacity-25 animate-gentle-float-1" style="top: -25%; left: -15%; will-change: transform;"></div>
+            <div class="absolute w-96 h-96 sm:w-144 sm:h-144 bg-windsurf-blue-electric rounded-full filter blur-3xl opacity-20 animate-gentle-float-2" style="top: -20%; right: -20%; will-change: transform;"></div>
+            <div class="absolute w-64 h-64 sm:w-80 sm:h-80 bg-windsurf-yellow-bright rounded-full filter blur-2xl opacity-20 animate-gentle-float-3" style="bottom: 5%; right: 10%; will-change: transform;"></div>
+        </div>
+
+        <!-- Content container -->
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-4xl mx-auto text-center">
+                <!-- Enhanced title with gradient effects -->
+                <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                    <span>Unlock </span>
+                    <span>Deeper </span>
+                    <span class="block sm:inline bg-clip-text text-transparent bg-yellow-lime-gradient animate-gradient-wave bg-200%">Insights.</span>
+                </h1>
+
+                <!-- Enhanced subtitle -->
+                <p class="mt-6 text-lg md:text-xl leading-8 text-windsurf-gray-light max-w-3xl mx-auto">
+                    C9N.AI leverages advanced AI to analyze and coordinate disparate, opaque relationships, bringing you relevant information and insights.
+                </p>
+
+                <!-- Enhanced CTA buttons -->
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="/request-consultation" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md bg-windsurf-pink-hot text-white hover:bg-opacity-90 shadow-lg hover:shadow-xl py-4 px-10 text-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 w-full sm:w-auto min-w-[200px]">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 2v4M16 2v4M3 10h18M3 4h18a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2zM9 16l2 2 4-4"/>
+                        </svg>
+                        Request a Consultation
+                    </a>
+                    
+                    <a href="/demo" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border-2 border-windsurf-pink-hot text-windsurf-pink-hot bg-transparent hover:bg-windsurf-pink-hot hover:text-white py-3 px-8 text-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 w-full sm:w-auto min-w-[160px]">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <polygon points="6 3 20 12 6 21 6 3"/>
+                        </svg>
+                        Watch Demo
+                    </a>
+                </div>
+
+                <!-- Social proof indicator -->
+                <div class="mt-8 flex items-center justify-center text-sm text-windsurf-gray-light">
+                    <svg class="mr-2 h-5 w-5 text-c9n-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.801 10A10 10 0 1 1 17 3.335M9 11l3 3L22 4"/>
+                    </svg>
+                    <span class="mr-4">Better analysis, better coordination, clearer insights.</span>
+                    <svg class="h-4 w-4 text-windsurf-yellow-bright animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+
+                <!-- Hero metrics display -->
+                <div class="mt-16">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                        <div class="text-center group hover:scale-105 transition-transform duration-300">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-2xl md:text-3xl font-bold text-white">
+                                    <span class="bg-clip-text text-transparent bg-yellow-lime-gradient">10,000+</span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-windsurf-gray-light">Active Users</div>
+                            <div class="text-xs text-windsurf-gray-light opacity-70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Trusted by professionals worldwide
+                            </div>
+                        </div>
+                        
+                        <div class="text-center group hover:scale-105 transition-transform duration-300">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-2xl md:text-3xl font-bold text-white">
+                                    <span class="bg-clip-text text-transparent bg-yellow-lime-gradient">99%</span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-windsurf-gray-light">Accuracy Rate</div>
+                            <div class="text-xs text-windsurf-gray-light opacity-70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                AI-powered precision
+                            </div>
+                        </div>
+                        
+                        <div class="text-center group hover:scale-105 transition-transform duration-300">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-2xl md:text-3xl font-bold text-white">
+                                    <span class="bg-clip-text text-transparent bg-yellow-lime-gradient">300%</span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-windsurf-gray-light">Faster Analysis</div>
+                            <div class="text-xs text-windsurf-gray-light opacity-70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Compared to traditional methods
+                            </div>
+                        </div>
+                        
+                        <div class="text-center group hover:scale-105 transition-transform duration-300">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-2xl md:text-3xl font-bold text-white">
+                                    <span class="bg-clip-text text-transparent bg-yellow-lime-gradient">4.9</span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-windsurf-gray-light">User Rating</div>
+                            <div class="text-xs text-windsurf-gray-light opacity-70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Based on 1000+ reviews
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance optimization: Preload critical resources -->
+        <link rel="preload" as="style" href="/fonts/inter.css" />
+    </section>
+
+    <script>
+        // Demo analytics tracking
+        function trackEvent(config) {
+            console.log('Analytics Event:', config);
+        }
+
+        // Add click tracking to CTAs
+        document.querySelectorAll('a[href]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent navigation in demo
+                const href = link.getAttribute('href');
+                const text = link.textContent.trim();
+                
+                trackEvent({
+                    event: href.includes('consultation') ? 'hero_primary_cta_click' : 'hero_secondary_cta_click',
+                    category: 'conversion',
+                    label: href.includes('consultation') ? 'consultation_request' : 'demo_request'
+                });
+                
+                alert(`CTA clicked: ${text}\nWould navigate to: ${href}\nEvent tracked successfully!`);
+            });
+        });
+
+        // Demo performance tracking
+        if ('performance' in window) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    const perfData = performance.getEntriesByType('navigation')[0];
+                    console.log('Page Load Performance:', {
+                        loadTime: perfData.loadEventEnd - perfData.loadEventStart,
+                        domContentLoaded: perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
+                        firstPaint: performance.getEntriesByType('paint').find(entry => entry.name === 'first-paint')?.startTime
+                    });
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>

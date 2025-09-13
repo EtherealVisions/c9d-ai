@@ -49,7 +49,7 @@ export class MembershipService {
       const validatedData = validateCreateMembership({
         ...membershipData,
         status: membershipData.status || 'active',
-        joinedAt: membershipData.joinedAt || new Date()
+        joinedAt: membershipData.joinedAt ?? new Date()
       })
 
       // Check if membership already exists
@@ -321,7 +321,7 @@ export class MembershipService {
       const token = this.generateInvitationToken()
       
       // Set default expiration to 7 days from now
-      const expiresAt = invitationData.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      const expiresAt = invitationData.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
       // Validate the invitation data
       const validatedData = validateCreateInvitation({
@@ -653,9 +653,11 @@ export class MembershipService {
         userId,
         organizationId,
         action,
-        resourceType,
+        resource: resourceType,
         resourceId,
-        metadata
+        details: metadata,
+        ipAddress: null,
+        userAgent: null
       })
     } catch (error) {
       console.error('Failed to log membership activity:', error)

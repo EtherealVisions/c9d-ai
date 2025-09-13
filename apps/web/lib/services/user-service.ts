@@ -6,7 +6,7 @@
 import { createTypedSupabaseClient, DatabaseError, NotFoundError, ValidationError } from '../models/database'
 import { validateUpdateUser, validateCreateUser } from '../models/schemas'
 import type { User } from '../models/types'
-import { userSyncService } from './user-sync'
+import { UserSyncService } from './user-sync'
 
 export interface UpdateUserProfileData {
   firstName?: string
@@ -291,7 +291,7 @@ export class UserService {
    */
   async syncUserFromClerk(clerkUser: any): Promise<UserServiceResult<User>> {
     try {
-      const syncResult = await userSyncService.syncUser(clerkUser)
+      const syncResult = await UserSyncService.syncUser(clerkUser)
       
       if (syncResult.error) {
         return {
@@ -424,10 +424,13 @@ export class UserService {
     try {
       await this.db.createAuditLog({
         userId,
+        organizationId: null,
         action,
-        resourceType,
+        resource: resourceType,
         resourceId,
-        metadata
+        details: metadata,
+        ipAddress: null,
+        userAgent: null
       })
     } catch (error) {
       console.error('Failed to log user activity:', error)

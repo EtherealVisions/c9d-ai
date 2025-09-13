@@ -8,7 +8,7 @@ import {
   ConflictError,
   InternalServerError,
   DatabaseError,
-  ExternalServiceError
+  isBaseError
 } from './custom-errors';
 
 /**
@@ -19,14 +19,14 @@ export const createAuthenticationError = (
   message: string,
   details?: Record<string, any>,
   requestId?: string
-) => new AuthenticationError(code, message, details, requestId);
+) => new AuthenticationError(message);
 
 export const createAuthorizationError = (
   code: ErrorCode,
   message: string,
   details?: Record<string, any>,
   requestId?: string
-) => new AuthorizationError(code, message, details, requestId);
+) => new AuthorizationError(message);
 
 export const createValidationError = (
   code: ErrorCode,
@@ -34,21 +34,21 @@ export const createValidationError = (
   fieldErrors?: Record<string, string[]>,
   details?: Record<string, any>,
   requestId?: string
-) => new ValidationError(code, message, fieldErrors, details, requestId);
+) => new ValidationError(message, { code, requestId, fieldErrors });
 
 export const createNotFoundError = (
   code: ErrorCode,
   message: string,
   details?: Record<string, any>,
   requestId?: string
-) => new NotFoundError(code, message, details, requestId);
+) => new NotFoundError(message);
 
 export const createConflictError = (
   code: ErrorCode,
   message: string,
   details?: Record<string, any>,
   requestId?: string
-) => new ConflictError(code, message, details, requestId);
+) => new ConflictError(message);
 
 /**
  * Common error factory functions
@@ -134,8 +134,7 @@ export const createRequiredFieldError = (field: string, requestId?: string) =>
 /**
  * Error type guards
  */
-export const isBaseError = (error: unknown): error is BaseError =>
-  error instanceof BaseError;
+export { isBaseError } from './custom-errors';
 
 export const isAuthenticationError = (error: unknown): error is AuthenticationError =>
   error instanceof AuthenticationError;
@@ -157,36 +156,23 @@ export const isConflictError = (error: unknown): error is ConflictError =>
  */
 export const getUserFriendlyMessage = (error: BaseError): string => {
   const messageMap: Record<ErrorCode, string> = {
+    [ErrorCode.VALIDATION_ERROR]: 'The information provided is not valid. Please check your input and try again.',
+    [ErrorCode.NOT_FOUND]: 'The requested resource could not be found.',
+    [ErrorCode.UNAUTHORIZED]: 'You are not authorized to access this resource.',
+    [ErrorCode.FORBIDDEN]: 'You don\'t have permission to perform this action.',
+    [ErrorCode.INTERNAL_ERROR]: 'An unexpected error occurred. Please try again later.',
+    [ErrorCode.INVALID_INPUT_FORMAT]: 'The information you entered is not in the correct format.',
+    [ErrorCode.DATABASE_ERROR]: 'A database error occurred. Please try again later.',
+    [ErrorCode.DUPLICATE_USER]: 'A user with this email already exists.',
+    [ErrorCode.DUPLICATE_ORGANIZATION]: 'An organization with this name already exists. Please choose a different name.',
     [ErrorCode.INVALID_CREDENTIALS]: 'The email or password you entered is incorrect. Please try again.',
-    [ErrorCode.ACCOUNT_LOCKED]: 'Your account has been temporarily locked for security reasons. Please contact support.',
     [ErrorCode.TOKEN_EXPIRED]: 'Your session has expired. Please sign in again.',
     [ErrorCode.UNAUTHORIZED_ACCESS]: 'You need to sign in to access this page.',
-    [ErrorCode.AUTHENTICATION_REQUIRED]: 'Please sign in to continue.',
-    
     [ErrorCode.INSUFFICIENT_PERMISSIONS]: 'You don\'t have permission to perform this action.',
-    [ErrorCode.ROLE_NOT_FOUND]: 'The specified role could not be found.',
-    [ErrorCode.PERMISSION_DENIED]: 'Access denied. You don\'t have the required permissions.',
-    [ErrorCode.ORGANIZATION_ACCESS_DENIED]: 'You don\'t have access to this organization.',
-    
+    [ErrorCode.ORGANIZATION_NOT_FOUND]: 'The organization you\'re looking for doesn\'t exist or has been removed.',
+    [ErrorCode.USER_NOT_FOUND]: 'The user you\'re looking for could not be found.',
     [ErrorCode.INVALID_EMAIL]: 'Please enter a valid email address.',
     [ErrorCode.REQUIRED_FIELD_MISSING]: 'Please fill in all required fields.',
-    [ErrorCode.INVALID_SLUG]: 'Organization name contains invalid characters. Please use only letters, numbers, and hyphens.',
-    [ErrorCode.PASSWORD_TOO_WEAK]: 'Password must be at least 8 characters long and contain uppercase, lowercase, and numbers.',
-    [ErrorCode.INVALID_INPUT_FORMAT]: 'The information you entered is not in the correct format.',
-    
-    [ErrorCode.ORGANIZATION_NOT_FOUND]: 'The organization you\'re looking for doesn\'t exist or has been removed.',
-    [ErrorCode.DUPLICATE_ORGANIZATION]: 'An organization with this name already exists. Please choose a different name.',
-    [ErrorCode.MEMBERSHIP_LIMIT_EXCEEDED]: 'This organization has reached its member limit.',
-    [ErrorCode.ORGANIZATION_CREATION_FAILED]: 'We couldn\'t create the organization. Please try again.',
-    
-    [ErrorCode.USER_NOT_FOUND]: 'User not found.',
-    [ErrorCode.DUPLICATE_USER]: 'A user with this email already exists.',
-    [ErrorCode.USER_CREATION_FAILED]: 'We couldn\'t create your account. Please try again.',
-    
-    [ErrorCode.DATABASE_ERROR]: 'We\'re experiencing technical difficulties. Please try again later.',
-    [ErrorCode.EXTERNAL_SERVICE_ERROR]: 'We\'re having trouble connecting to our services. Please try again later.',
-    [ErrorCode.INTERNAL_SERVER_ERROR]: 'Something went wrong on our end. Please try again later.',
-    [ErrorCode.RATE_LIMIT_EXCEEDED]: 'You\'re making requests too quickly. Please wait a moment and try again.',
   };
 
   return messageMap[error.code] || error.message;
@@ -201,14 +187,14 @@ export const normalizeError = (error: unknown, requestId?: string): BaseError =>
   }
 
   if (error instanceof Error) {
-    return new InternalServerError(error.message, { originalError: error.name }, requestId);
+    return new InternalServerError(error.message);
   }
 
   if (typeof error === 'string') {
-    return new InternalServerError(error, undefined, requestId);
+    return new InternalServerError(error);
   }
 
-  return new InternalServerError('An unknown error occurred', { error }, requestId);
+  return new InternalServerError('An unknown error occurred');
 };
 
 /**
@@ -216,7 +202,13 @@ export const normalizeError = (error: unknown, requestId?: string): BaseError =>
  */
 export const logError = (error: BaseError, context?: Record<string, any>) => {
   const logData = {
-    ...error.toJSON(),
+    name: error.name,
+    message: error.message,
+    code: error.code,
+    statusCode: error.statusCode,
+    timestamp: error.timestamp,
+    requestId: error.requestId,
+    stack: error.stack,
     context,
   };
 

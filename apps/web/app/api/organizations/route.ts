@@ -93,7 +93,14 @@ export const POST = tenantIsolation.authenticated()(async (request) => {
     // Validate request body
     const validatedData = validateCreateOrganization(body)
     
-    const result = await organizationService.createOrganization(request.user.id, validatedData)
+    // Convert null values to undefined for service compatibility
+    const serviceData = {
+      ...validatedData,
+      description: validatedData.description === null ? undefined : validatedData.description,
+      avatarUrl: validatedData.avatarUrl === null ? undefined : validatedData.avatarUrl
+    }
+    
+    const result = await organizationService.createOrganization(request.user.id, serviceData)
     
     if (result.error) {
       const statusCode = result.code === 'VALIDATION_ERROR' ? 400 :

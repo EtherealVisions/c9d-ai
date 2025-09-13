@@ -130,9 +130,9 @@ describe('OrganizationService', () => {
         userId: 'user-123',
         organizationId: result.data?.id,
         action: 'organization.created',
-        resourceType: 'organization',
+        resource: 'organization',
         resourceId: result.data?.id,
-        metadata: {
+        details: {
           organizationName: result.data?.name,
           slug: result.data?.slug
         }

@@ -557,9 +557,9 @@ export class OrganizationService {
         userId,
         organizationId,
         action,
-        resourceType,
+        resource: resourceType,
         resourceId,
-        metadata
+        details: metadata
       })
     } catch (error) {
       console.error('Failed to log organization activity:', error)

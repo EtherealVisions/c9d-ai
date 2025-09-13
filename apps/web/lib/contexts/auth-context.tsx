@@ -1,8 +1,8 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import type { User, Organization, OrganizationMembership } from '../database'
+import type { User, Organization, Membership } from '../models'
 
 export interface AuthContextValue {
   // User state
@@ -13,7 +13,7 @@ export interface AuthContextValue {
   // Organization state
   organizations: Organization[]
   currentOrganization: Organization | null
-  currentMembership: OrganizationMembership | null
+  currentMembership: Membership | null
   
   // Actions
   switchOrganization: (organizationId: string) => Promise<void>
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null)
-  const [currentMembership, setCurrentMembership] = useState<OrganizationMembership | null>(null)
+  const [currentMembership, setCurrentMembership] = useState<Membership | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
 

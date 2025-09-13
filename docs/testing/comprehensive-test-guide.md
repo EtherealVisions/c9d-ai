@@ -14,6 +14,7 @@ This guide covers all aspects of testing for the Account Management & Organizati
 8. [Test Data Management](#test-data-management)
 9. [Continuous Integration](#continuous-integration)
 10. [Best Practices](#best-practices)
+11. [Specialized Testing Guides](#specialized-testing-guides)
 
 ## Testing Strategy
 
@@ -119,6 +120,144 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
+```
+
+## Coverage Configuration
+
+The project uses comprehensive coverage tracking with tiered thresholds based on code criticality:
+
+### Global Coverage Requirements
+- **Branches**: 85% minimum
+- **Functions**: 85% minimum  
+- **Lines**: 85% minimum
+- **Statements**: 85% minimum
+
+### Module-Specific Coverage Requirements
+
+#### Critical Business Logic (100% Required)
+- **Services (`lib/services/**`)**: Complete coverage required
+  - All service methods must be tested
+  - All error paths must be covered
+  - All business logic branches tested
+
+#### Data Layer (95% Required)  
+- **Models (`lib/models/**`)**: Near-complete coverage
+  - All model transformations tested
+  - Database interaction patterns covered
+  - Type validation and conversion logic
+
+#### External Interfaces (90% Required)
+- **API Routes (`app/api/**`)**: High coverage for reliability
+  - All HTTP methods and status codes
+  - Authentication and authorization flows
+  - Input validation and error handling
+
+### Coverage Reports and Analysis
+
+Coverage reports are generated in multiple formats for different use cases:
+
+#### Interactive HTML Report
+- **Location**: `./coverage/index.html`
+- **Features**: Line-by-line coverage visualization, branch analysis
+- **Use Case**: Development debugging and coverage exploration
+
+#### Machine-Readable Formats
+- **JSON**: `./coverage/coverage.json` - Complete coverage data
+- **JSON Summary**: `./coverage/coverage-summary.json` - Quick statistics
+- **LCOV**: `./coverage/lcov.info` - CI/CD integration format
+
+#### Console Output
+- **Real-time**: Coverage summary during test execution
+- **Threshold Validation**: Immediate feedback on coverage requirements
+- **Module Breakdown**: Per-directory coverage statistics
+
+### Coverage Exclusions
+
+The following files and directories are excluded from coverage analysis:
+
+#### Build and Configuration Files
+- `**/*.config.{ts,js}` - Configuration files
+- `**/.next/**` - Next.js build output
+- `**/dist/**` - Distribution builds
+- `**/*.d.ts` - TypeScript declaration files
+
+#### Test Infrastructure
+- `__tests__/**` - Test files themselves
+- `**/*.test.{ts,tsx}` - Unit test files
+- `**/*.spec.{ts,tsx}` - Specification test files
+- `**/fixtures/**` - Test data fixtures
+- `**/mocks/**` - Mock implementations
+
+#### Development and Demo Files
+- `demo-*.{ts,tsx,html}` - Demo and example files
+- `**/examples/**` - Example code
+- `vitest.setup.ts` - Test setup configuration
+
+### Coverage Validation
+
+Coverage validation occurs at multiple levels:
+
+#### Pre-commit Validation
+```bash
+# Coverage check before commit
+pnpm test:coverage
+# Must meet all threshold requirements
+```
+
+#### CI/CD Pipeline Validation
+```bash
+# Automated coverage validation
+pnpm test:coverage --reporter=json
+# Fails build if thresholds not met
+```
+
+#### Module-Specific Validation
+- **Services**: 100% coverage enforced - build fails if not met
+- **Models**: 95% coverage enforced - warnings generated if not met  
+- **API Routes**: 90% coverage enforced - quality gate in CI/CD
+
+### Advanced Coverage Configuration
+
+The Vitest configuration includes advanced settings for comprehensive coverage tracking:
+
+```typescript
+// vitest.config.ts - Coverage Configuration
+coverage: {
+  provider: 'v8',
+  reporter: ['text', 'json', 'html', 'lcov', 'json-summary'],
+  reportsDirectory: './coverage',
+  
+  // Tiered coverage thresholds
+  thresholds: {
+    global: {
+      branches: 85,
+      functions: 85,
+      lines: 85,
+      statements: 85
+    },
+    // Critical modules require 100% coverage
+    'lib/services/**': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100
+    },
+    'lib/models/**': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    },
+    'app/api/**': {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    }
+  },
+  skipFull: false,
+  all: true
+}
 ```
 
 ## Unit Testing
@@ -1373,3 +1512,86 @@ jobs:
 ---
 
 This comprehensive testing guide provides the foundation for maintaining high-quality, reliable software through thorough testing practices. Regular review and updates of testing strategies ensure continued effectiveness as the system evolves.
+## Spec
+ialized Testing Guides
+
+### Analytics Testing
+
+The analytics system requires specialized testing approaches due to its interaction with browser APIs, external services, and complex state management. See the [Analytics Testing Guide](analytics-testing-guide.md) for comprehensive coverage of:
+
+- **Service Testing**: Testing AnalyticsService, ConversionFunnelService, and ABTestingService
+- **Component Testing**: Testing AnalyticsProvider and AnalyticsDashboard components
+- **Mock Strategy**: Comprehensive mocking of browser APIs and external services
+- **Test Isolation**: Ensuring proper cleanup and state reset between tests
+- **Performance Testing**: Verifying analytics don't impact application performance
+- **Error Handling**: Testing graceful degradation and error scenarios
+
+Key improvements in analytics testing include:
+
+#### Enhanced Test Isolation
+
+```typescript
+beforeEach(() => {
+  vi.clearAllMocks()
+  
+  // Reset localStorage mock to return null (no stored data)
+  mockWindow.localStorage.getItem.mockReturnValue(null)
+  mockWindow.localStorage.setItem.mockClear()
+  
+  // Reset any static state in AnalyticsService
+  ;(AnalyticsService as any).config = null
+  ;(AnalyticsService as any).sessionId = null
+  ;(AnalyticsService as any).userId = null
+  
+  // Clear any stored funnel data in real localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('conversion_funnel')
+  }
+})
+```
+
+#### Comprehensive Browser API Mocking
+
+The analytics tests include complete mocking of browser APIs including:
+- Vercel Analytics (`window.va`)
+- Google Analytics (`window.gtag`)
+- Performance APIs (`window.performance`, `PerformanceObserver`)
+- Storage APIs (`localStorage`, `sessionStorage`)
+- DOM APIs (`document.createElement`, event listeners)
+
+#### Error Resilience Testing
+
+Tests verify graceful handling of:
+- Missing browser APIs
+- Storage access errors
+- Invalid JSON data
+- Network failures
+- Provider initialization errors
+
+This ensures the analytics system never breaks the main application functionality.
+
+### Testing Commands for Analytics
+
+```bash
+# Run all analytics tests
+pnpm test --filter=@c9d/web -- analytics
+
+# Run specific analytics service tests
+pnpm test --filter=@c9d/web -- analytics-service
+
+# Run analytics tests with coverage
+pnpm test:coverage --filter=@c9d/web -- analytics
+
+# Run analytics tests in watch mode
+pnpm test:watch --filter=@c9d/web -- analytics
+```
+
+### Quality Standards for Analytics Tests
+
+- **100% Test Success Rate**: All analytics tests must pass consistently
+- **Comprehensive Coverage**: All analytics services and components tested
+- **Isolation Guarantee**: Tests run independently without state pollution
+- **Performance Validation**: Analytics performance impact is tested
+- **Error Scenarios**: All error conditions are tested and handled gracefully
+
+The analytics testing improvements ensure reliable, maintainable tests that accurately validate the analytics system's functionality while maintaining excellent performance and user experience.

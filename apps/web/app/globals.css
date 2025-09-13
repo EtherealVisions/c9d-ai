@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import mobile optimizations */
+@import '../styles/mobile-optimizations.css';
+
 @layer base {
   :root {
     /* Define light theme variables if needed, or keep dark as default */

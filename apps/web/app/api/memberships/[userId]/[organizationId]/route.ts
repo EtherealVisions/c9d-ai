@@ -20,7 +20,7 @@ const updateMembershipApiSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string; organizationId: string } }
+  { params }: { params: Promise<{ userId: string; organizationId: string }> }
 ) {
   try {
     // Check authentication
@@ -32,14 +32,15 @@ export async function PUT(
       )
     }
 
-    // Parse request body
+    // Parse request body and params
     const body = await request.json()
+    const { userId, organizationId } = await params
     const validatedData = updateMembershipApiSchema.parse(body)
 
     // Update membership
     const result = await membershipService.updateMembership(
-      params.userId,
-      params.organizationId,
+      userId,
+      organizationId,
       validatedData,
       clerkUserId
     )
@@ -83,7 +84,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string; organizationId: string } }
+  { params }: { params: Promise<{ userId: string; organizationId: string }> }
 ) {
   try {
     // Check authentication
@@ -95,10 +96,11 @@ export async function DELETE(
       )
     }
 
-    // Remove membership
+    // Await params and remove membership
+    const { userId, organizationId } = await params
     const result = await membershipService.removeMember(
-      params.userId,
-      params.organizationId,
+      userId,
+      organizationId,
       clerkUserId
     )
 

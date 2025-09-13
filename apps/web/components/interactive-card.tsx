@@ -1,7 +1,7 @@
 "use client"
 
-import type React from "react"
-import { useRef, useState, type ReactNode, type HTMLAttributes } from "react"
+import React, { type ReactNode, type HTMLAttributes } from "react"
+import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface InteractiveCardProps extends HTMLAttributes<HTMLDivElement> {

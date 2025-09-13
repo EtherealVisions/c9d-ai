@@ -414,9 +414,14 @@ export async function loadEnvironmentWithFallback(
     const phaseEnv = await loader.loadEnvironment(config);
     
     // Merge with local environment variables (local takes precedence for development)
+    // Filter out undefined values from process.env
+    const filteredProcessEnv = Object.fromEntries(
+      Object.entries(process.env).filter(([_, value]) => value !== undefined)
+    ) as Record<string, string>;
+    
     const mergedEnv = {
       ...phaseEnv,
-      ...process.env
+      ...filteredProcessEnv
     };
     
     console.log(`[Phase.dev] Successfully loaded environment with ${Object.keys(phaseEnv).length} Phase.dev variables and ${Object.keys(process.env).length} local variables`);

@@ -4,7 +4,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     unoptimized: false,
@@ -13,8 +13,6 @@ const nextConfig = {
   },
   // Vercel optimization settings
   experimental: {
-    // Enable edge runtime for API routes where appropriate
-    runtime: 'nodejs',
     // Optimize bundle size
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },

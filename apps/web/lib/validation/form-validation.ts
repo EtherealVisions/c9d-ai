@@ -246,7 +246,7 @@ export const useFieldValidation = (
 ) => {
   const [errors, setErrors] = React.useState<string[]>([]);
   const [isValidating, setIsValidating] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout>();
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const validate = React.useCallback((value: unknown, fieldName: string) => {
     setIsValidating(true);

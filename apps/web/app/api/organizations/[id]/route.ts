@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { organizationService } from '@/lib/services/organization-service'
 import { securityAuditService } from '@/lib/services/security-audit-service'
-import { tenantIsolation } from '@/lib/middleware/tenant-isolation'
+import { tenantIsolation, type TenantAwareRequest } from '@/lib/middleware/tenant-isolation'
 import { validateUpdateOrganization } from '@/lib/models/schemas'
 import { ZodError } from 'zod'
 
@@ -15,9 +15,11 @@ import { ZodError } from 'zod'
  * Get organization by ID with tenant isolation
  */
 export const GET = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const url = new URL(request.url)
+  const id = url.pathname.split('/').pop() || ''
+  
   try {
     if (!request.user) {
       return NextResponse.json(
@@ -25,8 +27,7 @@ export const GET = tenantIsolation.withOrganization()(async (
         { status: 401 }
       )
     }
-
-    const result = await organizationService.getOrganization(params.id, request.user.id)
+    const result = await organizationService.getOrganization(id, request.user.id)
     
     if (result.error) {
       const statusCode = result.code === 'ORGANIZATION_NOT_FOUND' ? 404 :
@@ -35,10 +36,10 @@ export const GET = tenantIsolation.withOrganization()(async (
       // Log access attempt
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'organization.access_denied',
         resourceType: 'organization',
-        resourceId: params.id,
+        resourceId: id,
         severity: result.code === 'TENANT_ACCESS_DENIED' ? 'medium' : 'low',
         metadata: {
           error: result.error,
@@ -64,10 +65,10 @@ export const GET = tenantIsolation.withOrganization()(async (
     if (request.user) {
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'api.error',
         resourceType: 'api_endpoint',
-        resourceId: `/api/organizations/${params.id}`,
+        resourceId: `/api/organizations/${id}`,
         severity: 'medium',
         metadata: {
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -90,9 +91,11 @@ export const GET = tenantIsolation.withOrganization()(async (
  * Update organization by ID with tenant isolation
  */
 export const PUT = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const url = new URL(request.url)
+  const id = url.pathname.split('/').pop() || ''
+  
   try {
     if (!request.user) {
       return NextResponse.json(
@@ -100,13 +103,20 @@ export const PUT = tenantIsolation.withOrganization()(async (
         { status: 401 }
       )
     }
-
+    
     const body = await request.json()
     
     // Validate request body
     const validatedData = validateUpdateOrganization(body)
     
-    const result = await organizationService.updateOrganization(params.id, request.user.id, validatedData)
+    // Convert null values to undefined for service compatibility
+    const serviceData = {
+      ...validatedData,
+      description: validatedData.description === null ? undefined : validatedData.description,
+      avatarUrl: validatedData.avatarUrl === null ? undefined : validatedData.avatarUrl
+    }
+    
+    const result = await organizationService.updateOrganization(id, request.user.id, serviceData)
     
     if (result.error) {
       const statusCode = result.code === 'VALIDATION_ERROR' ? 400 :
@@ -116,10 +126,10 @@ export const PUT = tenantIsolation.withOrganization()(async (
       // Log failed update attempt
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'organization.update_failed',
         resourceType: 'organization',
-        resourceId: params.id,
+        resourceId: id,
         severity: result.code === 'TENANT_ACCESS_DENIED' ? 'medium' : 'low',
         metadata: {
           error: result.error,
@@ -146,10 +156,10 @@ export const PUT = tenantIsolation.withOrganization()(async (
     if (request.user) {
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'api.error',
         resourceType: 'api_endpoint',
-        resourceId: `/api/organizations/${params.id}`,
+        resourceId: `/api/organizations/${id}`,
         severity: 'medium',
         metadata: {
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -182,9 +192,11 @@ export const PUT = tenantIsolation.withOrganization()(async (
  * Delete organization by ID (soft delete) with tenant isolation
  */
 export const DELETE = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const url = new URL(request.url)
+  const id = url.pathname.split('/').pop() || ''
+  
   try {
     if (!request.user) {
       return NextResponse.json(
@@ -192,8 +204,8 @@ export const DELETE = tenantIsolation.withOrganization()(async (
         { status: 401 }
       )
     }
-
-    const result = await organizationService.deleteOrganization(params.id, request.user.id)
+    
+    const result = await organizationService.deleteOrganization(id, request.user.id)
     
     if (result.error) {
       const statusCode = result.code === 'ORGANIZATION_NOT_FOUND' ? 404 :
@@ -202,10 +214,10 @@ export const DELETE = tenantIsolation.withOrganization()(async (
       // Log failed deletion attempt
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'organization.delete_failed',
         resourceType: 'organization',
-        resourceId: params.id,
+        resourceId: id,
         severity: result.code === 'TENANT_ACCESS_DENIED' ? 'medium' : 'low',
         metadata: {
           error: result.error,
@@ -224,7 +236,7 @@ export const DELETE = tenantIsolation.withOrganization()(async (
     // Log successful organization deletion (high severity due to data impact)
     await securityAuditService.logOrganizationEvent(
       request.user.id,
-      params.id,
+      id,
       'deleted',
       {
         organizationName: result.data!.name,
@@ -246,10 +258,10 @@ export const DELETE = tenantIsolation.withOrganization()(async (
     if (request.user) {
       await securityAuditService.logSecurityEvent({
         userId: request.user.id,
-        organizationId: params.id,
+        organizationId: id,
         action: 'api.error',
         resourceType: 'api_endpoint',
-        resourceId: `/api/organizations/${params.id}`,
+        resourceId: `/api/organizations/${id}`,
         severity: 'high', // High severity for deletion errors
         metadata: {
           error: error instanceof Error ? error.message : 'Unknown error',

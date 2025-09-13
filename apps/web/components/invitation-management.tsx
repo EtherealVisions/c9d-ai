@@ -45,7 +45,6 @@ export function InvitationManagement({ invitations, loading, onInvitationsChange
       description: 'Full access to organization',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['*'],
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -55,7 +54,6 @@ export function InvitationManagement({ invitations, loading, onInvitationsChange
       description: 'Standard member access',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['organization:read', 'membership:read'],
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -65,7 +63,6 @@ export function InvitationManagement({ invitations, loading, onInvitationsChange
       description: 'Read-only access',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['organization:read'],
       createdAt: new Date(),
       updatedAt: new Date()
     }

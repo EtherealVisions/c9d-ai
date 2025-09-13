@@ -326,6 +326,21 @@ Connection timeout
 
 ## Authentication Issues
 
+### Account Settings Placeholder
+
+**Symptoms**:
+- Account settings page shows "functionality is being updated" message
+- Missing profile management features
+- No user preferences interface
+
+**Current Status**:
+This is expected behavior. The account settings functionality is currently being refactored and will show a placeholder message until the new implementation is complete.
+
+**Solutions**:
+- Check [Account Settings Status](features/account-settings-status.md) for current progress
+- Use Clerk's user profile component for basic profile management: `/user-profile`
+- Contact support for urgent account changes
+
 ### Clerk Configuration Errors
 
 **Error Messages**:
@@ -701,8 +716,8 @@ When reporting issues, include:
 ### Diagnostic Commands
 
 ```bash
-# Test all systems
-pnpm test:run
+# Test all systems (runs once and exits)
+pnpm test
 
 # Test Phase.dev integration
 pnpm test:phase
@@ -738,8 +753,8 @@ pnpm install
 # Rebuild
 pnpm build
 
-# Test
-pnpm test:run
+# Test (runs once and exits)
+pnpm test
 ```
 
 This should resolve most common issues. If problems persist, check the specific service documentation or seek help with the diagnostic information above.

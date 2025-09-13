@@ -45,17 +45,21 @@ When you first register, you'll automatically become the owner of your initial o
 
 ### Profile Management
 
-#### Updating Your Profile
+> **Note**: Account settings functionality is currently being updated. The interface will show a placeholder message while new features are being implemented.
 
-1. Navigate to **Settings** → **Profile**
-2. Update the following information:
+#### Updating Your Profile (Coming Soon)
+
+The profile management interface is being enhanced with improved functionality:
+
+1. Navigate to **Settings** → **Profile** (currently shows placeholder)
+2. Future functionality will include:
    - **Display Name**: How your name appears to other users
    - **Email Address**: Your primary contact email (requires verification)
    - **Profile Picture**: Upload an image or use a generated avatar
    - **Bio**: Optional description about yourself
    - **Time Zone**: For accurate timestamp display
 
-3. Click **Save Changes** to apply updates
+3. Click **Save Changes** to apply updates (feature in development)
 
 #### Account Preferences
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { userSyncService } from '@/lib/services/user-sync'
+import { UserSyncService } from '@/lib/services/user-sync'
 import { createSupabaseClient } from '@/lib/database'
 import { initializeAppConfig, getAppConfigSync } from '@/lib/config/init'
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { userId } = auth()
+    const { userId } = await auth()
     
     if (!userId) {
       return NextResponse.json(
@@ -37,10 +37,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Sync user with database
-    const syncResult = await userSyncService.syncUser(clerkUser)
-    if (syncResult.error) {
+    const syncResult = await UserSyncService.syncUser(clerkUser)
+    if (syncResult.error || !syncResult.user) {
       return NextResponse.json(
-        { error: { code: 'USER_SYNC_FAILED', message: syncResult.error } },
+        { error: { code: 'USER_SYNC_FAILED', message: syncResult.error || 'User sync failed' } },
         { status: 500 }
       )
     }
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const organizations = memberships?.map(m => m.organization).filter(Boolean) || []
+    const organizations = memberships?.map((m: any) => m.organization).filter(Boolean) || []
 
     return NextResponse.json({
       user: syncResult.user,

@@ -19,7 +19,13 @@ interface MemberManagementProps {
   canManage: boolean
 }
 
-interface MemberWithDetails extends Membership {
+interface MemberWithDetails {
+  id: string
+  userId: string
+  organizationId: string
+  roleId: string
+  status: 'active' | 'inactive' | 'pending'
+  joinedAt: Date
   user?: {
     id: string
     email: string
@@ -48,7 +54,6 @@ export function MemberManagement({ members, loading, onMembersChange, canManage 
       description: 'Full access to organization',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['*'],
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -58,7 +63,6 @@ export function MemberManagement({ members, loading, onMembersChange, canManage 
       description: 'Standard member access',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['organization:read', 'membership:read'],
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -68,7 +72,6 @@ export function MemberManagement({ members, loading, onMembersChange, canManage 
       description: 'Read-only access',
       organizationId: organization?.id || '',
       isSystemRole: true,
-      permissions: ['organization:read'],
       createdAt: new Date(),
       updatedAt: new Date()
     }
