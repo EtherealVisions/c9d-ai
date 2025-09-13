@@ -91,6 +91,38 @@
         "NODE_ENV"
       ]
     },
+    "test:dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "env": [
+        "NODE_ENV"
+      ]
+    },
+    "test:watch": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "env": [
+        "NODE_ENV"
+      ]
+    },
     "test:coverage": {
       "dependsOn": ["^build"],
       "inputs": [

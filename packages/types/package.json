@@ -8,8 +8,10 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src/",
-    "test": "vitest",
+    "test": "vitest run",
     "test:run": "vitest run",
+    "test:dev": "vitest --watch",
+    "test:watch": "vitest --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

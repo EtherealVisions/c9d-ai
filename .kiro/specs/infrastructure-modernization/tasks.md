@@ -155,14 +155,14 @@
     - Test environment variable loading in monorepo context (apps and packages)
     - _Requirements: 1.1, 1.2, 4.1, 4.2_
 
-- [ ] 12. Fix test command configuration for proper CI/CD compliance
-  - [ ] 12.1 Update package.json test scripts to follow standards
+- [x] 12. Fix test command configuration for proper CI/CD compliance
+  - [x] 12.1 Update package.json test scripts to follow standards
     - Change default "test" command to use "vitest run" instead of "vitest"
     - Ensure test commands terminate gracefully without manual intervention
     - Add explicit watch mode commands for development
     - _Requirements: 3.4, 4.3_
 
-  - [ ] 12.2 Update Turbo configuration for proper test execution
+  - [x] 12.2 Update Turbo configuration for proper test execution
     - Configure test tasks to run once by default in turbo.json
     - Add separate test:dev and test:watch tasks for development
     - Ensure CI/CD compatibility with proper exit codes
