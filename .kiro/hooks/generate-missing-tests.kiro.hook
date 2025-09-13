@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Generate Missing Tests",
+  "description": "Automatically generate scaffolding for new or uncovered code paths",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/**/*.js",
+      "apps/**/*.ts",
+      "apps/**/*.tsx",
+      "packages/**/*.js",
+      "packages/**/*.ts",
+      "packages/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "For each new source file created, generate a matching unit test file with baseline tests (happy path, error handling). Place in the corresponding tests directory. Do not overwrite existing tests."
+  }
+}

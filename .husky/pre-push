@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-push quality validation..."
+
+# Comprehensive validation pipeline for merge/push
+echo "📦 Clean dependency installation..."
+pnpm install --frozen-lockfile || {
+  echo "❌ Dependency installation failed."
+  exit 1
+}
+
+echo "📝 TypeScript compilation..."
+pnpm typecheck || {
+  echo "❌ TypeScript compilation failed."
+  exit 1
+}
+
+echo "🧹 Code linting and security..."
+pnpm lint || {
+  echo "❌ Linting failed."
+  exit 1
+}
+
+echo "🧪 Full test suite with coverage..."
+pnpm test:coverage || {
+  echo "❌ Test suite failed or coverage thresholds not met."
+  exit 1
+}
+
+echo "🔗 Integration tests..."
+pnpm test:integration || {
+  echo "❌ Integration tests failed."
+  exit 1
+}
+
+echo "🌐 End-to-end tests..."
+pnpm test:e2e || {
+  echo "❌ E2E tests failed."
+  exit 1
+}
+
+echo "🏗️  Production build..."
+pnpm build || {
+  echo "❌ Production build failed."
+  exit 1
+}
+
+echo "✅ All pre-push checks passed! Ready for merge..."

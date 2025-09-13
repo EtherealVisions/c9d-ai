@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Pre-Merge Safety Net",
+  "description": "Run full test suite and coverage check before merging to main branch.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before merge: run the full test suite, enforce minimum 85% coverage globally, ensure build compiles without errors. Block merge if any check fails. Provide a summary report for the team."
+  }
+}

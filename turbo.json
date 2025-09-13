@@ -91,6 +91,41 @@
         "NODE_ENV"
       ]
     },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.setup.ts",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "outputs": [
+        "coverage/**",
+        "test-results/**"
+      ],
+      "env": [
+        "NODE_ENV"
+      ]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "playwright.config.ts",
+        "**/__tests__/e2e/**",
+        "**/*.e2e.*"
+      ],
+      "outputs": [
+        "test-results/**",
+        "coverage/e2e/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "PLAYWRIGHT_BASE_URL"
+      ]
+    },
     "clean": {
       "cache": false
     }

@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Build & Verify",
+  "description": "Verify that the project builds successfully whenever a feature task is marked complete.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "package.json",
+      "turbo.json",
+      "apps/web/package.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run the full build process for the application (including dependency installation, compilation, and bundling). If the build fails, output errors clearly and suggest fixes. If the build succeeds, confirm success and attach build summary."
+  }
+}
