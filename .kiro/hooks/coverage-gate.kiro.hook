@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Coverage Gate",
+  "description": "Ensure that code coverage never drops below the defined threshold when files are saved or new features are completed.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/**/*.js",
+      "apps/**/*.ts",
+      "apps/**/*.tsx",
+      "packages/**/*.js",
+      "packages/**/*.ts",
+      "packages/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run the test suite with coverage reporting enabled. Ensure overall coverage remains above 85%. For critical modules (auth, payments), enforce 100% coverage. If coverage is below threshold, provide a list of missing tests and generate test scaffolds for uncovered code paths."
+  }
+}

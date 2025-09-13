@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit quality checks..."
+
+# Quality validation pipeline - all must pass
+echo "📝 TypeScript compilation check..."
+pnpm typecheck || {
+  echo "❌ TypeScript compilation failed. Fix type errors before committing."
+  exit 1
+}
+
+echo "🧹 Code linting check..."
+pnpm lint || {
+  echo "❌ Linting failed. Fix linting errors before committing."
+  exit 1
+}
+
+echo "🧪 Running tests with coverage..."
+pnpm test:coverage || {
+  echo "❌ Tests failed or coverage thresholds not met. Fix tests before committing."
+  exit 1
+}
+
+echo "💅 Code formatting check..."
+pnpm format:check || {
+  echo "❌ Code formatting issues detected. Run 'pnpm format' to fix."
+  exit 1
+}
+
+echo "🔒 Security scan..."
+pnpm audit --audit-level moderate || {
+  echo "⚠️  Security vulnerabilities detected. Review and fix before committing."
+  exit 1
+}
+
+echo "✅ All pre-commit checks passed! Proceeding with commit..."

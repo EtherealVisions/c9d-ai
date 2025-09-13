@@ -1,0 +1,31 @@
+{
+  "enabled": true,
+  "name": "Run Unit Tests",
+  "description": "Automatically run unit tests when application source files are saved to ensure functionality remains intact.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/**/*.js",
+      "apps/**/*.ts",
+      "apps/**/*.tsx",
+      "apps/**/*.json",
+      "apps/**/*.mjs",
+      "**/*/vitest.config.ts",
+      "**/*/vitest.setup.ts",
+      "package.json",
+      "pnpm-workspace.yaml",
+      "tsconfig.json",
+      "vercel.json",
+      "vercel.staging.json",
+      "packages/**/*.js",
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "packages/**/*.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run the unit test suite for the project. If any tests fail, stop and report the failure summary. If all tests pass, confirm success. Optimize to run only affected tests if possible."
+  }
+}
