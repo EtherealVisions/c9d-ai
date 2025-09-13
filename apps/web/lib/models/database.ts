@@ -712,20 +712,54 @@ export class TypedSupabaseClient {
 }
 
 /**
- * Create a typed database client instance
+ * Get configuration value with comprehensive fallback logic
+ */
+function getConfigWithFallback(key: string): string | undefined {
+  try {
+    // Try to import and use the configuration manager
+    const { getConfigManager } = require('../config/manager');
+    const { isConfigInitialized } = require('../config/init');
+    
+    // First try the configuration manager if initialized
+    if (isConfigInitialized()) {
+      const configManager = getConfigManager();
+      const value = configManager.get(key);
+      if (value) {
+        return value;
+      }
+    }
+    
+    // Fallback to process.env
+    return process.env[key];
+    
+  } catch (error) {
+    console.warn(`[TypedDatabase] Failed to get config '${key}', using process.env fallback:`, error);
+    return process.env[key];
+  }
+}
+
+/**
+ * Create a typed database client instance with centralized configuration
  */
 export function createTypedSupabaseClient(): TypedSupabaseClient {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_URL');
+  const supabaseKey = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_ANON_KEY');
   
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase environment variables')
+    const errorMessage = 'Missing Supabase environment variables for typed client';
+    console.error('[TypedDatabase] Configuration error:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey,
+      nodeEnv: getConfigWithFallback('NODE_ENV') || 'unknown'
+    });
+    throw new Error(errorMessage);
   }
   
+  console.log('[TypedDatabase] Creating typed Supabase client with centralized configuration');
   return new TypedSupabaseClient({
     url: supabaseUrl,
     anonKey: supabaseKey
-  })
+  });
 }
 
 /**

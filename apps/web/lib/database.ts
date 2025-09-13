@@ -4,7 +4,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { getAppConfigSync } from './config/init'
+import { getAppConfigSync, isConfigInitialized } from './config/init'
+import { getConfigManager } from './config/manager'
 
 // Re-export types from the new models for backward compatibility
 export type {
@@ -20,22 +21,104 @@ export type {
 
 export { DATABASE_TABLES } from './models'
 
-// Create Supabase client (will need environment variables)
-export function createSupabaseClient() {
-  // Try to get configuration from the configuration manager first, fallback to process.env
-  const supabaseUrl = getAppConfigSync('NEXT_PUBLIC_SUPABASE_URL') || process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = getAppConfigSync('NEXT_PUBLIC_SUPABASE_ANON_KEY') || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!supabaseUrl || !supabaseKey) {
-    // During build time, return a mock client to prevent build failures
-    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-      console.warn('Missing Supabase environment variables - using mock client for build')
-      return {} as any
+/**
+ * Get configuration value with comprehensive fallback logic
+ */
+function getConfigWithFallback(key: string): string | undefined {
+  try {
+    // First try the configuration manager if initialized
+    if (isConfigInitialized()) {
+      const configManager = getConfigManager();
+      const value = configManager.get(key);
+      if (value) {
+        return value;
+      }
     }
-    throw new Error('Missing Supabase environment variables')
+    
+    // Fallback to sync config access
+    const syncValue = getAppConfigSync(key);
+    if (syncValue) {
+      return syncValue;
+    }
+    
+    // Final fallback to process.env
+    return process.env[key];
+    
+  } catch (error) {
+    console.warn(`[Database] Failed to get config '${key}', using process.env fallback:`, error);
+    return process.env[key];
+  }
+}
+
+/**
+ * Validate Supabase configuration
+ */
+function validateSupabaseConfig(url?: string, key?: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  
+  if (!url) {
+    errors.push('NEXT_PUBLIC_SUPABASE_URL is required');
+  } else if (!url.startsWith('https://')) {
+    errors.push('NEXT_PUBLIC_SUPABASE_URL must be a valid HTTPS URL');
   }
   
-  return createClient(supabaseUrl, supabaseKey)
+  if (!key) {
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY is required');
+  } else if (key.length < 50) {
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY appears to be invalid (too short)');
+  }
+  
+  return { valid: errors.length === 0, errors };
+}
+
+// Create Supabase client with centralized configuration
+export function createSupabaseClient() {
+  try {
+    // Get configuration using centralized configuration manager
+    const supabaseUrl = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_URL');
+    const supabaseKey = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    
+    // Validate configuration
+    const validation = validateSupabaseConfig(supabaseUrl, supabaseKey);
+    
+    if (!validation.valid) {
+      const nodeEnv = getConfigWithFallback('NODE_ENV') || 'development';
+      const isVercel = getConfigWithFallback('VERCEL') === '1';
+      
+      // During build time, return a mock client to prevent build failures
+      if (nodeEnv === 'production' && !isVercel) {
+        console.warn('[Database] Missing or invalid Supabase configuration - using mock client for build:', validation.errors);
+        return {} as any;
+      }
+      
+      // In development or other environments, throw an error with detailed information
+      const errorMessage = `Invalid Supabase configuration:\n${validation.errors.join('\n')}`;
+      console.error('[Database] Supabase configuration error:', {
+        errors: validation.errors,
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        nodeEnv,
+        isVercel,
+        configInitialized: isConfigInitialized()
+      });
+      
+      throw new Error(errorMessage);
+    }
+    
+    console.log('[Database] Creating Supabase client with centralized configuration');
+    return createClient(supabaseUrl!, supabaseKey!);
+    
+  } catch (error) {
+    console.error('[Database] Failed to create Supabase client:', error);
+    
+    // Re-throw configuration errors
+    if (error instanceof Error && error.message.includes('configuration')) {
+      throw error;
+    }
+    
+    // For other errors, provide a more helpful message
+    throw new Error(`Failed to initialize database connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 // Utility function to validate database schema

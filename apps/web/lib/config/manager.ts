@@ -2,7 +2,6 @@ import {
   PhaseConfig, 
   PhaseEnvironmentLoader, 
   PhaseError,
-  PhaseErrorType,
   loadEnvironmentWithFallback, 
   validatePhaseConfig, 
   createPhaseConfigFromEnv 
@@ -160,6 +159,9 @@ export class CentralizedConfigManager implements ConfigManager {
       throw new Error('Configuration manager not initialized. Call initialize() first.');
     }
 
+    // Store current config as backup
+    const backupConfig = { ...this.config };
+
     try {
       this.logInfo('Refreshing configuration...');
       
@@ -174,6 +176,9 @@ export class CentralizedConfigManager implements ConfigManager {
       this.logInfo('Configuration refreshed successfully');
       
     } catch (error) {
+      // Restore backup configuration on failure
+      this.config = backupConfig;
+      
       this.lastError = error instanceof Error ? error : new Error('Unknown refresh error');
       this.logError('Failed to refresh configuration', this.lastError);
       
@@ -420,7 +425,6 @@ export class CentralizedConfigManager implements ConfigManager {
     this.stopHealthCheckMonitoring();
     this.initialized = false;
     this.config = {};
-    this.cache = {};
     this.lastError = null;
   }
 }

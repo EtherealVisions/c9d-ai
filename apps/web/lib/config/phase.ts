@@ -398,7 +398,7 @@ export class PhaseEnvironmentLoader implements EnvironmentLoader {
 }
 
 /**
- * Load environment variables with fallback logic
+ * Load environment variables with comprehensive fallback logic
  * @param config Phase.dev configuration
  * @param fallbackToLocal Whether to fallback to local environment variables
  * @returns Promise resolving to environment variables
@@ -409,17 +409,24 @@ export async function loadEnvironmentWithFallback(
 ): Promise<Record<string, string>> {
   const loader = new PhaseEnvironmentLoader();
   
+  // Load local environment variables first (from .env files and process.env)
+  const localEnv = await loadLocalEnvironmentVariables();
+  
   try {
-    // Try to load from Phase.dev first
+    // Try to load from Phase.dev
     const phaseEnv = await loader.loadEnvironment(config);
     
-    // Merge with local environment variables (local takes precedence for development)
+    // Merge environment variables with proper precedence:
+    // 1. process.env (highest priority - runtime environment)
+    // 2. Phase.dev variables (medium priority - remote configuration)
+    // 3. Local .env files (lowest priority - local fallback)
     const mergedEnv = {
-      ...phaseEnv,
-      ...process.env
+      ...localEnv.fileEnv,      // .env files (lowest priority)
+      ...phaseEnv,              // Phase.dev (medium priority)
+      ...localEnv.processEnv    // process.env (highest priority)
     };
     
-    console.log(`[Phase.dev] Successfully loaded environment with ${Object.keys(phaseEnv).length} Phase.dev variables and ${Object.keys(process.env).length} local variables`);
+    console.log(`[Phase.dev] Successfully loaded environment with ${Object.keys(phaseEnv).length} Phase.dev variables, ${Object.keys(localEnv.fileEnv).length} file variables, and ${Object.keys(localEnv.processEnv).length} process variables`);
     return mergedEnv;
     
   } catch (error) {
@@ -442,8 +449,120 @@ export async function loadEnvironmentWithFallback(
     console.warn('[Phase.dev] Falling back to local environment variables only');
     
     // Fallback to local environment variables only
-    return { ...process.env } as Record<string, string>;
+    const fallbackEnv = {
+      ...localEnv.fileEnv,
+      ...localEnv.processEnv
+    };
+    
+    console.log(`[Phase.dev] Using ${Object.keys(fallbackEnv).length} local environment variables as fallback`);
+    return fallbackEnv;
   }
+}
+
+/**
+ * Load local environment variables from .env files and process.env
+ * @returns Object containing file-based and process environment variables
+ */
+async function loadLocalEnvironmentVariables(): Promise<{
+  fileEnv: Record<string, string>;
+  processEnv: Record<string, string>;
+}> {
+  const processEnv = { ...process.env } as Record<string, string>;
+  const fileEnv = await loadEnvFiles();
+  
+  return { fileEnv, processEnv };
+}
+
+/**
+ * Load environment variables from .env files
+ * @param rootPath Root path to search for .env files
+ * @returns Parsed environment variables from files
+ */
+async function loadEnvFiles(rootPath: string = process.cwd()): Promise<Record<string, string>> {
+  // Try to use the shared config package if available
+  try {
+    const { getAllEnvVars } = await import('@c9d/config');
+    return getAllEnvVars(true); // Force reload to get fresh data
+  } catch (error) {
+    // Fallback to manual loading if shared package is not available
+    console.warn('[Phase.dev] Shared config package not available, using manual .env loading');
+    return loadEnvFilesManually(rootPath);
+  }
+}
+
+/**
+ * Manually load environment variables from .env files
+ * @param rootPath Root path to search for .env files
+ * @returns Parsed environment variables
+ */
+async function loadEnvFilesManually(rootPath: string): Promise<Record<string, string>> {
+  const env: Record<string, string> = {};
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  
+  // Define the order of .env files to load (later files override earlier ones)
+  const envFiles = [
+    '.env',
+    `.env.${nodeEnv}`,
+    '.env.local'
+  ];
+
+  // Dynamic import for Node.js modules
+  const fs = await import('fs');
+  const path = await import('path');
+
+  for (const envFile of envFiles) {
+    const envPath = path.join(rootPath, envFile);
+    if (fs.existsSync(envPath)) {
+      try {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const parsed = parseEnvFileContent(envContent);
+        Object.assign(env, parsed);
+        console.log(`[Phase.dev] Loaded ${Object.keys(parsed).length} variables from ${envFile}`);
+      } catch (error) {
+        console.warn(`[Phase.dev] Failed to load ${envFile}:`, error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+  }
+
+  return env;
+}
+
+/**
+ * Parse .env file content
+ * @param content File content
+ * @returns Parsed environment variables
+ */
+function parseEnvFileContent(content: string): Record<string, string> {
+  const env: Record<string, string> = {};
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // Skip empty lines and comments
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue;
+    }
+
+    // Parse key=value pairs
+    const equalIndex = trimmedLine.indexOf('=');
+    if (equalIndex === -1) {
+      continue;
+    }
+
+    const key = trimmedLine.slice(0, equalIndex).trim();
+    let value = trimmedLine.slice(equalIndex + 1).trim();
+
+    // Remove quotes if present
+    if ((value.startsWith('"') && value.endsWith('"')) || 
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    env[key] = value;
+  }
+
+  return env;
 }
 
 /**

@@ -135,3 +135,55 @@
     - Validate environment variable availability in production
     - Test application functionality and performance
     - _Requirements: 2.1, 2.2, 5.1, 5.3_
+
+- [x] 11. Integrate Phase.dev configuration into application startup
+  - [x] 11.1 Update application entry points to use Phase.dev configuration
+    - Modify apps/web/app/layout.tsx to initialize configuration manager
+    - Update middleware.ts to use centralized configuration
+    - Ensure proper error handling during application startup
+    - _Requirements: 1.1, 1.3, 1.5_
+
+  - [x] 11.2 Update existing services to use centralized configuration
+    - Modify database connection to use configuration manager
+    - Update authentication services to use managed configuration
+    - Replace direct process.env usage with configuration manager calls
+    - _Requirements: 1.4, 1.5_
+
+  - [x] 11.3 Ensure environment variable availability for all pnpm commands
+    - Update package.json scripts to properly load environment variables
+    - Ensure PHASE_SERVICE_TOKEN and other env vars are available during build, test, and dev commands
+    - Test environment variable loading in monorepo context (apps and packages)
+    - _Requirements: 1.1, 1.2, 4.1, 4.2_
+
+- [ ] 12. Fix test command configuration for proper CI/CD compliance
+  - [ ] 12.1 Update package.json test scripts to follow standards
+    - Change default "test" command to use "vitest run" instead of "vitest"
+    - Ensure test commands terminate gracefully without manual intervention
+    - Add explicit watch mode commands for development
+    - _Requirements: 3.4, 4.3_
+
+  - [ ] 12.2 Update Turbo configuration for proper test execution
+    - Configure test tasks to run once by default in turbo.json
+    - Add separate test:dev and test:watch tasks for development
+    - Ensure CI/CD compatibility with proper exit codes
+    - _Requirements: 3.4, 4.3_
+
+- [ ] 13. Implement comprehensive environment variable fallback support
+  - [ ] 13.1 Update packages/config to support all .env file types
+    - Implement proper .env file loading (.env, .env.local, .env.development, .env.test, .env.production)
+    - Add environment variable precedence handling (process.env > .env.local > .env.{NODE_ENV} > .env)
+    - Create utilities for environment variable validation and caching
+    - _Requirements: 1.1, 1.2, 1.4_
+
+  - [ ] 13.2 Update Phase.dev integration to use comprehensive fallback
+    - Modify Phase.dev loader to integrate with improved .env file loading
+    - Ensure proper precedence: process.env > Phase.dev > .env files
+    - Add support for PHASE_SERVICE_TOKEN from any .env file type
+    - _Requirements: 1.1, 1.3, 1.5_
+
+  - [ ] 13.3 Test environment variable loading across all scenarios
+    - Write tests for .env file loading in different environments (development, test, production)
+    - Test Phase.dev integration with and without service token
+    - Validate fallback behavior when Phase.dev is unavailable
+    - Test environment variable precedence and caching
+    - _Requirements: 1.3, 1.5, 5.5_

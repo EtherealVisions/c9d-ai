@@ -88,8 +88,8 @@ export class BuildErrorHandler {
     this.diagnostics = {
       nodeVersion: process.version,
       workingDirectory: process.cwd(),
-      environment: process.env.NODE_ENV || 'unknown',
-      phaseConfigured: !!process.env.PHASE_SERVICE_TOKEN,
+      environment: this.getConfigWithFallback('NODE_ENV') || 'unknown',
+      phaseConfigured: !!this.getConfigWithFallback('PHASE_SERVICE_TOKEN'),
       memoryUsage: process.memoryUsage(),
       buildStartTime: this.buildStartTime,
       errors: [],
@@ -97,6 +97,29 @@ export class BuildErrorHandler {
     };
 
     this.detectVersions();
+  }
+
+  /**
+   * Get configuration value with fallback to process.env
+   */
+  private getConfigWithFallback(key: string): string | undefined {
+    try {
+      // Try to use the configuration manager if available
+      const { getConfigManager } = require('./manager');
+      const { isConfigInitialized } = require('./init');
+      
+      if (isConfigInitialized()) {
+        const configManager = getConfigManager();
+        const value = configManager.get(key);
+        if (value) {
+          return value;
+        }
+      }
+    } catch (error) {
+      // Configuration manager not available or failed, use process.env
+    }
+    
+    return process.env[key];
   }
 
   /**
