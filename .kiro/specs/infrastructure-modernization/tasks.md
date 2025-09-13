@@ -168,20 +168,20 @@
     - Ensure CI/CD compatibility with proper exit codes
     - _Requirements: 3.4, 4.3_
 
-- [ ] 13. Implement comprehensive environment variable fallback support
-  - [ ] 13.1 Update packages/config to support all .env file types
+- [x] 13. Implement comprehensive environment variable fallback support
+  - [x] 13.1 Update packages/config to support all .env file types
     - Implement proper .env file loading (.env, .env.local, .env.development, .env.test, .env.production)
     - Add environment variable precedence handling (process.env > .env.local > .env.{NODE_ENV} > .env)
     - Create utilities for environment variable validation and caching
     - _Requirements: 1.1, 1.2, 1.4_
 
-  - [ ] 13.2 Update Phase.dev integration to use comprehensive fallback
+  - [x] 13.2 Update Phase.dev integration to use comprehensive fallback
     - Modify Phase.dev loader to integrate with improved .env file loading
     - Ensure proper precedence: process.env > Phase.dev > .env files
     - Add support for PHASE_SERVICE_TOKEN from any .env file type
     - _Requirements: 1.1, 1.3, 1.5_
 
-  - [ ] 13.3 Test environment variable loading across all scenarios
+  - [x] 13.3 Test environment variable loading across all scenarios
     - Write tests for .env file loading in different environments (development, test, production)
     - Test Phase.dev integration with and without service token
     - Validate fallback behavior when Phase.dev is unavailable

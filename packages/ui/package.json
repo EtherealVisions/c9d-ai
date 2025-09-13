@@ -71,5 +71,8 @@
   "peerDependencies": {
     "react": "^19",
     "react-dom": "^19"
+  },
+  "phase": {
+    "appName": "AI.C9d.UI"
   }
 }

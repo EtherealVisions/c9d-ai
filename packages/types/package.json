@@ -18,5 +18,8 @@
   "devDependencies": {
     "typescript": "^5",
     "vitest": "^3.2.4"
+  },
+  "phase": {
+    "appName": "AI.C9d.Types"
   }
 }

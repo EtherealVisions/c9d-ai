@@ -10,7 +10,13 @@ import {
   clearEnvCache,
   getPhaseServiceToken,
   isPhaseDevAvailable,
-  getEnvironmentConfig
+  getEnvironmentConfig,
+  getEnvLoadingDiagnostics,
+  validateEnvVar,
+  getEnvVarAsNumber,
+  getEnvVarAsBoolean,
+  getEnvVarAsArray,
+  reloadEnvironmentVars
 } from '../env'
 
 // Mock fs functions
@@ -19,8 +25,38 @@ vi.mock('fs', () => ({
   existsSync: vi.fn()
 }))
 
+// Mock dotenv
+vi.mock('dotenv', () => ({
+  config: vi.fn()
+}))
+
+// Mock dotenv-expand
+vi.mock('dotenv-expand', () => ({
+  expand: vi.fn()
+}))
+
+// Mock phase module
+vi.mock('../phase', () => ({
+  loadFromPhase: vi.fn(),
+  isPhaseDevAvailable: vi.fn(),
+  getPhaseServiceToken: vi.fn(),
+  getPhaseConfig: vi.fn(),
+  clearPhaseCache: vi.fn(),
+  getPhaseCacheStatus: vi.fn(),
+  testPhaseConnectivity: vi.fn()
+}))
+
 const mockReadFileSync = vi.mocked(readFileSync)
 const mockExistsSync = vi.mocked(existsSync)
+
+// Import mocked modules
+import { config as dotenvConfig } from 'dotenv'
+import { expand as dotenvExpand } from 'dotenv-expand'
+import { isPhaseDevAvailable as mockIsPhaseDevAvailable } from '../phase'
+
+const mockConfig = vi.mocked(dotenvConfig)
+const mockExpand = vi.mocked(dotenvExpand)
+const mockPhaseAvailable = vi.mocked(mockIsPhaseDevAvailable)
 
 describe('Environment Configuration Utilities', () => {
   const originalEnv = process.env
@@ -37,6 +73,13 @@ describe('Environment Configuration Utilities', () => {
     
     // Default mock behavior - no .env files exist
     mockExistsSync.mockReturnValue(false)
+    
+    // Default dotenv mock behavior
+    mockConfig.mockReturnValue({ parsed: {}, error: undefined })
+    mockExpand.mockReturnValue({ parsed: {}, error: undefined })
+    
+    // Default Phase.dev mock behavior
+    mockPhaseAvailable.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -73,7 +116,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue('TEST_VAR=env-file-value\n')
+      mockConfig.mockReturnValue({
+        parsed: { TEST_VAR: 'env-file-value' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { TEST_VAR: 'env-file-value' },
+        error: undefined
+      })
       
       const result = getEnvVar('TEST_VAR')
       
@@ -87,7 +138,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue('TEST_VAR=env-file-value\n')
+      mockConfig.mockReturnValue({
+        parsed: { TEST_VAR: 'env-file-value' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { TEST_VAR: 'env-file-value' },
+        error: undefined
+      })
       
       const result = getEnvVar('TEST_VAR')
       
@@ -135,7 +194,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue('FILE_VAR=file-value\nPROCESS_VAR=should-be-overridden\n')
+      mockConfig.mockReturnValue({
+        parsed: { FILE_VAR: 'file-value', PROCESS_VAR: 'should-be-overridden' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { FILE_VAR: 'file-value', PROCESS_VAR: 'should-be-overridden' },
+        error: undefined
+      })
       
       const result = getAllEnvVars()
       
@@ -250,39 +317,7 @@ describe('Environment Configuration Utilities', () => {
     })
   })
 
-  describe('Phase.dev integration', () => {
-    describe('getPhaseServiceToken', () => {
-      it('should return Phase.dev service token when available', () => {
-        process.env.PHASE_SERVICE_TOKEN = 'phase-token-123'
-        
-        const result = getPhaseServiceToken()
-        
-        expect(result).toBe('phase-token-123')
-      })
-
-      it('should return null when Phase.dev service token is not available', () => {
-        const result = getPhaseServiceToken()
-        
-        expect(result).toBeNull()
-      })
-    })
-
-    describe('isPhaseDevAvailable', () => {
-      it('should return true when Phase.dev service token is available', () => {
-        process.env.PHASE_SERVICE_TOKEN = 'phase-token-123'
-        
-        const result = isPhaseDevAvailable()
-        
-        expect(result).toBe(true)
-      })
-
-      it('should return false when Phase.dev service token is not available', () => {
-        const result = isPhaseDevAvailable()
-        
-        expect(result).toBe(false)
-      })
-    })
-  })
+  // Phase.dev integration tests are in phase.test.ts
 
   describe('getEnvironmentConfig', () => {
     it('should return correct environment configuration for development', () => {
@@ -296,8 +331,10 @@ describe('Environment Configuration Utilities', () => {
         isDevelopment: true,
         isProduction: false,
         isTest: false,
-        phaseServiceToken: 'phase-token',
-        isPhaseDevAvailable: true
+        isStaging: false,
+        phaseServiceToken: undefined, // No token set in test
+        isPhaseDevAvailable: false,   // No token available
+        diagnostics: expect.any(Object)
       })
     })
 
@@ -311,8 +348,10 @@ describe('Environment Configuration Utilities', () => {
         isDevelopment: false,
         isProduction: true,
         isTest: false,
-        phaseServiceToken: null,
-        isPhaseDevAvailable: false
+        isStaging: false,
+        phaseServiceToken: undefined, // No token set in test
+        isPhaseDevAvailable: false,
+        diagnostics: expect.any(Object)
       })
     })
 
@@ -332,7 +371,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue('SIMPLE_VAR=simple-value\n')
+      mockConfig.mockReturnValue({
+        parsed: { SIMPLE_VAR: 'simple-value' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { SIMPLE_VAR: 'simple-value' },
+        error: undefined
+      })
       
       const result = getEnvVar('SIMPLE_VAR')
       
@@ -344,7 +391,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue('QUOTED_VAR="quoted value"\nSINGLE_QUOTED=\'single quoted\'\n')
+      mockConfig.mockReturnValue({
+        parsed: { QUOTED_VAR: 'quoted value', SINGLE_QUOTED: 'single quoted' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { QUOTED_VAR: 'quoted value', SINGLE_QUOTED: 'single quoted' },
+        error: undefined
+      })
       
       expect(getEnvVar('QUOTED_VAR')).toBe('quoted value')
       expect(getEnvVar('SINGLE_QUOTED')).toBe('single quoted')
@@ -355,13 +410,15 @@ describe('Environment Configuration Utilities', () => {
         return path.toString().endsWith('.env')
       })
       
-      mockReadFileSync.mockReturnValue(`
-# This is a comment
-VALID_VAR=valid-value
-
-# Another comment
-ANOTHER_VAR=another-value
-`)
+      mockConfig.mockReturnValue({
+        parsed: { VALID_VAR: 'valid-value', ANOTHER_VAR: 'another-value' },
+        error: undefined
+      })
+      
+      mockExpand.mockReturnValue({
+        parsed: { VALID_VAR: 'valid-value', ANOTHER_VAR: 'another-value' },
+        error: undefined
+      })
       
       expect(getEnvVar('VALID_VAR')).toBe('valid-value')
       expect(getEnvVar('ANOTHER_VAR')).toBe('another-value')
@@ -377,17 +434,19 @@ ANOTHER_VAR=another-value
                pathStr.endsWith('.env.local')
       })
       
-      mockReadFileSync.mockImplementation((path: PathOrFileDescriptor) => {
-        const pathStr = path.toString()
+      mockConfig.mockImplementation((options) => {
+        const pathStr = options?.path?.toString() || ''
         if (pathStr.endsWith('.env.local')) {
-          return 'PRECEDENCE_TEST=local-value\n'
+          return { parsed: { PRECEDENCE_TEST: 'local-value' } as Record<string, string>, error: undefined }
         } else if (pathStr.endsWith('.env.development')) {
-          return 'PRECEDENCE_TEST=development-value\n'
+          return { parsed: { PRECEDENCE_TEST: 'development-value' } as Record<string, string>, error: undefined }
         } else if (pathStr.endsWith('.env')) {
-          return 'PRECEDENCE_TEST=base-value\n'
+          return { parsed: { PRECEDENCE_TEST: 'base-value' } as Record<string, string>, error: undefined }
         }
-        return ''
+        return { parsed: {} as Record<string, string>, error: undefined }
       })
+      
+      mockExpand.mockImplementation((options) => ({ parsed: options?.parsed, error: undefined }))
       
       const result = getEnvVar('PRECEDENCE_TEST')
       
@@ -437,6 +496,326 @@ ANOTHER_VAR=another-value
       
       // Should return same cached instance
       expect(result1).toBe(result2)
+    })
+  })
+
+  describe('comprehensive .env file support', () => {
+    it('should load all supported .env file types', () => {
+      process.env.NODE_ENV = 'development'
+      
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        const pathStr = path.toString()
+        return pathStr.endsWith('.env') || 
+               pathStr.endsWith('.env.development') || 
+               pathStr.endsWith('.env.local')
+      })
+      
+      mockConfig.mockImplementation((options) => {
+        const pathStr = options?.path?.toString() || ''
+        if (pathStr.endsWith('.env.local')) {
+          return { parsed: { LOCAL_VAR: 'local-value' } as Record<string, string>, error: undefined }
+        } else if (pathStr.endsWith('.env.development')) {
+          return { parsed: { DEV_VAR: 'dev-value' } as Record<string, string>, error: undefined }
+        } else if (pathStr.endsWith('.env')) {
+          return { parsed: { BASE_VAR: 'base-value' } as Record<string, string>, error: undefined }
+        }
+        return { parsed: {} as Record<string, string>, error: undefined }
+      })
+      
+      mockExpand.mockImplementation((options) => ({ parsed: options?.parsed, error: undefined }))
+      
+      const result = getAllEnvVars()
+      
+      expect(result.BASE_VAR).toBe('base-value')
+      expect(result.DEV_VAR).toBe('dev-value')
+      expect(result.LOCAL_VAR).toBe('local-value')
+    })
+
+    it('should handle variable expansion', () => {
+      mockExistsSync.mockReturnValue(true)
+      mockConfig.mockReturnValue({
+        parsed: { BASE_URL: 'https://api.example.com', API_URL: '${BASE_URL}/v1' },
+        error: undefined
+      })
+      mockExpand.mockReturnValue({
+        parsed: { BASE_URL: 'https://api.example.com', API_URL: 'https://api.example.com/v1' },
+        error: undefined
+      })
+      
+      const result = getAllEnvVars()
+      
+      expect(result.API_URL).toBe('https://api.example.com/v1')
+    })
+
+    it('should handle dotenv parsing errors gracefully', () => {
+      mockExistsSync.mockReturnValue(true)
+      mockConfig.mockReturnValue({
+        parsed: undefined,
+        error: new Error('Parse error')
+      })
+      
+      // Should not throw, should continue with process.env
+      expect(() => getAllEnvVars()).not.toThrow()
+    })
+
+    it('should handle dotenv expansion errors gracefully', () => {
+      mockExistsSync.mockReturnValue(true)
+      mockConfig.mockReturnValue({
+        parsed: { VAR: 'value' },
+        error: undefined
+      })
+      mockExpand.mockReturnValue({
+        parsed: undefined,
+        error: new Error('Expansion error')
+      })
+      
+      // Should not throw, should continue with process.env
+      expect(() => getAllEnvVars()).not.toThrow()
+    })
+  })
+
+  describe('environment variable type conversion', () => {
+    describe('getEnvVarAsNumber', () => {
+      it('should convert valid number strings', () => {
+        process.env.PORT = '3000'
+        
+        const result = getEnvVarAsNumber('PORT')
+        
+        expect(result).toBe(3000)
+      })
+
+      it('should return default for invalid numbers', () => {
+        process.env.INVALID_NUMBER = 'not-a-number'
+        
+        const result = getEnvVarAsNumber('INVALID_NUMBER', 8080)
+        
+        expect(result).toBe(8080)
+      })
+
+      it('should throw for invalid numbers without default', () => {
+        process.env.INVALID_NUMBER = 'not-a-number'
+        
+        expect(() => getEnvVarAsNumber('INVALID_NUMBER')).toThrow(
+          'Environment variable INVALID_NUMBER is not a valid number: not-a-number'
+        )
+      })
+
+      it('should handle missing variables with default', () => {
+        const result = getEnvVarAsNumber('MISSING_NUMBER', 5000)
+        
+        expect(result).toBe(5000)
+      })
+
+      it('should throw for missing variables without default', () => {
+        expect(() => getEnvVarAsNumber('MISSING_NUMBER')).toThrow(
+          'Environment variable MISSING_NUMBER is required but not found'
+        )
+      })
+    })
+
+    describe('getEnvVarAsBoolean', () => {
+      it('should convert truthy values', () => {
+        process.env.ENABLE_FEATURE = 'true'
+        process.env.DEBUG_MODE = '1'
+        process.env.VERBOSE = 'yes'
+        process.env.ACTIVE = 'on'
+        
+        expect(getEnvVarAsBoolean('ENABLE_FEATURE')).toBe(true)
+        expect(getEnvVarAsBoolean('DEBUG_MODE')).toBe(true)
+        expect(getEnvVarAsBoolean('VERBOSE')).toBe(true)
+        expect(getEnvVarAsBoolean('ACTIVE')).toBe(true)
+      })
+
+      it('should convert falsy values', () => {
+        process.env.DISABLE_FEATURE = 'false'
+        process.env.NO_DEBUG = '0'
+        process.env.QUIET = 'no'
+        process.env.INACTIVE = 'off'
+        
+        expect(getEnvVarAsBoolean('DISABLE_FEATURE')).toBe(false)
+        expect(getEnvVarAsBoolean('NO_DEBUG')).toBe(false)
+        expect(getEnvVarAsBoolean('QUIET')).toBe(false)
+        expect(getEnvVarAsBoolean('INACTIVE')).toBe(false)
+      })
+
+      it('should handle missing variables with default', () => {
+        const result = getEnvVarAsBoolean('MISSING_BOOL', true)
+        
+        expect(result).toBe(true)
+      })
+
+      it('should throw for missing variables without default', () => {
+        expect(() => getEnvVarAsBoolean('MISSING_BOOL')).toThrow(
+          'Environment variable MISSING_BOOL is required but not found'
+        )
+      })
+    })
+
+    describe('getEnvVarAsArray', () => {
+      it('should convert comma-separated values', () => {
+        process.env.ALLOWED_ORIGINS = 'http://localhost:3000,https://example.com,https://app.example.com'
+        
+        const result = getEnvVarAsArray('ALLOWED_ORIGINS')
+        
+        expect(result).toEqual([
+          'http://localhost:3000',
+          'https://example.com',
+          'https://app.example.com'
+        ])
+      })
+
+      it('should handle values with spaces', () => {
+        process.env.TAGS = 'tag1, tag2 , tag3'
+        
+        const result = getEnvVarAsArray('TAGS')
+        
+        expect(result).toEqual(['tag1', 'tag2', 'tag3'])
+      })
+
+      it('should filter empty values', () => {
+        process.env.MIXED_LIST = 'value1,,value2, ,value3'
+        
+        const result = getEnvVarAsArray('MIXED_LIST')
+        
+        expect(result).toEqual(['value1', 'value2', 'value3'])
+      })
+
+      it('should handle missing variables with default', () => {
+        const result = getEnvVarAsArray('MISSING_ARRAY', ['default1', 'default2'])
+        
+        expect(result).toEqual(['default1', 'default2'])
+      })
+
+      it('should throw for missing variables without default', () => {
+        expect(() => getEnvVarAsArray('MISSING_ARRAY')).toThrow(
+          'Environment variable MISSING_ARRAY is required but not found'
+        )
+      })
+    })
+  })
+
+  describe('environment variable validation', () => {
+    describe('validateEnvVar', () => {
+      it('should validate valid values', () => {
+        const validator = (value: string) => {
+          if (!value.startsWith('https://')) {
+            throw new Error('Must be HTTPS URL')
+          }
+          return value
+        }
+        
+        const result = validateEnvVar('API_URL', 'https://api.example.com', validator)
+        
+        expect(result.isValid).toBe(true)
+        expect(result.value).toBe('https://api.example.com')
+        expect(result.error).toBeUndefined()
+      })
+
+      it('should handle validation failures', () => {
+        const validator = (value: string) => {
+          if (!value.startsWith('https://')) {
+            throw new Error('Must be HTTPS URL')
+          }
+          return value
+        }
+        
+        const result = validateEnvVar('API_URL', 'http://api.example.com', validator)
+        
+        expect(result.isValid).toBe(false)
+        expect(result.value).toBeUndefined()
+        expect(result.error).toBe('Environment variable API_URL validation failed: Must be HTTPS URL')
+      })
+
+      it('should handle undefined values', () => {
+        const validator = (value: string) => value
+        
+        const result = validateEnvVar('MISSING_VAR', undefined, validator)
+        
+        expect(result.isValid).toBe(false)
+        expect(result.value).toBeUndefined()
+        expect(result.error).toBe('Environment variable MISSING_VAR is not defined')
+      })
+    })
+  })
+
+  describe('diagnostics and utilities', () => {
+    describe('getEnvLoadingDiagnostics', () => {
+      it('should return loading diagnostics', () => {
+        process.env.DIAG_TEST = 'value'
+        
+        mockExistsSync.mockReturnValue(true)
+        mockConfig.mockReturnValue({
+          parsed: { FILE_VAR: 'file-value' },
+          error: undefined
+        })
+        mockExpand.mockReturnValue({
+          parsed: { FILE_VAR: 'file-value' },
+          error: undefined
+        })
+        
+        // Trigger loading
+        getAllEnvVars()
+        
+        const diagnostics = getEnvLoadingDiagnostics()
+        
+        expect(diagnostics).toHaveProperty('loadedFiles')
+        expect(diagnostics).toHaveProperty('errors')
+        expect(diagnostics).toHaveProperty('cacheAge')
+        expect(diagnostics).toHaveProperty('totalVariables')
+        expect(diagnostics).toHaveProperty('phaseDevStatus')
+        expect(typeof diagnostics.totalVariables).toBe('number')
+        expect(typeof diagnostics.phaseDevStatus.available).toBe('boolean')
+      })
+    })
+
+    describe('reloadEnvironmentVars', () => {
+      it('should force reload environment variables', () => {
+        process.env.RELOAD_TEST = 'initial'
+        
+        // Initial load
+        getAllEnvVars()
+        
+        // Change environment
+        process.env.RELOAD_TEST = 'updated'
+        
+        // Normal call should return cached value
+        expect(getAllEnvVars().RELOAD_TEST).toBe('initial')
+        
+        // Reload should return updated value
+        const reloaded = reloadEnvironmentVars()
+        expect(reloaded.RELOAD_TEST).toBe('updated')
+      })
+    })
+
+    describe('getEnvironmentConfig', () => {
+      it('should include staging environment detection', () => {
+        process.env.NODE_ENV = 'staging'
+        
+        const config = getEnvironmentConfig()
+        
+        expect(config.nodeEnv).toBe('staging')
+        expect(config.isStaging).toBe(true)
+        expect(config.isDevelopment).toBe(false)
+        expect(config.isProduction).toBe(false)
+        expect(config.isTest).toBe(false)
+      })
+
+      it('should include diagnostics', () => {
+        const config = getEnvironmentConfig()
+        
+        expect(config).toHaveProperty('diagnostics')
+        expect(config.diagnostics).toHaveProperty('loadedFiles')
+        expect(config.diagnostics).toHaveProperty('errors')
+        expect(config.diagnostics).toHaveProperty('phaseDevStatus')
+      })
+      
+      it('should include Phase.dev status in diagnostics', () => {
+        mockPhaseAvailable.mockReturnValue(true)
+        
+        const config = getEnvironmentConfig()
+        
+        expect(config.diagnostics.phaseDevStatus.available).toBe(true)
+      })
     })
   })
 })
