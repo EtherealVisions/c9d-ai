@@ -321,7 +321,13 @@ describe('Configuration Manager', () => {
         }
       ];
 
-      mockCreatePhaseConfigFromEnv.mockReturnValue(null);
+      // Mock Phase.dev configuration to trigger the loadEnvironmentWithFallback path
+      mockCreatePhaseConfigFromEnv.mockReturnValue({
+        serviceToken: 'test-token',
+        appName: 'test-app',
+        environment: 'development'
+      });
+      
       mockLoadEnvironmentWithFallback.mockResolvedValue({
         CUSTOM_URL: 'http://insecure.com',
         CUSTOM_KEY: 'short'
@@ -332,9 +338,7 @@ describe('Configuration Manager', () => {
         fallbackToEnv: false
       });
 
-      await expect(manager.initialize()).rejects.toThrow(
-        expect.stringContaining('CUSTOM_URL must be a secure HTTPS URL')
-      );
+      await expect(manager.initialize()).rejects.toThrow(/CUSTOM_URL must be a secure HTTPS URL/);
     });
 
     it('should perform health checks and report status', async () => {

@@ -19,7 +19,7 @@ export type {
   DatabaseTable
 } from './models'
 
-export { DATABASE_TABLES } from './models'
+export { DATABASE_TABLES } from './models/types'
 
 /**
  * Get configuration value with comprehensive fallback logic
@@ -86,9 +86,16 @@ export function createSupabaseClient() {
       const isVercel = getConfigWithFallback('VERCEL') === '1';
       
       // During build time, return a mock client to prevent build failures
-      if (nodeEnv === 'production' && !isVercel) {
+      if (nodeEnv === 'production' || process.env.NODE_ENV === 'production') {
         console.warn('[Database] Missing or invalid Supabase configuration - using mock client for build:', validation.errors);
-        return {} as any;
+        return {
+          from: () => ({
+            select: () => ({ data: null, error: null }),
+            insert: () => ({ data: null, error: null }),
+            update: () => ({ data: null, error: null }),
+            delete: () => ({ data: null, error: null })
+          })
+        } as any;
       }
       
       // In development or other environments, throw an error with detailed information

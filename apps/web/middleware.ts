@@ -121,7 +121,7 @@ function addConfigHeaders(response: NextResponse, req: NextRequest): NextRespons
   return response;
 }
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   try {
     // Validate critical configuration for API routes
     const configValidationResponse = validateCriticalConfig(req);
@@ -132,7 +132,10 @@ export default clerkMiddleware((auth, req) => {
     // Handle protected routes
     if (isProtectedRoute(req)) {
       try {
-        auth().protect();
+        const authResult = await auth();
+        if (!authResult.userId) {
+          throw new Error('User not authenticated');
+        }
       } catch (error) {
         console.error('[Middleware] Authentication failed for protected route:', {
           route: req.nextUrl.pathname,

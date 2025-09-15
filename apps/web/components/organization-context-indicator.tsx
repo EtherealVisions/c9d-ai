@@ -189,7 +189,7 @@ export function OrganizationContextIndicator({
           {showMemberCount && (
             <div className="flex items-center space-x-1 text-xs text-muted-foreground">
               <Users className="h-3 w-3" />
-              <span>Member since {new Date(currentMembership.joinedAt).toLocaleDateString()}</span>
+              <span>Member since {new Date(currentMembership.joinedAt || currentMembership.createdAt).toLocaleDateString()}</span>
             </div>
           )}
           

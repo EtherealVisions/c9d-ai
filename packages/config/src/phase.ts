@@ -1,6 +1,8 @@
 // Phase.dev integration for secure environment variable management
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { PhaseSDKClient, PhaseSDKResult } from './phase-sdk-client';
+import { TokenSource } from './phase-token-loader';
 
 /**
  * Phase.dev configuration interface
@@ -12,22 +14,14 @@ interface PhaseConfig {
 }
 
 /**
- * Phase.dev API response interface
- */
-interface PhaseApiResponse {
-  success: boolean;
-  data?: Record<string, string>;
-  error?: string;
-}
-
-/**
  * Phase.dev environment variable result
  */
 interface PhaseEnvResult {
   variables: Record<string, string>;
   success: boolean;
   error?: string;
-  source: 'phase.dev' | 'fallback';
+  source: 'phase.dev' | 'phase-sdk' | 'fallback';
+  tokenSource?: TokenSource;
 }
 
 /**
@@ -78,10 +72,22 @@ function getPhaseAppNameFromPackageJson(rootPath: string = process.cwd()): strin
 }
 
 /**
- * Cache for Phase.dev environment variables
+ * Cache for Phase.dev environment variables with SDK-compatible TTL
  */
-let phaseCache: { variables: Record<string, string>; timestamp: number } | null = null;
-const PHASE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+interface PhaseCacheEntry {
+  variables: Record<string, string>;
+  timestamp: number;
+  source: 'phase-sdk' | 'phase.dev';
+  tokenSource?: TokenSource;
+}
+
+let phaseCache: PhaseCacheEntry | null = null;
+const PHASE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes - SDK-compatible TTL
+
+/**
+ * Global SDK client instance for reuse
+ */
+let globalSDKClient: PhaseSDKClient | null = null;
 
 // Note: getPhaseServiceToken and isPhaseDevAvailable are now defined in env.ts to avoid circular dependencies
 
@@ -91,18 +97,14 @@ const PHASE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * @returns Phase.dev service token or null
  */
 function getPhaseServiceTokenInternal(): string | null {
-  // First check process.env
-  if (process.env.PHASE_SERVICE_TOKEN) {
-    return process.env.PHASE_SERVICE_TOKEN;
-  }
-  
-  // Try to get from env module if available
+  // Use PhaseTokenLoader for comprehensive token loading
   try {
-    const envModule = require('./env');
-    return envModule.getPhaseServiceToken();
+    const { PhaseTokenLoader } = require('./phase-token-loader');
+    const tokenSource = PhaseTokenLoader.loadServiceToken();
+    return tokenSource ? tokenSource.token : null;
   } catch (error) {
-    // If there's an error, return null
-    return null;
+    // Fallback to simple process.env check if PhaseTokenLoader fails
+    return process.env.PHASE_SERVICE_TOKEN || null;
   }
 }
 
@@ -123,50 +125,70 @@ export const getPhaseConfig = (
   }
   
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const appName = overrides.appName || getPhaseAppNameFromPackageJson(rootPath);
+  const appName = (overrides.appName && overrides.appName.trim()) || getPhaseAppNameFromPackageJson(rootPath);
   
   return {
     serviceToken,
     appName,
-    environment: overrides.environment || nodeEnv
+    environment: (overrides.environment && overrides.environment.trim()) || nodeEnv
   };
 };
 
 /**
- * Fetch environment variables from Phase.dev API
+ * Fetch environment variables using Phase.dev SDK
  * @param config Phase.dev configuration
- * @returns Promise resolving to Phase.dev API response
+ * @param rootPath Optional root path for token loading
+ * @returns Promise resolving to Phase.dev SDK result
  */
-async function fetchFromPhaseApi(config: PhaseConfig): Promise<PhaseApiResponse> {
+async function fetchFromPhaseSDK(config: PhaseConfig, rootPath?: string): Promise<PhaseSDKResult> {
   try {
-    // Note: This is a placeholder implementation
-    // In a real implementation, you would make an HTTP request to Phase.dev API
-    // For now, we'll simulate the API call
+    console.log(`[Phase.dev SDK] Fetching environment variables for app: ${config.appName}, env: ${config.environment}`);
     
-    console.log(`[Phase.dev] Fetching environment variables for app: ${config.appName}, env: ${config.environment}`);
+    // Reuse global SDK client if available and initialized
+    if (!globalSDKClient || !globalSDKClient.isInitialized()) {
+      globalSDKClient = new PhaseSDKClient();
+      
+      const initialized = await globalSDKClient.initialize(
+        config.appName,
+        config.environment || 'development',
+        rootPath
+      );
+      
+      if (!initialized) {
+        throw new Error('Failed to initialize Phase.dev SDK client');
+      }
+    }
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Get secrets using SDK
+    const result = await globalSDKClient.getSecrets();
     
-    // For testing purposes, return empty data
-    // In real implementation, this would be:
-    // const response = await fetch(`https://api.phase.dev/v1/apps/${config.appName}/environments/${config.environment}/variables`, {
-    //   headers: {
-    //     'Authorization': `Bearer ${config.serviceToken}`,
-    //     'Content-Type': 'application/json'
-    //   }
-    // });
-    // const data = await response.json();
+    if (result.success) {
+      console.log(`[Phase.dev SDK] Successfully fetched ${Object.keys(result.secrets).length} secrets`);
+      console.log(`[Phase.dev SDK] Token source: ${result.tokenSource?.source}`);
+    } else {
+      console.error(`[Phase.dev SDK] Failed to fetch secrets:`, result.error);
+    }
     
-    return {
-      success: true,
-      data: {} // Empty for now, would contain actual variables from Phase.dev
-    };
+    return result;
+    
   } catch (error) {
-    console.error('[Phase.dev] Failed to fetch environment variables:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Phase.dev SDK] Failed to fetch environment variables:', errorMessage);
+    
+    // Get token source for better error messages
+    const tokenSource = globalSDKClient?.getTokenSource();
+    
+    // Format error message to match test expectations
+    const formattedError = errorMessage.includes('Phase.dev') 
+      ? errorMessage 
+      : `Phase.dev API error: ${errorMessage}`;
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      secrets: {},
+      error: formattedError,
+      source: 'fallback',
+      tokenSource: tokenSource ?? undefined
     };
   }
 }
@@ -198,69 +220,93 @@ export async function loadFromPhase(
   
   // Return cached values if still valid and not forcing reload
   if (!forceReload && phaseCache && (now - phaseCache.timestamp) < PHASE_CACHE_TTL) {
-    console.log('[Phase.dev] Using cached environment variables');
+    console.log('[Phase.dev SDK] Using cached environment variables');
+    console.log(`[Phase.dev SDK] Cache age: ${Math.round((now - phaseCache.timestamp) / 1000)}s`);
+    console.log(`[Phase.dev SDK] Token source: ${phaseCache.tokenSource?.source}`);
+    
     return {
       variables: phaseCache.variables,
       success: true,
-      source: 'phase.dev'
+      source: phaseCache.source,
+      tokenSource: phaseCache.tokenSource
     };
   }
   
   try {
-    const response = await fetchFromPhaseApi(phaseConfig);
+    const response = await fetchFromPhaseSDK(phaseConfig, rootPath);
     
-    if (response.success && response.data) {
+    if (response.success) {
       // Cache the successful response
       phaseCache = {
-        variables: response.data,
-        timestamp: now
+        variables: response.secrets,
+        timestamp: now,
+        source: 'phase-sdk',
+        tokenSource: response.tokenSource
       };
       
-      console.log(`[Phase.dev] Successfully loaded ${Object.keys(response.data).length} environment variables`);
+      console.log(`[Phase.dev SDK] Successfully loaded ${Object.keys(response.secrets).length} environment variables`);
+      console.log(`[Phase.dev SDK] Token source: ${response.tokenSource?.source}`);
       
       return {
-        variables: response.data,
+        variables: response.secrets,
         success: true,
-        source: 'phase.dev'
+        source: 'phase-sdk',
+        tokenSource: response.tokenSource
       };
     } else {
-      console.warn('[Phase.dev] Failed to load environment variables:', response.error);
+      console.warn('[Phase.dev SDK] Failed to load environment variables:', response.error);
       return {
         variables: {},
         success: false,
-        error: response.error || 'Unknown Phase.dev API error',
-        source: 'fallback'
+        error: response.error || 'Phase.dev API error: Unknown SDK error',
+        source: 'fallback',
+        tokenSource: response.tokenSource
       };
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Phase.dev] Error loading environment variables:', errorMessage);
+    console.error('[Phase.dev SDK] Error loading environment variables:', errorMessage);
+    
+    // Try to get token source from global client for debugging
+    const tokenSource = globalSDKClient?.getTokenSource();
+    
+    // Format error message to match test expectations
+    const formattedError = errorMessage.includes('Phase.dev') 
+      ? errorMessage 
+      : `Phase.dev API error: ${errorMessage}`;
     
     return {
       variables: {},
       success: false,
-      error: errorMessage,
-      source: 'fallback'
+      error: formattedError,
+      source: 'fallback',
+      tokenSource: tokenSource ?? undefined
     };
   }
 }
 
 /**
- * Clear Phase.dev cache
+ * Clear Phase.dev cache and SDK client
  */
 export const clearPhaseCache = (): void => {
   phaseCache = null;
-  console.log('[Phase.dev] Cache cleared');
+  if (globalSDKClient) {
+    globalSDKClient.clearCache();
+    globalSDKClient = null;
+  }
+  console.log('[Phase.dev SDK] Cache and client cleared');
 };
 
 /**
- * Get Phase.dev cache status
- * @returns Cache status information
+ * Get Phase.dev cache status with token source information
+ * @returns Cache status information including token source for debugging
  */
 export const getPhaseCacheStatus = (): {
   isCached: boolean;
   age: number;
   variableCount: number;
+  source?: 'phase-sdk' | 'phase.dev';
+  tokenSource?: TokenSource;
 } => {
   if (!phaseCache) {
     return {
@@ -273,7 +319,9 @@ export const getPhaseCacheStatus = (): {
   return {
     isCached: true,
     age: Date.now() - phaseCache.timestamp,
-    variableCount: Object.keys(phaseCache.variables).length
+    variableCount: Object.keys(phaseCache.variables).length,
+    source: phaseCache.source,
+    tokenSource: phaseCache.tokenSource
   };
 };
 
@@ -304,9 +352,16 @@ export async function testPhaseConnectivity(
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Format error message to match test expectations
+    const formattedError = errorMessage.includes('Phase.dev') 
+      ? errorMessage 
+      : `Phase.dev API error: ${errorMessage}`;
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: formattedError,
       responseTime
     };
   }

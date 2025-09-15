@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "node ../../scripts/run-with-env.js next build",
-    "dev": "node ../../scripts/run-with-env.js next dev",
+    "dev": "node ../../scripts/run-with-env.js next dev -p 3007",
     "lint": "node ../../scripts/run-with-env.js next lint",
     "start": "node ../../scripts/run-with-env.js next start",
     "test": "node ../../scripts/run-with-env.js vitest run",

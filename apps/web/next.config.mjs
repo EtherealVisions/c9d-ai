@@ -6,6 +6,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // Ensure TypeScript path mapping works
+    typedRoutes: false,
+  },
   images: {
     unoptimized: false,
     domains: [],
@@ -13,8 +17,6 @@ const nextConfig = {
   },
   // Vercel optimization settings
   experimental: {
-    // Enable edge runtime for API routes where appropriate
-    runtime: 'nodejs',
     // Optimize bundle size
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },

@@ -49,9 +49,10 @@ describe('Custom Error Classes', () => {
         code: ErrorCode.INTERNAL_SERVER_ERROR,
         message: 'Test message',
         statusCode: 500,
-        timestamp: error.timestamp,
+        timestamp: error.timestamp.toISOString(),
         requestId: mockRequestId,
         details: mockDetails,
+        stack: expect.any(String)
       });
     });
   });

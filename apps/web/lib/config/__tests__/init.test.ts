@@ -6,6 +6,7 @@ import {
   isConfigInitialized, 
   resetConfigInitialization 
 } from '../init';
+import type { CentralizedConfigManager } from '../manager';
 
 // Mock the manager module
 vi.mock('../manager', () => ({
@@ -82,8 +83,8 @@ describe('Configuration Initialization', () => {
 
     it('should handle concurrent initialization calls', async () => {
       let resolveInit: () => void;
-      const initPromise = new Promise<void>((resolve) => {
-        resolveInit = resolve;
+      const initPromise = new Promise<CentralizedConfigManager>((resolve) => {
+        resolveInit = () => resolve(mockConfigManager);
       });
 
       mockInitializeGlobalConfig.mockImplementation(() => initPromise);

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ErrorCode } from '../custom-errors';
 import {
   createInvalidCredentialsError,
@@ -36,11 +36,13 @@ describe('Error Handling Integration', () => {
   describe('API Error Handling Flow', () => {
     it('should handle authentication errors in API routes', async () => {
       const mockHandler = vi.fn().mockImplementation(() => {
-        throw createInvalidCredentialsError('test-request-id');
+        throw createInvalidCredentialsError();
       });
 
       const wrappedHandler = withErrorHandler(mockHandler);
-      const mockRequest = {
+      // Create a proper NextRequest mock that passes instanceof check
+      const mockRequest = Object.create(NextRequest.prototype);
+      Object.assign(mockRequest, {
         url: 'https://example.com/api/auth/signin',
         method: 'POST',
         headers: {
@@ -50,7 +52,7 @@ describe('Error Handling Integration', () => {
             return null;
           }),
         },
-      } as unknown as NextRequest;
+      });
 
       const response = await wrappedHandler(mockRequest);
 
@@ -83,12 +85,13 @@ describe('Error Handling Integration', () => {
       });
 
       const wrappedHandler = withErrorHandler(mockHandler);
-      const response = await wrappedHandler();
+      const response = await wrappedHandler() as NextResponse;
 
       expect(response.status).toBe(400);
-      expect(response.data.error.code).toBe(ErrorCode.INVALID_INPUT_FORMAT);
-      expect(response.data.error.fieldErrors).toBeDefined();
-      expect(response.data.error.fieldErrors.email).toContain('Please enter a valid email address');
+      const responseData = await response.json();
+      expect(responseData.error.code).toBe(ErrorCode.INVALID_INPUT_FORMAT);
+      expect(responseData.error.fieldErrors).toBeDefined();
+      expect(responseData.error.fieldErrors.email).toContain('Please enter a valid email address');
     });
 
     it('should handle not found errors', async () => {
@@ -97,11 +100,12 @@ describe('Error Handling Integration', () => {
       });
 
       const wrappedHandler = withErrorHandler(mockHandler);
-      const response = await wrappedHandler();
+      const response = await wrappedHandler() as NextResponse;
 
       expect(response.status).toBe(404);
-      expect(response.data.error.code).toBe(ErrorCode.ORGANIZATION_NOT_FOUND);
-      expect(response.data.error.details).toEqual({ organizationId: 'org-123' });
+      const responseData = await response.json();
+      expect(responseData.error.code).toBe(ErrorCode.ORGANIZATION_NOT_FOUND);
+      expect(responseData.error.details).toEqual({ organizationId: 'org-123' });
     });
 
     it('should handle successful responses', async () => {
@@ -111,10 +115,11 @@ describe('Error Handling Integration', () => {
       );
 
       const wrappedHandler = withErrorHandler(mockHandler);
-      const response = await wrappedHandler();
+      const response = await wrappedHandler() as NextResponse;
 
       expect(response.status).toBe(201);
-      expect(response.data).toEqual({ data: mockData, success: true });
+      const responseData = await response.json();
+      expect(responseData).toEqual({ data: mockData, success: true });
     });
   });
 
@@ -261,9 +266,10 @@ describe('Error Handling Integration', () => {
         headers: { get: vi.fn() },
       } as unknown as NextRequest;
 
-      const successResponse = await wrappedHandler(validRequest);
+      const successResponse = await wrappedHandler(validRequest) as NextResponse;
       expect(successResponse.status).toBe(201);
-      expect(successResponse.data.success).toBe(true);
+      const successData = await successResponse.json();
+      expect(successData.success).toBe(true);
 
       // Test validation error case
       const invalidRequest = {
@@ -274,9 +280,10 @@ describe('Error Handling Integration', () => {
         headers: { get: vi.fn() },
       } as unknown as NextRequest;
 
-      const validationErrorResponse = await wrappedHandler(invalidRequest);
+      const validationErrorResponse = await wrappedHandler(invalidRequest) as NextResponse;
       expect(validationErrorResponse.status).toBe(400);
-      expect(validationErrorResponse.data.error.code).toBe(ErrorCode.INVALID_INPUT_FORMAT);
+      const validationData = await validationErrorResponse.json();
+      expect(validationData.error.code).toBe(ErrorCode.INVALID_INPUT_FORMAT);
 
       // Test business logic error case
       const duplicateRequest = {
@@ -288,10 +295,11 @@ describe('Error Handling Integration', () => {
         headers: { get: vi.fn() },
       } as unknown as NextRequest;
 
-      const duplicateErrorResponse = await wrappedHandler(duplicateRequest);
+      const duplicateErrorResponse = await wrappedHandler(duplicateRequest) as NextResponse;
       expect(duplicateErrorResponse.status).toBe(400);
-      expect(duplicateErrorResponse.data.error.code).toBe(ErrorCode.DUPLICATE_USER);
-      expect(duplicateErrorResponse.data.error.fieldErrors).toEqual({
+      const duplicateData = await duplicateErrorResponse.json();
+      expect(duplicateData.error.code).toBe(ErrorCode.DUPLICATE_USER);
+      expect(duplicateData.error.fieldErrors).toEqual({
         email: ['A user with this email already exists'],
       });
     });

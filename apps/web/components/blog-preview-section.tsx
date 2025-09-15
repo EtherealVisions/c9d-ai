@@ -64,8 +64,8 @@ export default function BlogPreviewSection() {
               <Image
                 src={featuredPost.imageUrl || "/placeholder.svg"}
                 alt={featuredPost.title}
-                layout="fill"
-                objectFit="cover"
+                fill
+                style={{ objectFit: 'cover' }}
                 className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -97,8 +97,8 @@ export default function BlogPreviewSection() {
                   <Image
                     src={post.imageUrl || "/placeholder.svg"}
                     alt={post.title}
-                    layout="fill"
-                    objectFit="cover"
+                    fill
+                    style={{ objectFit: 'cover' }}
                     className="group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-50 group-hover:opacity-20 transition-opacity"></div>

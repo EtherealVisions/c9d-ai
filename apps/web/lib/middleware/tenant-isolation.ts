@@ -120,7 +120,7 @@ export function withTenantIsolation(options: TenantIsolationOptions = {}) {
       
       try {
         // Get authentication from Clerk
-        const { userId: clerkUserId } = auth()
+        const { userId: clerkUserId } = await auth()
         
         if (!clerkUserId) {
           await securityAuditService.logSecurityEvent({

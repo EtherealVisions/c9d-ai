@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '../services/rbac-service'
 import { createSupabaseClient } from '../database'
 
@@ -88,7 +88,7 @@ export function withAuth() {
   ): Promise<NextResponse> {
     try {
       // Get authentication from Clerk
-      const { userId: clerkUserId } = auth()
+      const { userId: clerkUserId } = await auth()
       
       if (!clerkUserId) {
         return NextResponse.json(
@@ -129,7 +129,7 @@ export function withRBAC(options: RBACOptions = {}) {
   return function rbacMiddleware(
     handler: (req: AuthenticatedRequest) => Promise<NextResponse>
   ) {
-    return withAuth()(async (request: AuthenticatedRequest): Promise<NextResponse> => {
+    return withAuth(async (request: AuthenticatedRequest): Promise<NextResponse> => {
       try {
         if (!request.user) {
           return NextResponse.json(

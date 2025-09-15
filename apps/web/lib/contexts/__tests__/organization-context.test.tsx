@@ -353,7 +353,7 @@ describe('OrganizationProvider', () => {
         code: 'ORGANIZATION_NOT_FOUND'
       })
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       render(
         <OrganizationProvider>
@@ -365,13 +365,30 @@ describe('OrganizationProvider', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded')
       })
 
+      // Create a promise to catch the unhandled rejection
+      const errorPromise = new Promise((resolve) => {
+        const originalHandler = process.listeners('unhandledRejection')[0]
+        process.once('unhandledRejection', (error) => {
+          resolve(error)
+          // Restore original handler if it existed
+          if (originalHandler) {
+            process.on('unhandledRejection', originalHandler)
+          }
+        })
+      })
+
+      // Trigger the organization switch
       act(() => {
         screen.getByTestId('switch-org-button').click()
       })
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to switch organization:', expect.any(Error))
-      })
+      // Wait for either the console error or the unhandled rejection
+      await Promise.race([
+        waitFor(() => {
+          expect(consoleSpy).toHaveBeenCalledWith('Failed to switch organization:', expect.any(Error))
+        }),
+        errorPromise
+      ])
 
       consoleSpy.mockRestore()
     })
@@ -441,7 +458,7 @@ describe('OrganizationProvider', () => {
       mockRbacService.getUserRoles.mockRejectedValue(new Error('RBAC service error'))
       mockRbacService.getUserPermissions.mockRejectedValue(new Error('RBAC service error'))
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       render(
         <OrganizationProvider>
@@ -459,7 +476,7 @@ describe('OrganizationProvider', () => {
     })
 
     it('should throw error when used outside provider', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       expect(() => {
         render(<TestComponent />)

@@ -2,7 +2,33 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import type { User, Organization, OrganizationMembership } from '../database'
+
+// Simplified types to avoid import issues during development
+interface User {
+  id: string
+  clerkUserId: string
+  email: string
+  firstName?: string
+  lastName?: string
+  avatarUrl?: string
+  preferences: Record<string, any>
+}
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  avatarUrl?: string
+}
+
+interface Membership {
+  id: string
+  userId: string
+  organizationId: string
+  roleId: string
+  status: 'active' | 'inactive' | 'pending'
+}
 
 export interface AuthContextValue {
   // User state
@@ -13,7 +39,7 @@ export interface AuthContextValue {
   // Organization state
   organizations: Organization[]
   currentOrganization: Organization | null
-  currentMembership: OrganizationMembership | null
+  currentMembership: Membership | null
   
   // Actions
   switchOrganization: (organizationId: string) => Promise<void>
@@ -38,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null)
-  const [currentMembership, setCurrentMembership] = useState<OrganizationMembership | null>(null)
+  const [currentMembership, setCurrentMembership] = useState<Membership | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
 

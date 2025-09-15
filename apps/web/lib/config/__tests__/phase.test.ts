@@ -8,20 +8,17 @@ import {
   createPhaseConfigFromEnv 
 } from '../phase';
 
-// Mock node-fetch
-vi.mock('node-fetch', () => ({
-  default: vi.fn()
-}));
-
-import fetch from 'node-fetch';
-const mockFetch = vi.mocked(fetch);
+// Mock global fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 describe('Phase.dev Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Clear environment variables
     delete process.env.PHASE_SERVICE_TOKEN;
-    delete process.env.NODE_ENV;
+    // Use Reflect.deleteProperty to avoid TypeScript read-only error
+    Reflect.deleteProperty(process.env, 'NODE_ENV');
   });
 
   afterEach(() => {
@@ -110,7 +107,7 @@ describe('Phase.dev Integration', () => {
       };
 
       await expect(loader.loadEnvironment(config)).rejects.toThrow(
-        'Phase.dev API error: 401 Unauthorized'
+        'Authentication failed: Unauthorized'
       );
     });
 
@@ -217,7 +214,11 @@ describe('Phase.dev Integration', () => {
   describe('createPhaseConfigFromEnv', () => {
     it('should create config from environment variables', () => {
       process.env.PHASE_SERVICE_TOKEN = 'env-token-123';
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true
+      });
 
       const config = createPhaseConfigFromEnv();
 
@@ -235,7 +236,7 @@ describe('Phase.dev Integration', () => {
 
     it('should default to development environment', () => {
       process.env.PHASE_SERVICE_TOKEN = 'env-token-123';
-      delete process.env.NODE_ENV;
+      Reflect.deleteProperty(process.env, 'NODE_ENV');
 
       const config = createPhaseConfigFromEnv();
 
@@ -296,7 +297,7 @@ describe('Phase.dev Integration', () => {
       mockFetch.mockRejectedValue(abortError);
 
       await expect(loader.loadEnvironment(config)).rejects.toThrow('Request timeout');
-    });
+    }, 15000);
 
     it('should handle network errors', async () => {
       const loader = new PhaseEnvironmentLoader();
@@ -308,7 +309,7 @@ describe('Phase.dev Integration', () => {
       mockFetch.mockRejectedValue(new Error('ENOTFOUND console.phase.dev'));
 
       await expect(loader.loadEnvironment(config)).rejects.toThrow('Network error');
-    });
+    }, 15000);
 
     it('should handle rate limiting', async () => {
       const loader = new PhaseEnvironmentLoader();
@@ -324,7 +325,7 @@ describe('Phase.dev Integration', () => {
       });
 
       await expect(loader.loadEnvironment(config)).rejects.toThrow('Rate limit exceeded');
-    });
+    }, 15000);
   });
 
   describe('Caching Behavior', () => {

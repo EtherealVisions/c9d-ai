@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom"],
     "paths": {
       "@/*": ["./*"],
       "@c9d/ui": ["../../packages/ui/src"],

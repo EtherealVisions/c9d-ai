@@ -86,7 +86,8 @@ vi.mock('../organization-context', async () => {
       refreshOrganizationData: mockOrganizationContext.refreshOrganizationData
     }),
     useResourceFiltering: () => ({
-      filterResourcesByPermission: mockOrganizationContext.filterResourcesByPermission
+      filterResourcesByPermission: mockOrganizationContext.filterResourcesByPermission,
+      hasPermission: mockOrganizationContext.hasPermission
     })
   }
 })

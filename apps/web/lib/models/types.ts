@@ -112,9 +112,9 @@ export interface UserRow {
   id: string
   clerk_user_id: string
   email: string
-  first_name?: string
-  last_name?: string
-  avatar_url?: string
+  first_name: string | null
+  last_name: string | null
+  avatar_url: string | null
   preferences: Record<string, any>
   created_at: string
   updated_at: string
@@ -124,8 +124,8 @@ export interface OrganizationRow {
   id: string
   name: string
   slug: string
-  description?: string
-  avatar_url?: string
+  description: string | null
+  avatar_url: string | null
   metadata: Record<string, any>
   settings: Record<string, any>
   created_at: string
@@ -146,7 +146,7 @@ export interface MembershipRow {
 export interface RoleRow {
   id: string
   name: string
-  description?: string
+  description: string | null
   organization_id: string
   is_system_role: boolean
   permissions: string[]
@@ -157,7 +157,7 @@ export interface RoleRow {
 export interface PermissionRow {
   id: string
   name: string
-  description?: string
+  description: string | null
   resource: string
   action: string
   created_at: string
@@ -178,14 +178,14 @@ export interface InvitationRow {
 
 export interface AuditLogRow {
   id: string
-  user_id?: string
-  organization_id?: string
+  user_id: string | null
+  organization_id: string | null
   action: string
   resource_type: string
-  resource_id?: string
+  resource_id: string | null
   metadata: Record<string, any>
-  ip_address?: string
-  user_agent?: string
+  ip_address: string | null
+  user_agent: string | null
   created_at: string
 }
 
@@ -209,3 +209,24 @@ export interface MembershipWithRelations extends Membership {
   organization: Organization
   role: Role
 }
+
+// Insert types for database operations (omit auto-generated fields)
+export type UserInsert = Omit<UserRow, 'id' | 'created_at' | 'updated_at'>
+export type UserUpdate = Partial<UserInsert>
+
+export type OrganizationInsert = Omit<OrganizationRow, 'id' | 'created_at' | 'updated_at'>
+export type OrganizationUpdate = Partial<OrganizationInsert>
+
+export type MembershipInsert = Omit<MembershipRow, 'id' | 'created_at' | 'updated_at'>
+export type MembershipUpdate = Partial<MembershipInsert>
+
+export type RoleInsert = Omit<RoleRow, 'id' | 'created_at' | 'updated_at'>
+export type RoleUpdate = Partial<RoleInsert>
+
+export type PermissionInsert = Omit<PermissionRow, 'id' | 'created_at'>
+export type PermissionUpdate = Partial<PermissionInsert>
+
+export type InvitationInsert = Omit<InvitationRow, 'id' | 'created_at' | 'updated_at'>
+export type InvitationUpdate = Partial<InvitationInsert>
+
+export type AuditLogInsert = Omit<AuditLogRow, 'id' | 'created_at'>

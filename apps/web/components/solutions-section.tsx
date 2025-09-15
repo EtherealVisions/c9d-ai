@@ -50,8 +50,8 @@ export default function SolutionsSection() {
                 <Image
                   src={solution.imageUrl || "/placeholder.svg"}
                   alt={solution.imageAlt}
-                  layout="fill"
-                  objectFit="cover"
+                  fill
+                  style={{ objectFit: 'cover' }}
                   className="opacity-70 group-hover:opacity-100 transition-opacity duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>

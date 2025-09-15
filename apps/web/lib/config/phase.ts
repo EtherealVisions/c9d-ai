@@ -1,5 +1,5 @@
-// Import fetch - use built-in fetch in modern environments
-import fetch from 'node-fetch';
+// Use built-in fetch in modern environments
+// Note: fetch is available globally in Node.js 18+ and browsers
 
 /**
  * Configuration interface for Phase.dev integration
@@ -512,9 +512,9 @@ async function loadEnvFilesManually(rootPath: string): Promise<Record<string, st
     '.env.local'
   ];
 
-  // Dynamic import for Node.js modules
-  const fs = await import('fs');
-  const path = await import('path');
+  // Use require for Node.js modules to avoid webpack issues
+  const fs = require('fs');
+  const path = require('path');
 
   for (const envFile of envFiles) {
     const envPath = path.join(rootPath, envFile);

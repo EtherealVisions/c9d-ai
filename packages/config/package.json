@@ -8,17 +8,18 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src/",
-    "test": "vitest run",
-    "test:run": "vitest run",
-    "test:dev": "vitest --watch",
-    "test:watch": "vitest --watch",
+    "test": "node ../../scripts/run-with-env.js vitest run",
+    "test:run": "node ../../scripts/run-with-env.js vitest run",
+    "test:dev": "node ../../scripts/run-with-env.js vitest --watch",
+    "test:watch": "node ../../scripts/run-with-env.js vitest --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "zod": "^3.24.1",
+    "@phase.dev/phase-node": "^3.1.1",
     "dotenv": "^16.4.5",
-    "dotenv-expand": "^11.0.6"
+    "dotenv-expand": "^11.0.6",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22",
@@ -26,6 +27,6 @@
     "vitest": "^3.2.4"
   },
   "phase": {
-    "appName": "AI.C9d.Config"
+    "appName": "AI.C9d.Web"
   }
 }

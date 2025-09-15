@@ -176,7 +176,10 @@ export function UserProfile({ className }: UserProfileProps) {
               aria-controls={`${tab.id}-panel`}
               id={`${tab.id}-tab`}
               data-testid={`tab-${tab.id}`}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any)
+                setMessage(null) // Clear any existing messages when switching tabs
+              }}
               className={`group inline-flex items-center border-b-2 px-1 py-4 text-sm font-medium ${
                 activeTab === tab.id
                   ? 'border-primary text-primary'

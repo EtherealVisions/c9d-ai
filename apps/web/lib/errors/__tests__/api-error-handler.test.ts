@@ -15,7 +15,9 @@ import { RateLimitError } from '../custom-errors';
 import {
   createInvalidCredentialsError,
   createInvalidEmailError,
+  createAuthenticationError,
 } from '../error-utils';
+import { ErrorCode } from '../custom-errors';
 
 // Mock NextResponse
 vi.mock('next/server', () => ({
@@ -87,15 +89,19 @@ describe('API Error Handler', () => {
         error: {
           code: error.code,
           message: error.message,
-          timestamp: error.timestamp,
+          timestamp: error.timestamp.toISOString(),
           requestId: 'test-request-id',
         },
       });
     });
 
     it('should include details when present', () => {
-      const error = createInvalidCredentialsError('test-request-id');
-      error.details = { test: 'details' };
+      const error = createAuthenticationError(
+        ErrorCode.INVALID_CREDENTIALS,
+        'Invalid credentials',
+        { test: 'details' },
+        'test-request-id'
+      );
       const formatted = formatApiError(error, 'test-request-id');
       
       expect(formatted.error.details).toEqual({ test: 'details' });

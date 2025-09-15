@@ -122,7 +122,15 @@ export function OrganizationDashboard({ className }: OrganizationDashboardProps)
 
         {/* Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${
+            [true, canViewMembers, canManageMembers, canManageSettings].filter(Boolean).length === 1 
+              ? 'grid-cols-1' 
+              : [true, canViewMembers, canManageMembers, canManageSettings].filter(Boolean).length === 2
+              ? 'grid-cols-2'
+              : [true, canViewMembers, canManageMembers, canManageSettings].filter(Boolean).length === 3
+              ? 'grid-cols-3'
+              : 'grid-cols-4'
+          }`}>
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <Activity className="w-4 h-4" />
               <span>Overview</span>
@@ -267,7 +275,7 @@ export function OrganizationDashboard({ className }: OrganizationDashboardProps)
 
           {/* Members Tab */}
           {canViewMembers && (
-            <TabsContent value="members">
+            <TabsContent value="members" data-testid="members-tab-content">
               <MemberManagement
                 members={members}
                 loading={loadingMembers}
@@ -279,7 +287,7 @@ export function OrganizationDashboard({ className }: OrganizationDashboardProps)
 
           {/* Invitations Tab */}
           {canManageMembers && (
-            <TabsContent value="invitations">
+            <TabsContent value="invitations" data-testid="invitations-tab-content">
               <InvitationManagement
                 invitations={invitations}
                 loading={loadingInvitations}
@@ -290,7 +298,7 @@ export function OrganizationDashboard({ className }: OrganizationDashboardProps)
 
           {/* Settings Tab */}
           {canManageSettings && (
-            <TabsContent value="settings">
+            <TabsContent value="settings" data-testid="settings-tab-content">
               <OrganizationSettings organization={organization} />
             </TabsContent>
           )}

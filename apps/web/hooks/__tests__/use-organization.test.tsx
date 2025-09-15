@@ -477,7 +477,11 @@ describe('Organization Hooks', () => {
 
     it('should log context in development mode', () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true
+      })
       
       const consoleSpy = vi.spyOn(console, 'group').mockImplementation(() => {})
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -496,12 +500,20 @@ describe('Organization Hooks', () => {
       consoleSpy.mockRestore()
       consoleLogSpy.mockRestore()
       consoleGroupEndSpy.mockRestore()
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      })
     })
 
     it('should not log in production mode', () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true
+      })
       
       const consoleSpy = vi.spyOn(console, 'group').mockImplementation(() => {})
 
@@ -514,7 +526,11 @@ describe('Organization Hooks', () => {
       expect(consoleSpy).not.toHaveBeenCalled()
 
       consoleSpy.mockRestore()
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      })
     })
   })
 })

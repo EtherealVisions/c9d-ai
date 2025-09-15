@@ -22,7 +22,15 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test-project-id.supabase.co'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QtcHJvamVjdC1pZCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQwOTk1MjAwLCJleHAiOjE5NTY1NzEyMDB9.test-anon-key-for-testing-purposes-only-with-sufficient-length'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QtcHJvamVjdC1pZCIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2NDA5OTUyMDAsImV4cCI6MTk1NjU3MTIwMH0.test-service-role-key-for-testing-purposes-only-with-sufficient-length'
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db'
-process.env.NODE_ENV = 'test'
+// Set NODE_ENV for tests (only if not already set)
+if (!process.env.NODE_ENV) {
+  // Use Object.defineProperty to avoid TypeScript read-only error
+  Object.defineProperty(process.env, 'NODE_ENV', {
+    value: 'test',
+    writable: true,
+    configurable: true
+  })
+}
 
 // Global test configuration
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -59,5 +67,27 @@ Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
 
 Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
   value: vi.fn(),
+  writable: true
+})
+
+// Mock scrollIntoView for Radix UI components
+Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+  value: vi.fn(),
+  writable: true
+})
+
+// Mock getBoundingClientRect for Radix UI positioning
+Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
+  value: vi.fn(() => ({
+    bottom: 0,
+    height: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    width: 0,
+    x: 0,
+    y: 0,
+    toJSON: vi.fn()
+  })),
   writable: true
 })

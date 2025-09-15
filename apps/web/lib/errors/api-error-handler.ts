@@ -41,7 +41,7 @@ export const formatApiError = (error: BaseError, requestId: string): ApiErrorRes
     error: {
       code: error.code,
       message: error.message,
-      timestamp: error.timestamp,
+      timestamp: error.timestamp.toISOString(),
       requestId,
     },
   };
@@ -53,7 +53,7 @@ export const formatApiError = (error: BaseError, requestId: string): ApiErrorRes
 
   // Add field errors for validation errors
   if ('fieldErrors' in error && error.fieldErrors) {
-    response.error.fieldErrors = error.fieldErrors;
+    (response.error as any).fieldErrors = error.fieldErrors;
   }
 
   return response;
@@ -77,7 +77,7 @@ export const createErrorResponse = (
 
   // Add retry-after header for rate limit errors
   if ('retryAfter' in error && error.retryAfter) {
-    responseHeaders['Retry-After'] = error.retryAfter.toString();
+    (responseHeaders as any)['Retry-After'] = error.retryAfter.toString();
   }
 
   return NextResponse.json(errorResponse, {

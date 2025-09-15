@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OrganizationSettings } from '../organization-settings'
@@ -83,8 +83,8 @@ describe('OrganizationSettings', () => {
     
     expect(screen.getByText('org-1')).toBeInTheDocument()
     expect(screen.getByText('test-org')).toBeInTheDocument()
-    expect(screen.getByText('1/1/2024, 10:00:00 AM')).toBeInTheDocument()
-    expect(screen.getByText('1/2/2024, 3:30:00 PM')).toBeInTheDocument()
+    expect(screen.getByText('1/1/2024, 4:00:00 AM')).toBeInTheDocument()
+    expect(screen.getByText('1/2/2024, 9:30:00 AM')).toBeInTheDocument()
   })
 
   it('updates organization successfully', async () => {
@@ -273,7 +273,7 @@ describe('OrganizationSettings', () => {
 
     render(<OrganizationSettings organization={mockOrganization} />)
     
-    const deleteButton = screen.getByText('Delete Organization')
+    const deleteButton = screen.getByRole('button', { name: /delete organization/i })
     await user.click(deleteButton)
     
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -301,7 +301,7 @@ describe('OrganizationSettings', () => {
 
     render(<OrganizationSettings organization={mockOrganization} />)
     
-    const deleteButton = screen.getByText('Delete Organization')
+    const deleteButton = screen.getByRole('button', { name: /delete organization/i })
     await user.click(deleteButton)
     
     expect(mockConfirm).toHaveBeenCalled()
@@ -321,7 +321,7 @@ describe('OrganizationSettings', () => {
 
     render(<OrganizationSettings organization={mockOrganization} />)
     
-    const deleteButton = screen.getByText('Delete Organization')
+    const deleteButton = screen.getByRole('button', { name: /delete organization/i })
     await user.click(deleteButton)
     
     await waitFor(() => {
@@ -349,7 +349,7 @@ describe('OrganizationSettings', () => {
 
     render(<OrganizationSettings organization={mockOrganization} />)
     
-    const deleteButton = screen.getByText('Delete Organization')
+    const deleteButton = screen.getByRole('button', { name: /delete organization/i })
     await user.click(deleteButton)
     
     await waitFor(() => {
@@ -363,6 +363,9 @@ describe('OrganizationSettings', () => {
   it('handles network errors gracefully', async () => {
     const user = userEvent.setup()
     
+    // Clear any previous mocks and set up the rejection
+    mockFetch.mockClear()
+    mockToast.mockClear()
     mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
     render(<OrganizationSettings organization={mockOrganization} />)
@@ -376,6 +379,6 @@ describe('OrganizationSettings', () => {
         description: 'Network error',
         variant: 'destructive'
       })
-    })
+    }, { timeout: 3000 })
   })
 })

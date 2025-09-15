@@ -156,7 +156,7 @@ export const isConflictError = (error: unknown): error is ConflictError =>
  * Error message mapping for user-friendly messages
  */
 export const getUserFriendlyMessage = (error: BaseError): string => {
-  const messageMap: Record<ErrorCode, string> = {
+  const messageMap: Partial<Record<ErrorCode, string>> = {
     [ErrorCode.INVALID_CREDENTIALS]: 'The email or password you entered is incorrect. Please try again.',
     [ErrorCode.ACCOUNT_LOCKED]: 'Your account has been temporarily locked for security reasons. Please contact support.',
     [ErrorCode.TOKEN_EXPIRED]: 'Your session has expired. Please sign in again.',

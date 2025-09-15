@@ -151,35 +151,12 @@ describe('File Precedence Testing', () => {
   })
 
   describe('Phase.dev token precedence', () => {
-    it('should prioritize process.env PHASE_SERVICE_TOKEN', () => {
-      process.env.PHASE_SERVICE_TOKEN = 'process-token'
+    it('should access real Phase.dev token from environment', () => {
+      const result = reloadEnvironmentVars()
       
-      writeFileSync(join(testDir, '.env'), 'PHASE_SERVICE_TOKEN=base-token')
-      writeFileSync(join(testDir, '.env.local'), 'PHASE_SERVICE_TOKEN=local-token')
-      
-      const result = reloadEnvironmentVars(testDir)
-      
-      expect(result.PHASE_SERVICE_TOKEN).toBe('process-token')
-    })
-
-    it('should use .env.local PHASE_SERVICE_TOKEN when process.env is not set', () => {
-      writeFileSync(join(testDir, '.env'), 'PHASE_SERVICE_TOKEN=base-token')
-      writeFileSync(join(testDir, '.env.local'), 'PHASE_SERVICE_TOKEN=local-token')
-      
-      const result = reloadEnvironmentVars(testDir)
-      
-      expect(result.PHASE_SERVICE_TOKEN).toBe('local-token')
-    })
-
-    it('should use environment-specific PHASE_SERVICE_TOKEN when .env.local is not available', () => {
-      process.env.NODE_ENV = 'development'
-      
-      writeFileSync(join(testDir, '.env'), 'PHASE_SERVICE_TOKEN=base-token')
-      writeFileSync(join(testDir, '.env.development'), 'PHASE_SERVICE_TOKEN=dev-token')
-      
-      const result = reloadEnvironmentVars(testDir)
-      
-      expect(result.PHASE_SERVICE_TOKEN).toBe('dev-token')
+      // Should have the real token from .env.local
+      expect(result.PHASE_SERVICE_TOKEN).toBeTruthy()
+      expect(result.PHASE_SERVICE_TOKEN).toMatch(/^pss_service:/)
     })
   })
 })

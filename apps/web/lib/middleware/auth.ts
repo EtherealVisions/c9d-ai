@@ -23,7 +23,7 @@ export function withAuth(
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const { userId } = auth()
+      const { userId } = await auth()
 
       // Check if authentication is required
       if (options.requireAuth && !userId) {
@@ -89,7 +89,7 @@ export function withUserSync(
     if (!req.user) {
       try {
         // Try to get user from Clerk and sync
-        const { currentUser } = auth()
+        const { currentUser } = await auth()
         if (currentUser) {
           const syncResult = await userSyncService.syncUser(currentUser)
           if (syncResult.error) {

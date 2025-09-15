@@ -53,6 +53,7 @@ export class CentralizedConfigManager implements ConfigManager {
   private lastRefresh: number = 0;
   private phaseLoader: PhaseEnvironmentLoader;
   private lastError: Error | null = null;
+  private lastPhaseError: Error | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
 
   constructor(options: ConfigManagerOptions = {}) {
@@ -79,8 +80,17 @@ export class CentralizedConfigManager implements ConfigManager {
           // Load environment variables from Phase.dev with fallback
           this.config = await loadEnvironmentWithFallback(this.phaseConfig, this.fallbackToEnv);
         } catch (error) {
-          this.logWarn('Phase.dev configuration failed, falling back to environment variables', error);
-          this.config = { ...process.env } as Record<string, string>;
+          // Track the Phase.dev error for statistics
+          this.lastPhaseError = error instanceof Error ? error : new Error('Phase.dev configuration failed');
+          
+          if (this.fallbackToEnv) {
+            this.logWarn('Phase.dev configuration failed, falling back to environment variables');
+            this.config = { ...process.env } as Record<string, string>;
+          } else {
+            this.logError('Phase.dev configuration failed and fallback is disabled', error instanceof Error ? error : new Error(String(error)));
+            this.lastError = this.lastPhaseError;
+            throw error;
+          }
         }
       } else {
         this.logInfo('No Phase.dev configuration found, using local environment only');
@@ -92,7 +102,7 @@ export class CentralizedConfigManager implements ConfigManager {
         this.validateConfiguration();
       } catch (error) {
         if (this.fallbackToEnv) {
-          this.logWarn('Configuration validation failed, but fallback is enabled', error);
+          this.logWarn('Configuration validation failed, but fallback is enabled');
           // Continue with partial configuration
         } else {
           throw error;
@@ -278,7 +288,7 @@ export class CentralizedConfigManager implements ConfigManager {
       lastRefresh: new Date(this.lastRefresh),
       cacheEnabled: this.enableCaching,
       phaseConfigured: this.phaseConfig !== null,
-      lastError: this.lastError,
+      lastError: this.lastError || this.lastPhaseError,
       healthy: this.isHealthy()
     };
   }
@@ -385,7 +395,7 @@ export class CentralizedConfigManager implements ConfigManager {
    * @returns True if healthy
    */
   private isHealthy(): boolean {
-    return this.initialized && this.lastError === null;
+    return this.initialized && this.lastError === null && this.lastPhaseError === null;
   }
 
   /**
