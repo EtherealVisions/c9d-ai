@@ -715,27 +715,9 @@ export class TypedSupabaseClient {
  * Get configuration value with comprehensive fallback logic
  */
 function getConfigWithFallback(key: string): string | undefined {
-  try {
-    // Try to import and use the configuration manager
-    const { getConfigManager } = require('../config/manager');
-    const { isConfigInitialized } = require('../config/init');
-    
-    // First try the configuration manager if initialized
-    if (isConfigInitialized()) {
-      const configManager = getConfigManager();
-      const value = configManager.get(key);
-      if (value) {
-        return value;
-      }
-    }
-    
-    // Fallback to process.env
-    return process.env[key];
-    
-  } catch (error) {
-    console.warn(`[TypedDatabase] Failed to get config '${key}', using process.env fallback:`, error);
-    return process.env[key];
-  }
+  // Always use process.env for now to avoid module resolution issues
+  // TODO: Implement proper config manager integration when needed
+  return process.env[key];
 }
 
 /**

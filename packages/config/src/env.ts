@@ -3,9 +3,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 import { expand as dotenvExpand } from 'dotenv-expand';
-import { isPhaseDevAvailable } from './phase';
-import { getPhaseServiceToken } from './phase';
-import { isPhaseDevAvailable } from './phase';
+// Note: getPhaseServiceToken and isPhaseDevAvailable are now defined in this file
 // Note: Phase.dev integration is handled separately in phase.ts to avoid circular dependencies
 
 /**
@@ -142,41 +140,6 @@ function loadEnvFiles(rootPath: string = process.cwd()): EnvLoadResult {
 }
 
 /**
- * Validate environment variable name
- * @param key Environment variable key
- * @returns True if valid
- */
-function isValidEnvVarName(key: string): boolean {
-  // Environment variable names should be uppercase with underscores
-  return /^[A-Z][A-Z0-9_]*$/.test(key);
-}
-
-/**
- * Sanitize environment variable value for logging
- * @param key Environment variable key
- * @param value Environment variable value
- * @returns Sanitized value for safe logging
- */
-function sanitizeValueForLogging(key: string, value: string): string {
-  // Don't log sensitive values
-  const sensitivePatterns = [
-    /password/i,
-    /secret/i,
-    /key/i,
-    /token/i,
-    /auth/i,
-    /credential/i
-  ];
-  
-  if (sensitivePatterns.some(pattern => pattern.test(key))) {
-    return value.length > 0 ? '[REDACTED]' : '[EMPTY]';
-  }
-  
-  // Truncate long values
-  return value.length > 50 ? `${value.substring(0, 47)}...` : value;
-}
-
-/**
  * Load and cache all environment variables with comprehensive fallback support
  * @param forceReload Force reload from files and Phase.dev
  * @param rootPath Root path to search for .env files and package.json
@@ -303,12 +266,6 @@ export const getOptionalEnvVar = (key: string, defaultValue?: string): string | 
 };
 
 /**
- * Get Phase.dev service token with comprehensive fallback support
- * Note: getPhaseServiceToken and isPhaseDevAvailable are now exported from phase.ts
- * to avoid circular dependencies
- */
-
-/**
  * Get all environment variables
  * @param forceReload Force reload from files
  * @returns All environment variables
@@ -371,6 +328,23 @@ export const validateRequiredEnvVars = (requiredVars: string[]): void => {
 export const clearEnvCache = (): void => {
   envCache = null;
   cacheTimestamp = 0;
+};
+
+/**
+ * Get Phase.dev service token with comprehensive fallback support
+ * @returns Phase.dev service token or null if not available
+ */
+export const getPhaseServiceToken = (): string | null => {
+  const allEnv = loadAllEnvVars();
+  return allEnv.PHASE_SERVICE_TOKEN || null;
+};
+
+/**
+ * Check if Phase.dev integration is available
+ * @returns True if Phase.dev service token is available
+ */
+export const isPhaseDevAvailable = (): boolean => {
+  return getPhaseServiceToken() !== null;
 };
 
 // Re-export Phase.dev functions for backward compatibility and convenience

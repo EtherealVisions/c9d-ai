@@ -19,10 +19,12 @@ import {
 import {
   loadFromPhase,
   clearPhaseCache,
-  testPhaseConnectivity,
+  testPhaseConnectivity
+} from '../phase'
+import {
   isPhaseDevAvailable,
   getPhaseServiceToken
-} from '../phase'
+} from '../env'
 
 describe('Comprehensive Environment Variable Loading Scenarios', () => {
   const originalEnv = process.env

@@ -9,6 +9,7 @@ import { NextRequest } from 'next/server'
 // Mock external dependencies
 vi.mock('@clerk/nextjs/server')
 vi.mock('@/lib/services/user-service')
+vi.mock('@/lib/services/user-sync')
 
 describe('/api/users', () => {
   beforeEach(() => {
@@ -21,6 +22,20 @@ describe('/api/users', () => {
 
   describe('GET /api/users', () => {
     it('should return current user profile', async () => {
+      // Mock Clerk authentication
+      const { auth } = await import('@clerk/nextjs/server')
+      vi.mocked(auth).mockReturnValue({ userId: 'clerk_123' })
+
+      // Mock user sync service
+      const { userSyncService } = await import('@/lib/services/user-sync')
+      vi.mocked(userSyncService.getUserByClerkId).mockResolvedValue({
+        id: 'user-123',
+        clerkUserId: 'clerk_123',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User'
+      })
+
       // Mock user service
       const { userService } = await import('@/lib/services/user-service')
       vi.mocked(userService.getUserWithMemberships).mockResolvedValue({
@@ -57,11 +72,12 @@ describe('/api/users', () => {
     })
 
     it('should return 401 when user not authenticated', async () => {
-      // Create a mock unauthenticated request
-      const request = new NextRequest('http://localhost:3000/api/users') as any
-      request.user = null
+      // Mock unauthenticated state
+      const { auth } = await import('@clerk/nextjs/server')
+      vi.mocked(auth).mockReturnValue({ userId: null })
 
       const { GET } = await import('@/app/api/users/route')
+      const request = new NextRequest('http://localhost:3000/api/users')
       const response = await GET(request)
       const data = await response.json()
 
@@ -70,6 +86,18 @@ describe('/api/users', () => {
     })
 
     it('should handle user service errors', async () => {
+      // Mock Clerk authentication
+      const { auth } = await import('@clerk/nextjs/server')
+      vi.mocked(auth).mockReturnValue({ userId: 'clerk_123' })
+
+      // Mock user sync service
+      const { userSyncService } = await import('@/lib/services/user-sync')
+      vi.mocked(userSyncService.getUserByClerkId).mockResolvedValue({
+        id: 'user-123',
+        clerkUserId: 'clerk_123',
+        email: 'test@example.com'
+      })
+
       // Mock user service error
       const { userService } = await import('@/lib/services/user-service')
       vi.mocked(userService.getUserWithMemberships).mockResolvedValue({
@@ -77,15 +105,8 @@ describe('/api/users', () => {
         code: 'DATABASE_ERROR'
       })
 
-      // Create a mock authenticated request
-      const request = new NextRequest('http://localhost:3000/api/users') as any
-      request.user = {
-        id: 'user-123',
-        clerkUserId: 'clerk_123',
-        email: 'test@example.com'
-      }
-
       const { GET } = await import('@/app/api/users/route')
+      const request = new NextRequest('http://localhost:3000/api/users')
       const response = await GET(request)
       const data = await response.json()
 
@@ -109,6 +130,14 @@ describe('/api/users', () => {
       // Mock Clerk authentication
       const { auth } = await import('@clerk/nextjs/server')
       vi.mocked(auth).mockReturnValue({ userId: 'clerk_123' })
+
+      // Mock user sync service
+      const { userSyncService } = await import('@/lib/services/user-sync')
+      vi.mocked(userSyncService.getUserByClerkId).mockResolvedValue({
+        id: 'user-123',
+        clerkUserId: 'clerk_123',
+        email: 'test@example.com'
+      })
 
       // Mock user service
       const { userService } = await import('@/lib/services/user-service')
@@ -166,6 +195,14 @@ describe('/api/users', () => {
       const { auth } = await import('@clerk/nextjs/server')
       vi.mocked(auth).mockReturnValue({ userId: 'clerk_123' })
 
+      // Mock user sync service
+      const { userSyncService } = await import('@/lib/services/user-sync')
+      vi.mocked(userSyncService.getUserByClerkId).mockResolvedValue({
+        id: 'user-123',
+        clerkUserId: 'clerk_123',
+        email: 'test@example.com'
+      })
+
       const { PUT } = await import('@/app/api/users/route')
       const request = new NextRequest('http://localhost:3000/api/users', {
         method: 'PUT',
@@ -185,6 +222,14 @@ describe('/api/users', () => {
       // Mock Clerk authentication
       const { auth } = await import('@clerk/nextjs/server')
       vi.mocked(auth).mockReturnValue({ userId: 'clerk_123' })
+
+      // Mock user sync service
+      const { userSyncService } = await import('@/lib/services/user-sync')
+      vi.mocked(userSyncService.getUserByClerkId).mockResolvedValue({
+        id: 'user-123',
+        clerkUserId: 'clerk_123',
+        email: 'test@example.com'
+      })
 
       const { PUT } = await import('@/app/api/users/route')
       const request = new NextRequest('http://localhost:3000/api/users', {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import {
@@ -6,14 +6,14 @@ import {
   clearPhaseCache,
   testPhaseConnectivity,
   getPhaseConfig,
-  getPhaseCacheStatus,
-  isPhaseDevAvailable,
-  getPhaseServiceToken
+  getPhaseCacheStatus
 } from '../phase'
 import {
   reloadEnvironmentVars,
   clearEnvCache,
-  getEnvironmentConfig
+  getEnvironmentConfig,
+  isPhaseDevAvailable,
+  getPhaseServiceToken
 } from '../env'
 
 describe('Phase.dev Integration Scenarios', () => {
@@ -116,7 +116,7 @@ describe('Phase.dev Integration Scenarios', () => {
       
       expect(config).toEqual({
         serviceToken: 'test-token-123',
-        appName: 'C9d.Config',
+        appName: 'AI.C9d.Config',
         environment: 'development'
       })
     })

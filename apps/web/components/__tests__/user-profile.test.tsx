@@ -74,8 +74,8 @@ describe('UserProfile', () => {
 
       render(<UserProfile />)
       
-      expect(screen.getByText('Loading user profile...')).toBeInTheDocument()
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByTestId('user-profile-loading')).toBeInTheDocument()
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
     })
 
     it('renders user profile when user is loaded', () => {

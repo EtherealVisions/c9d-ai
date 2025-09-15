@@ -19,7 +19,7 @@ async function getHandler(req: AuthenticatedRequest) {
     
     if (result.error) {
       return NextResponse.json(
-        { error: { code: result.code, message: result.error } },
+        { success: false, error: { code: result.code, message: result.error } },
         { status: result.code === 'USER_NOT_FOUND' ? 404 : 500 }
       )
     }
@@ -48,7 +48,21 @@ async function putHandler(req: AuthenticatedRequest) {
       )
     }
 
-    const body = await req.json()
+    let body
+    try {
+      body = await req.json()
+    } catch (jsonError) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: { 
+            code: 'INVALID_JSON', 
+            message: 'Invalid JSON in request body'
+          } 
+        },
+        { status: 400 }
+      )
+    }
     
     // Validate the request body
     try {
@@ -56,6 +70,7 @@ async function putHandler(req: AuthenticatedRequest) {
     } catch (validationError) {
       return NextResponse.json(
         { 
+          success: false,
           error: { 
             code: 'VALIDATION_ERROR', 
             message: 'Invalid request data',
@@ -73,19 +88,20 @@ async function putHandler(req: AuthenticatedRequest) {
                         result.code === 'VALIDATION_ERROR' ? 400 : 500
       
       return NextResponse.json(
-        { error: { code: result.code, message: result.error } },
+        { success: false, error: { code: result.code, message: result.error } },
         { status: statusCode }
       )
     }
 
     return NextResponse.json({
-      user: result.data,
+      success: true,
+      data: result.data,
       message: 'Profile updated successfully'
     })
   } catch (error) {
     console.error('Error in PUT /api/users:', error)
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Failed to update user profile' } },
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to update user profile' } },
       { status: 500 }
     )
   }

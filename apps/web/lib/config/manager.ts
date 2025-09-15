@@ -72,18 +72,32 @@ export class CentralizedConfigManager implements ConfigManager {
       this.logInfo('Initializing configuration manager...');
       
       if (this.phaseConfig) {
-        // Validate Phase.dev configuration
-        validatePhaseConfig(this.phaseConfig);
-        
-        // Load environment variables from Phase.dev with fallback
-        this.config = await loadEnvironmentWithFallback(this.phaseConfig, this.fallbackToEnv);
+        try {
+          // Validate Phase.dev configuration
+          validatePhaseConfig(this.phaseConfig);
+          
+          // Load environment variables from Phase.dev with fallback
+          this.config = await loadEnvironmentWithFallback(this.phaseConfig, this.fallbackToEnv);
+        } catch (error) {
+          this.logWarn('Phase.dev configuration failed, falling back to environment variables', error);
+          this.config = { ...process.env } as Record<string, string>;
+        }
       } else {
         this.logInfo('No Phase.dev configuration found, using local environment only');
         this.config = { ...process.env } as Record<string, string>;
       }
 
-      // Validate required configuration
-      this.validateConfiguration();
+      // Validate required configuration (with fallback handling)
+      try {
+        this.validateConfiguration();
+      } catch (error) {
+        if (this.fallbackToEnv) {
+          this.logWarn('Configuration validation failed, but fallback is enabled', error);
+          // Continue with partial configuration
+        } else {
+          throw error;
+        }
+      }
 
       this.initialized = true;
       this.lastRefresh = Date.now();

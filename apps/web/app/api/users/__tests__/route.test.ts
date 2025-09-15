@@ -168,7 +168,8 @@ describe('/api/users', () => {
       const responseData = await response.json()
 
       expect(response.status).toBe(200)
-      expect(responseData.user).toMatchObject({
+      expect(responseData.success).toBe(true)
+      expect(responseData.data).toMatchObject({
         id: updatedUser.id,
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,

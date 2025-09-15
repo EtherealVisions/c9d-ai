@@ -219,7 +219,13 @@ export class PhaseEnvironmentLoader implements EnvironmentLoader {
         throw new PhaseError('Request timeout', PhaseErrorType.TIMEOUT, undefined, true);
       }
       
-      throw error;
+      // If it's already a PhaseError, re-throw it
+      if (error instanceof PhaseError) {
+        throw error;
+      }
+      
+      // Normalize other errors (including fetch network errors)
+      throw this.normalizeError(error);
     }
   }
 
@@ -575,7 +581,7 @@ export function validatePhaseConfig(config: Partial<PhaseConfig>): asserts confi
     throw new Error('Phase.dev service token is required (PHASE_SERVICE_TOKEN)');
   }
   
-  if (!config.appName) {
+  if (!config.appName || config.appName.trim() === '') {
     throw new Error('Phase.dev app name is required');
   }
   

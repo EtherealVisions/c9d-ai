@@ -8,17 +8,15 @@ import {
 } from '../phase';
 import { CentralizedConfigManager } from '../manager';
 
-// Mock node-fetch
-vi.mock('node-fetch', () => ({
-  default: vi.fn()
-}));
-
-import fetch from 'node-fetch';
-const mockFetch = vi.mocked(fetch);
+// Mock global fetch
+const mockFetch = vi.fn()
+global.fetch = mockFetch
 
 describe('Configuration Error Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset the fetch mock for each test
+    mockFetch.mockReset();
     // Clear environment variables
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('TEST_') || key.startsWith('ERROR_')) {

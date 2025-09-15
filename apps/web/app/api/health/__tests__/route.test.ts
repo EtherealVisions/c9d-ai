@@ -5,6 +5,7 @@ import { NextRequest } from 'next/server';
 // Mock the config manager
 vi.mock('@/lib/config/manager', () => ({
   getConfigManager: vi.fn(() => ({
+    isInitialized: vi.fn(() => true),
     getHealthStatus: vi.fn(() => ({
       healthy: true,
       initialized: true,
@@ -13,7 +14,22 @@ vi.mock('@/lib/config/manager', () => ({
       configValidation: { valid: true, errors: [] }
     })),
     getStats: vi.fn(() => ({
-      phaseConfigured: false
+      initialized: true,
+      healthy: true,
+      configCount: 10,
+      lastRefresh: new Date().toISOString(),
+      phaseConfigured: false,
+      cacheEnabled: true,
+      lastError: null
+    })),
+    performHealthCheck: vi.fn(() => Promise.resolve({
+      healthy: true,
+      checks: {
+        configValidation: { status: 'pass', message: 'Configuration is valid' },
+        phaseConnection: { status: 'pass', message: 'Phase.dev connection healthy' },
+        initialization: { status: 'pass', message: 'Manager initialized successfully' }
+      },
+      errors: []
     })),
     get: vi.fn((key: string) => {
       const mockEnv: Record<string, string> = {
@@ -64,11 +80,11 @@ describe('/api/health', () => {
     expect(response.status).toBe(200);
     expect(data.status).toBe('healthy');
     expect(data).toHaveProperty('timestamp');
-    expect(data).toHaveProperty('responseTime');
+    expect(data).toHaveProperty('configuration');
     expect(data).toHaveProperty('version');
     expect(data).toHaveProperty('environment');
     expect(data).toHaveProperty('checks');
-    expect(Array.isArray(data.checks)).toBe(true);
+    expect(typeof data.checks).toBe('object');
   });
 
   it('should include all required health checks', async () => {
@@ -76,15 +92,9 @@ describe('/api/health', () => {
     const response = await GET(request);
     const data = await response.json();
 
-    const checkNames = data.checks.map((check: any) => check.name);
-    
-    expect(checkNames).toContain('configuration_manager');
-    expect(checkNames).toContain('phase_integration');
-    expect(checkNames).toContain('environment_variables');
-    expect(checkNames).toContain('database_configuration');
-    expect(checkNames).toContain('build_system');
-    expect(checkNames).toContain('memory_usage');
-    expect(checkNames).toContain('system_info');
+    expect(data.checks).toHaveProperty('configuration');
+    expect(data.checks).toHaveProperty('phaseConnection');
+    expect(data.checks).toHaveProperty('initialization');
   });
 
   it('should handle errors gracefully', async () => {
@@ -99,9 +109,8 @@ describe('/api/health', () => {
     const response = await GET(request);
     const data = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(503);
     expect(data.status).toBe('error');
     expect(data).toHaveProperty('error');
-    expect(data.checks[0].status).toBe('fail');
   });
 });

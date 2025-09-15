@@ -1,7 +1,6 @@
 // Phase.dev integration for secure environment variable management
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-// Note: Avoiding import from './env' to prevent circular dependency
 
 /**
  * Phase.dev configuration interface
@@ -84,28 +83,28 @@ function getPhaseAppNameFromPackageJson(rootPath: string = process.cwd()): strin
 let phaseCache: { variables: Record<string, string>; timestamp: number } | null = null;
 const PHASE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Note: getPhaseServiceToken and isPhaseDevAvailable are now defined in env.ts to avoid circular dependencies
+
 /**
- * Get Phase.dev service token from environment variables
- * @returns Phase.dev service token or null if not available
+ * Get Phase.dev service token with fallback
+ * This function is defined here to avoid circular dependencies
+ * @returns Phase.dev service token or null
  */
-export const getPhaseServiceToken = (): string | null => {
-  // Check process.env first (highest priority)
+function getPhaseServiceTokenInternal(): string | null {
+  // First check process.env
   if (process.env.PHASE_SERVICE_TOKEN) {
     return process.env.PHASE_SERVICE_TOKEN;
   }
   
-  // For now, only check process.env to avoid circular dependency
-  // The env.ts module will handle .env file loading separately
-  return null;
-};
-
-/**
- * Check if Phase.dev integration is available
- * @returns True if Phase.dev service token is available
- */
-export const isPhaseDevAvailable = (): boolean => {
-  return getPhaseServiceToken() !== null;
-};
+  // Try to get from env module if available
+  try {
+    const envModule = require('./env');
+    return envModule.getPhaseServiceToken();
+  } catch (error) {
+    // If there's an error, return null
+    return null;
+  }
+}
 
 /**
  * Get Phase.dev configuration
@@ -117,7 +116,7 @@ export const getPhaseConfig = (
   overrides: Partial<PhaseConfig> = {},
   rootPath?: string
 ): PhaseConfig | null => {
-  const serviceToken = getPhaseServiceToken();
+  const serviceToken = getPhaseServiceTokenInternal();
   
   if (!serviceToken) {
     return null;

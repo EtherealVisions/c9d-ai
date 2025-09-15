@@ -52,7 +52,7 @@ const mockExistsSync = vi.mocked(existsSync)
 // Import mocked modules
 import { config as dotenvConfig } from 'dotenv'
 import { expand as dotenvExpand } from 'dotenv-expand'
-import { isPhaseDevAvailable as mockIsPhaseDevAvailable } from '../phase'
+import { isPhaseDevAvailable as mockIsPhaseDevAvailable } from '../env'
 
 const mockConfig = vi.mocked(dotenvConfig)
 const mockExpand = vi.mocked(dotenvExpand)

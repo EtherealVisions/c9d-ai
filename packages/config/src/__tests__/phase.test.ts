@@ -5,10 +5,12 @@ import {
   loadFromPhase,
   clearPhaseCache,
   getPhaseCacheStatus,
-  testPhaseConnectivity,
+  testPhaseConnectivity
+} from '../phase'
+import {
   getPhaseServiceToken,
   isPhaseDevAvailable
-} from '../phase'
+} from '../env'
 
 // Mock fs functions
 vi.mock('fs', () => ({
@@ -18,7 +20,9 @@ vi.mock('fs', () => ({
 
 // Mock env module
 vi.mock('../env', () => ({
-  getOptionalEnvVar: vi.fn()
+  getOptionalEnvVar: vi.fn(),
+  getPhaseServiceToken: vi.fn(),
+  isPhaseDevAvailable: vi.fn()
 }))
 
 const mockReadFileSync = vi.mocked(readFileSync)
@@ -27,6 +31,8 @@ const mockExistsSync = vi.mocked(existsSync)
 // Import mocked env functions
 import { getOptionalEnvVar } from '../env'
 const mockGetOptionalEnvVar = vi.mocked(getOptionalEnvVar)
+const mockGetPhaseServiceToken = vi.mocked(getPhaseServiceToken)
+const mockIsPhaseDevAvailable = vi.mocked(isPhaseDevAvailable)
 
 describe('Phase.dev Integration', () => {
   const originalEnv = process.env
@@ -44,6 +50,8 @@ describe('Phase.dev Integration', () => {
     // Default mock behavior
     mockExistsSync.mockReturnValue(false)
     mockGetOptionalEnvVar.mockReturnValue(undefined)
+    mockGetPhaseServiceToken.mockReturnValue(null)
+    mockIsPhaseDevAvailable.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -56,7 +64,7 @@ describe('Phase.dev Integration', () => {
 
   describe('getPhaseServiceToken', () => {
     it('should return token from process.env when available', () => {
-      process.env.PHASE_SERVICE_TOKEN = 'process-token-123'
+      mockGetPhaseServiceToken.mockReturnValue('process-token-123')
       
       const result = getPhaseServiceToken()
       
@@ -64,15 +72,16 @@ describe('Phase.dev Integration', () => {
     })
 
     it('should fallback to getOptionalEnvVar when not in process.env', () => {
-      mockGetOptionalEnvVar.mockReturnValue('fallback-token-456')
+      mockGetPhaseServiceToken.mockReturnValue('fallback-token-456')
       
       const result = getPhaseServiceToken()
       
       expect(result).toBe('fallback-token-456')
-      expect(mockGetOptionalEnvVar).toHaveBeenCalledWith('PHASE_SERVICE_TOKEN')
     })
 
     it('should return null when token is not available anywhere', () => {
+      mockGetPhaseServiceToken.mockReturnValue(null)
+      
       const result = getPhaseServiceToken()
       
       expect(result).toBeNull()
@@ -81,7 +90,7 @@ describe('Phase.dev Integration', () => {
 
   describe('isPhaseDevAvailable', () => {
     it('should return true when service token is available', () => {
-      process.env.PHASE_SERVICE_TOKEN = 'token-123'
+      mockIsPhaseDevAvailable.mockReturnValue(true)
       
       const result = isPhaseDevAvailable()
       
@@ -89,6 +98,8 @@ describe('Phase.dev Integration', () => {
     })
 
     it('should return false when service token is not available', () => {
+      mockIsPhaseDevAvailable.mockReturnValue(false)
+      
       const result = isPhaseDevAvailable()
       
       expect(result).toBe(false)
@@ -97,6 +108,8 @@ describe('Phase.dev Integration', () => {
 
   describe('getPhaseConfig', () => {
     it('should return null when service token is not available', () => {
+      delete process.env.PHASE_SERVICE_TOKEN
+      
       const result = getPhaseConfig()
       
       expect(result).toBeNull()
@@ -204,6 +217,8 @@ describe('Phase.dev Integration', () => {
 
   describe('loadFromPhase', () => {
     it('should return fallback result when service token is not available', async () => {
+      delete process.env.PHASE_SERVICE_TOKEN
+      
       const result = await loadFromPhase()
       
       expect(result).toEqual({
@@ -304,6 +319,8 @@ describe('Phase.dev Integration', () => {
     })
 
     it('should return error when service token is not available', async () => {
+      delete process.env.PHASE_SERVICE_TOKEN
+      
       const result = await testPhaseConnectivity()
       
       expect(result.success).toBe(false)

@@ -62,12 +62,32 @@ const mockOrganizationContext = {
   })
 }
 
-// Mock the useOrganization hook
+// Mock the useOrganization hook and derived hooks
 vi.mock('../organization-context', async () => {
   const actual = await vi.importActual('../organization-context')
   return {
     ...actual,
-    useOrganization: () => mockOrganizationContext
+    useOrganization: () => mockOrganizationContext,
+    useCurrentOrganizationDetails: () => ({
+      organization: mockOrganizationContext.organization,
+      membership: mockOrganizationContext.membership,
+      isLoading: mockOrganizationContext.isLoading
+    }),
+    useOrganizationPermissions: () => ({
+      roles: mockOrganizationContext.roles,
+      permissions: mockOrganizationContext.permissions,
+      canAccess: mockOrganizationContext.canAccess,
+      hasPermission: mockOrganizationContext.hasPermission,
+      hasRole: mockOrganizationContext.hasRole,
+      hasAnyRole: mockOrganizationContext.hasAnyRole
+    }),
+    useOrganizationActions: () => ({
+      switchOrganization: mockOrganizationContext.switchOrganization,
+      refreshOrganizationData: mockOrganizationContext.refreshOrganizationData
+    }),
+    useResourceFiltering: () => ({
+      filterResourcesByPermission: mockOrganizationContext.filterResourcesByPermission
+    })
   }
 })
 

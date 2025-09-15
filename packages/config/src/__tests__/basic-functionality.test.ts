@@ -6,12 +6,10 @@ import {
   getOptionalEnvVar,
   getAllEnvVars,
   clearEnvCache,
-  reloadEnvironmentVars
-} from '../env'
-import {
+  reloadEnvironmentVars,
   getPhaseServiceToken,
   isPhaseDevAvailable
-} from '../phase'
+} from '../env'
 
 describe('Basic Environment Variable Functionality', () => {
   const originalEnv = process.env

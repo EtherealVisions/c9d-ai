@@ -150,9 +150,9 @@ export function UserProfile({ className }: UserProfileProps) {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8" data-testid="user-profile-loading">
         <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" data-testid="loading-spinner" />
           <p className="mt-2 text-sm text-muted-foreground">Loading user profile...</p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export function UserProfile({ className }: UserProfileProps) {
   }
 
   return (
-    <div className={className}>
+    <div className={className} data-testid="user-profile">
       {/* Tab Navigation */}
       <div className="mb-6 border-b">
         <div role="tablist" className="-mb-px flex space-x-8" aria-label="Account settings tabs">
@@ -175,6 +175,7 @@ export function UserProfile({ className }: UserProfileProps) {
               aria-selected={activeTab === tab.id}
               aria-controls={`${tab.id}-panel`}
               id={`${tab.id}-tab`}
+              data-testid={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id as any)}
               className={`group inline-flex items-center border-b-2 px-1 py-4 text-sm font-medium ${
                 activeTab === tab.id
@@ -203,7 +204,7 @@ export function UserProfile({ className }: UserProfileProps) {
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div role="tabpanel" id="profile-panel" aria-labelledby="profile-tab">
+        <div role="tabpanel" id="profile-panel" aria-labelledby="profile-tab" data-testid="profile-panel">
         <Card>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>

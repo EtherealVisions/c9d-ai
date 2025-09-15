@@ -21,10 +21,12 @@ import {
   loadFromPhase,
   clearPhaseCache,
   testPhaseConnectivity,
-  getPhaseConfig,
+  getPhaseConfig
+} from '../phase'
+import {
   isPhaseDevAvailable,
   getPhaseServiceToken
-} from '../phase'
+} from '../env'
 
 describe('Edge Cases and Error Handling', () => {
   const originalEnv = process.env

@@ -353,7 +353,7 @@ describe('OrganizationProvider', () => {
         code: 'ORGANIZATION_NOT_FOUND'
       })
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
 
       render(
         <OrganizationProvider>
@@ -441,7 +441,7 @@ describe('OrganizationProvider', () => {
       mockRbacService.getUserRoles.mockRejectedValue(new Error('RBAC service error'))
       mockRbacService.getUserPermissions.mockRejectedValue(new Error('RBAC service error'))
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
 
       render(
         <OrganizationProvider>
@@ -459,7 +459,7 @@ describe('OrganizationProvider', () => {
     })
 
     it('should throw error when used outside provider', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
 
       expect(() => {
         render(<TestComponent />)

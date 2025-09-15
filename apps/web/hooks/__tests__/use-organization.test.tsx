@@ -443,7 +443,7 @@ describe('Organization Hooks', () => {
       render(<OrganizationMetadataTestComponent />)
 
       expect(screen.getByTestId('metadata-key')).toHaveTextContent('default')
-      expect(screen.getByTestId('setting-theme')).toHaveTextContent('default')
+      expect(screen.getByTestId('setting-theme')).toHaveTextContent('light')
       expect(screen.getByTestId('metadata-count')).toHaveTextContent('0')
       expect(screen.getByTestId('settings-count')).toHaveTextContent('0')
     })

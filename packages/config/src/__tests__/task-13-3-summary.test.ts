@@ -17,7 +17,7 @@ import {
 import {
   getPhaseServiceToken,
   isPhaseDevAvailable
-} from '../phase'
+} from '../env'
 import {
   loadFromPhase,
   clearPhaseCache,
