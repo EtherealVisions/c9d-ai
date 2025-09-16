@@ -5,34 +5,69 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { 
-  setupComprehensiveMocks,
   createMockUser,
   createMockOrganization,
   createMockMembership,
-  createMockRole,
-  setupSuccessfulServiceResponses
+  createMockRole
 } from '../setup/comprehensive-mocks'
 
-// Setup mocks before importing services
-setupComprehensiveMocks()
+// Mock the services directly
+const mockUserService = {
+  getUser: vi.fn(),
+  updateUserProfile: vi.fn(),
+  createUser: vi.fn(),
+  deleteUser: vi.fn()
+}
+
+const mockOrganizationService = {
+  createOrganization: vi.fn(),
+  getOrganization: vi.fn(),
+  updateOrganization: vi.fn(),
+  getUserOrganizations: vi.fn()
+}
+
+const mockMembershipService = {
+  inviteUser: vi.fn(),
+  updateMemberRole: vi.fn(),
+  getOrganizationMembers: vi.fn()
+}
+
+const mockRbacService = {
+  hasPermission: vi.fn(),
+  getUserRoles: vi.fn(),
+  assignRole: vi.fn()
+}
+
+// Mock the service modules
+vi.mock('@/lib/services/user-service', () => ({
+  UserService: vi.fn().mockImplementation(() => mockUserService),
+  userService: mockUserService
+}))
+
+vi.mock('@/lib/services/organization-service', () => ({
+  OrganizationService: vi.fn().mockImplementation(() => mockOrganizationService),
+  organizationService: mockOrganizationService
+}))
+
+vi.mock('@/lib/services/membership-service', () => ({
+  MembershipService: vi.fn().mockImplementation(() => mockMembershipService),
+  membershipService: mockMembershipService
+}))
+
+vi.mock('@/lib/services/rbac-service', () => ({
+  RBACService: vi.fn().mockImplementation(() => mockRbacService),
+  rbacService: mockRbacService
+}))
 
 // Import services after mocks are set up
-import { userService } from '@/lib/services/user-service'
-import { organizationService } from '@/lib/services/organization-service'
-import { membershipService } from '@/lib/services/membership-service'
-import { rbacService } from '@/lib/services/rbac-service'
+const userService = mockUserService
+const organizationService = mockOrganizationService
+const membershipService = mockMembershipService
+const rbacService = mockRbacService
 
 describe('Fixed Authentication and Authorization Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    
-    // Setup default successful responses
-    setupSuccessfulServiceResponses({
-      userService,
-      organizationService,
-      membershipService,
-      rbacService
-    })
   })
 
   afterEach(() => {
@@ -42,27 +77,27 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
   describe('User Service Integration', () => {
     it('should get current user successfully', async () => {
       const mockUser = createMockUser()
-      userService.getCurrentUser.mockResolvedValue({
-        success: true,
-        data: mockUser
+      userService.getUser.mockResolvedValue({
+        data: mockUser,
+        error: undefined
       })
 
-      const result = await userService.getCurrentUser()
+      const result = await userService.getUser("test-user-id")
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data).toEqual(mockUser)
     })
 
     it('should handle user not found', async () => {
-      userService.getCurrentUser.mockResolvedValue({
-        success: false,
+      userService.getUser.mockResolvedValue({
+        data: undefined,
         error: 'User not found',
         code: 'USER_NOT_FOUND'
       })
 
-      const result = await userService.getCurrentUser()
+      const result = await userService.getUser("test-user-id")
 
-      expect(result.success).toBe(false)
+      expect(result.data).toBeUndefined()
       expect(result.error).toBe('User not found')
     })
 
@@ -72,13 +107,13 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const updatedUser = createMockUser({ firstName: 'Jane', lastName: 'Smith' })
 
       userService.updateUserProfile.mockResolvedValue({
-        success: true,
-        data: updatedUser
+        data: updatedUser,
+        error: undefined
       })
 
       const result = await userService.updateUserProfile(userId, updateData)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.firstName).toBe('Jane')
       expect(result.data?.lastName).toBe('Smith')
     })
@@ -94,13 +129,13 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const createdOrg = createMockOrganization(orgData)
 
       organizationService.createOrganization.mockResolvedValue({
-        success: true,
-        data: createdOrg
+        data: createdOrg,
+        error: undefined
       })
 
-      const result = await organizationService.createOrganization(orgData, userId)
+      const result = await organizationService.createOrganization(userId, orgData)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.name).toBe(orgData.name)
     })
 
@@ -110,13 +145,13 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const organization = createMockOrganization({ id: organizationId })
 
       organizationService.getOrganization.mockResolvedValue({
-        success: true,
-        data: organization
+        data: organization,
+        error: undefined
       })
 
       const result = await organizationService.getOrganization(organizationId, userId)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.id).toBe(organizationId)
     })
 
@@ -128,13 +163,13 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       ]
 
       organizationService.getUserOrganizations.mockResolvedValue({
-        success: true,
-        data: organizations
+        data: organizations,
+        error: undefined
       })
 
       const result = await organizationService.getUserOrganizations(userId)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data).toHaveLength(2)
     })
   })
@@ -189,51 +224,59 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const updatedMembership = createMockMembership({ roleId: newRoleId })
 
       membershipService.updateMemberRole.mockResolvedValue({
-        success: true,
-        data: updatedMembership
+        data: updatedMembership,
+        error: undefined
       })
 
-      const result = await membershipService.updateMemberRole(organizationId, userId, newRoleId)
+      const result = await membershipService.updateMemberRole(userId, organizationId, newRoleId, 'admin-user-id')
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.roleId).toBe(newRoleId)
     })
 
     it('should invite user to organization', async () => {
       const organizationId = 'org-123'
       const inviteData = {
+        organizationId: 'org-123',
         email: 'newuser@example.com',
         roleId: 'role-member',
         invitedBy: 'user-123'
       }
 
       membershipService.inviteUser.mockResolvedValue({
-        success: true,
         data: {
           id: 'invitation-123',
-          ...inviteData,
-          status: 'pending'
-        }
+          organizationId: 'org-123',
+          email: inviteData.email,
+          roleId: inviteData.roleId,
+          invitedBy: inviteData.invitedBy,
+          token: 'invitation-token-123',
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        error: undefined
       })
 
       const result = await membershipService.inviteUser(inviteData)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.email).toBe(inviteData.email)
     })
   })
 
   describe('Error Handling', () => {
     it('should handle service errors gracefully', async () => {
-      userService.getCurrentUser.mockResolvedValue({
-        success: false,
+      userService.getUser.mockResolvedValue({
+        data: undefined,
         error: 'Database connection failed',
         code: 'DATABASE_ERROR'
       })
 
-      const result = await userService.getCurrentUser()
+      const result = await userService.getUser("test-user-id")
 
-      expect(result.success).toBe(false)
+      expect(result.data).toBeUndefined()
       expect(result.error).toBe('Database connection failed')
       expect(result.code).toBe('DATABASE_ERROR')
     })
@@ -242,14 +285,14 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const invalidOrgData = { name: '' }
 
       organizationService.createOrganization.mockResolvedValue({
-        success: false,
+        data: undefined,
         error: 'Organization name is required',
         code: 'VALIDATION_ERROR'
       })
 
-      const result = await organizationService.createOrganization(invalidOrgData, 'user-123')
+      const result = await organizationService.createOrganization('user-123', invalidOrgData)
 
-      expect(result.success).toBe(false)
+      expect(result.data).toBeUndefined()
       expect(result.error).toBe('Organization name is required')
     })
 
@@ -258,14 +301,14 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       const userId = 'user-123'
 
       organizationService.getOrganization.mockResolvedValue({
-        success: false,
+        data: undefined,
         error: 'Organization not found',
         code: 'NOT_FOUND'
       })
 
       const result = await organizationService.getOrganization(organizationId, userId)
 
-      expect(result.success).toBe(false)
+      expect(result.data).toBeUndefined()
       expect(result.error).toBe('Organization not found')
     })
   })
@@ -280,14 +323,14 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
       }
 
       // Mock user creation
-      userService.getCurrentUser.mockResolvedValue({
-        success: true,
-        data: createMockUser(userData)
+      userService.getUser.mockResolvedValue({
+        data: createMockUser(userData),
+        error: undefined
       })
 
-      const result = await userService.getCurrentUser()
+      const result = await userService.getUser("test-user-id")
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.email).toBe(userData.email)
     })
 
@@ -300,13 +343,13 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
 
       // Mock organization creation
       organizationService.createOrganization.mockResolvedValue({
-        success: true,
-        data: createMockOrganization(orgData)
+        data: createMockOrganization(orgData),
+        error: undefined
       })
 
-      const result = await organizationService.createOrganization(orgData, userId)
+      const result = await organizationService.createOrganization(userId, orgData)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.name).toBe(orgData.name)
     })
 
@@ -320,17 +363,24 @@ describe('Fixed Authentication and Authorization Integration Tests', () => {
 
       // Mock invitation creation
       membershipService.inviteUser.mockResolvedValue({
-        success: true,
         data: {
           id: 'invitation-123',
-          ...inviteData,
-          status: 'pending'
-        }
+          organizationId: inviteData.organizationId,
+          email: inviteData.email,
+          roleId: inviteData.roleId,
+          invitedBy: inviteData.invitedBy,
+          token: 'invitation-token-123',
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        error: undefined
       })
 
       const result = await membershipService.inviteUser(inviteData)
 
-      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
       expect(result.data?.email).toBe(inviteData.email)
       expect(result.data?.status).toBe('pending')
     })

@@ -21,7 +21,7 @@ vi.mock('next/server', () => ({
   NextRequest: vi.fn(),
   NextResponse: {
     json: vi.fn((data, options) => ({
-      data,
+      json: async () => data,
       status: options?.status || 200,
       headers: options?.headers || {},
     })),

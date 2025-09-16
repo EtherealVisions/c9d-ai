@@ -39,7 +39,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           email: 'test@example.com',
           firstName: 'John',
           lastName: 'Doe',
-          avatarUrl: null,
+          avatarUrl: undefined,
           preferences: {},
           createdAt: new Date(),
           updatedAt: new Date()
@@ -82,7 +82,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           email: 'test@example.com',
           firstName: 'Jane',
           lastName: 'Smith',
-          avatarUrl: null,
+          avatarUrl: undefined,
           preferences: {},
           createdAt: new Date(),
           updatedAt: new Date()
@@ -112,7 +112,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           name: orgData.name,
           description: orgData.description,
           slug: 'test-organization',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -137,7 +137,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           name: 'Test Organization',
           description: 'A test organization',
           slug: 'test-organization',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -161,8 +161,8 @@ describe('Authentication and Authorization Integration Tests', () => {
             id: 'org-1',
             name: 'Organization 1',
             slug: 'org-1',
-            description: null,
-            avatarUrl: null,
+            description: undefined,
+            avatarUrl: undefined,
             metadata: {},
             settings: {},
             createdAt: new Date(),
@@ -172,8 +172,8 @@ describe('Authentication and Authorization Integration Tests', () => {
             id: 'org-2',
             name: 'Organization 2',
             slug: 'org-2',
-            description: null,
-            avatarUrl: null,
+            description: undefined,
+            avatarUrl: undefined,
             metadata: {},
             settings: {},
             createdAt: new Date(),
@@ -219,26 +219,24 @@ describe('Authentication and Authorization Integration Tests', () => {
       const userId = 'user-123'
       const organizationId = 'org-456'
 
-      vi.spyOn(rbacService, 'getUserRoles').mockResolvedValue({
-        data: [
-          {
-            id: 'role-admin',
-            name: 'Admin',
-            description: 'Administrator role',
-            organizationId,
-            isSystemRole: false,
-            permissions: ['organization.read', 'organization.write', 'members.manage'],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]
-      })
+      vi.spyOn(rbacService, 'getUserRoles').mockResolvedValue([
+        {
+          id: 'role-admin',
+          name: 'Admin',
+          description: 'Administrator role',
+          organizationId,
+          isSystemRole: false,
+          permissions: ['organization.read', 'organization.write', 'members.manage'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ])
 
       const result = await rbacService.getUserRoles(userId, organizationId)
 
-      expect(result.data).toBeDefined()
-      expect(result.data).toHaveLength(1)
-      expect(result.data?.[0].name).toBe('Admin')
+      expect(result).toBeDefined()
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('Admin')
     })
   })
 
@@ -261,7 +259,7 @@ describe('Authentication and Authorization Integration Tests', () => {
         }
       })
 
-      const result = await membershipService.updateMemberRole(organizationId, userId, newRoleId)
+      const result = await membershipService.updateMemberRole(userId, organizationId, newRoleId, 'admin-user-id')
 
       expect(result.data).toBeDefined()
       expect(result.data?.roleId).toBe(newRoleId)
@@ -288,7 +286,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         }
       })
 
-      const result = await membershipService.inviteUser(organizationId, email, roleId)
+      const result = await membershipService.inviteUser({
+        organizationId,
+        email,
+        roleId,
+        invitedBy: 'admin-user-id'
+      })
 
       expect(result.data).toBeDefined()
       expect(result.data?.email).toBe(email)
@@ -365,7 +368,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           email: 'newuser@example.com',
           firstName: 'John',
           lastName: 'Doe',
-          avatarUrl: null,
+          avatarUrl: undefined,
           preferences: {},
           createdAt: new Date(),
           updatedAt: new Date()
@@ -393,7 +396,7 @@ describe('Authentication and Authorization Integration Tests', () => {
           name: orgData.name,
           description: orgData.description,
           slug: 'new-organization',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -430,7 +433,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         }
       })
 
-      const result = await membershipService.inviteUser(organizationId, email, roleId)
+      const result = await membershipService.inviteUser({
+        organizationId,
+        email,
+        roleId,
+        invitedBy: 'admin-user-id'
+      })
 
       expect(result.data).toBeDefined()
       expect(result.data?.email).toBe(email)

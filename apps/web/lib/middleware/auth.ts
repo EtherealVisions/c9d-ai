@@ -1,7 +1,8 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { userSyncService } from '../services/user-sync'
-import type { User } from '../database'
+import { userService } from '../services/user-service'
+import type { User } from '../contexts/auth-context'
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: User
@@ -89,13 +90,14 @@ export function withUserSync(
     if (!req.user) {
       try {
         // Try to get user from Clerk and sync
-        const { currentUser } = await auth()
-        if (currentUser) {
-          const syncResult = await userSyncService.syncUser(currentUser)
-          if (syncResult.error) {
-            throw new Error(syncResult.error)
+        const { userId } = await auth()
+        if (userId) {
+          // Get user from our database
+          const userResult = await userService.getUserByClerkId(userId)
+          if (userResult.error) {
+            throw new Error(userResult.error)
           }
-          req.user = syncResult.user
+          req.user = userResult.data
         } else {
           throw new Error('Unable to fetch user from Clerk')
         }

@@ -1,8 +1,5 @@
 // Environment configuration utilities with comprehensive .env file support
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { config as dotenvConfig } from 'dotenv';
-import { expand as dotenvExpand } from 'dotenv-expand';
+// Note: File system operations are only available in Node.js environment
 // Note: getPhaseServiceToken and isPhaseDevAvailable are now defined in this file
 // Note: Phase.dev integration is handled separately in phase.ts to avoid circular dependencies
 
@@ -69,71 +66,87 @@ function getEnvFilesToLoad(nodeEnv: string): string[] {
 }
 
 /**
- * Load environment variables from .env files with comprehensive support
+ * Load environment variables from .env files with comprehensive support (server-side only)
  * @param rootPath Root path to search for .env files
  * @returns Result object with loaded config, files, and errors
  */
-function loadEnvFiles(rootPath: string = process.cwd()): EnvLoadResult {
-  const nodeEnv = process.env.NODE_ENV || 'development';
-  const envFiles = getEnvFilesToLoad(nodeEnv);
-  
+async function loadEnvFiles(rootPath: string = process.cwd()): Promise<EnvLoadResult> {
   const result: EnvLoadResult = {
     config: {},
     loadedFiles: [],
     errors: []
   };
 
-  // Load files in order (later files override earlier ones)
-  for (const envFile of envFiles) {
-    const envPath = join(rootPath, envFile);
-    
-    if (existsSync(envPath)) {
-      try {
-        // Use dotenv to parse the file without affecting process.env
-        const parsed = dotenvConfig({ path: envPath, processEnv: {} });
-        
-        if (parsed.error) {
-          result.errors.push({
-            file: envFile,
-            error: parsed.error.message
-          });
-          continue;
-        }
-        
-        if (parsed.parsed) {
-          // First, merge the parsed values into our result config
-          Object.assign(result.config, parsed.parsed);
+  // Only run on server-side (Node.js environment)
+  if (typeof window !== 'undefined') {
+    console.warn('[Config] File system access not available in browser environment');
+    return result;
+  }
+
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const envFiles = getEnvFilesToLoad(nodeEnv);
+
+  try {
+    // Dynamic imports to avoid bundling in client code
+    const fs = await import('fs');
+    const path = await import('path');
+    const { config: dotenvConfig } = await import('dotenv');
+    const { expand: dotenvExpand } = await import('dotenv-expand');
+
+    // Load files in order (later files override earlier ones)
+    for (const envFile of envFiles) {
+      const envPath = path.join(rootPath, envFile);
+      
+      if (fs.existsSync(envPath)) {
+        try {
+          // Use dotenv to parse the file without affecting process.env
+          const parsed = dotenvConfig({ path: envPath, processEnv: {} });
           
-          // Then expand variables using the complete context
-          // This ensures that variables can reference previously loaded values
-          const expanded = dotenvExpand({ parsed: result.config, processEnv: {} });
-          
-          if (expanded.error) {
+          if (parsed.error) {
             result.errors.push({
               file: envFile,
-              error: expanded.error.message
+              error: parsed.error.message
             });
             continue;
           }
           
-          // Update result config with expanded values
-          if (expanded.parsed) {
-            result.config = expanded.parsed;
+          if (parsed.parsed) {
+            // First, merge the parsed values into our result config
+            Object.assign(result.config, parsed.parsed);
+            
+            // Then expand variables using the complete context
+            // This ensures that variables can reference previously loaded values
+            const expanded = dotenvExpand({ parsed: result.config, processEnv: {} });
+            
+            if (expanded.error) {
+              result.errors.push({
+                file: envFile,
+                error: expanded.error.message
+              });
+              continue;
+            }
+            
+            // Update result config with expanded values
+            if (expanded.parsed) {
+              result.config = expanded.parsed;
+            }
+            
+            result.loadedFiles.push(envFile);
+            
+            console.log(`[Config] Loaded ${Object.keys(parsed.parsed || {}).length} variables from ${envFile}`);
           }
-          
-          result.loadedFiles.push(envFile);
-          
-          console.log(`[Config] Loaded ${Object.keys(parsed.parsed || {}).length} variables from ${envFile}`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push({
+            file: envFile,
+            error: errorMessage
+          });
+          console.warn(`[Config] Failed to load ${envFile}:`, errorMessage);
         }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        result.errors.push({
-          file: envFile,
-          error: errorMessage
-        });
-        console.warn(`[Config] Failed to load ${envFile}:`, errorMessage);
       }
     }
+  } catch (error) {
+    console.warn('[Config] File system modules not available, skipping .env file loading');
   }
 
   return result;
@@ -145,7 +158,7 @@ function loadEnvFiles(rootPath: string = process.cwd()): EnvLoadResult {
  * @param rootPath Root path to search for .env files and package.json
  * @returns Combined environment variables
  */
-function loadAllEnvVars(forceReload: boolean = false, rootPath?: string): EnvConfig {
+async function loadAllEnvVars(forceReload: boolean = false, rootPath?: string): Promise<EnvConfig> {
   const now = Date.now();
   
   // Return cached values if still valid
@@ -154,7 +167,7 @@ function loadAllEnvVars(forceReload: boolean = false, rootPath?: string): EnvCon
   }
 
   // Load from .env files first (lowest priority among file sources)
-  const fileResult = loadEnvFiles(rootPath);
+  const fileResult = await loadEnvFiles(rootPath);
   
   // Start with file-based environment variables
   const mergedEnv: EnvConfig = { ...fileResult.config };
@@ -237,15 +250,15 @@ function loadAllEnvVars(forceReload: boolean = false, rootPath?: string): EnvCon
 }
 
 /**
- * Get an environment variable with fallback support
+ * Get an environment variable with fallback support (synchronous - uses process.env only)
  * @param key Environment variable key
  * @param defaultValue Default value if not found
  * @returns Environment variable value
  * @throws Error if required variable is missing
  */
 export const getEnvVar = (key: string, defaultValue?: string): string => {
-  const allEnv = loadAllEnvVars();
-  const value = allEnv[key];
+  // Use process.env directly for synchronous access
+  const value = process.env[key];
   
   if (!value && defaultValue === undefined) {
     throw new Error(`Environment variable ${key} is required but not found`);
@@ -255,46 +268,52 @@ export const getEnvVar = (key: string, defaultValue?: string): string => {
 };
 
 /**
- * Get an optional environment variable
+ * Get an optional environment variable (synchronous - uses process.env only)
  * @param key Environment variable key
  * @param defaultValue Default value if not found
  * @returns Environment variable value or undefined
  */
 export const getOptionalEnvVar = (key: string, defaultValue?: string): string | undefined => {
-  const allEnv = loadAllEnvVars();
-  return allEnv[key] || defaultValue;
+  // Use process.env directly for synchronous access
+  return process.env[key] || defaultValue;
 };
 
 /**
- * Get all environment variables
+ * Get all environment variables (async - includes file loading)
  * @param forceReload Force reload from files
  * @returns All environment variables
  */
-export const getAllEnvVars = (forceReload: boolean = false): EnvConfig => {
-  return loadAllEnvVars(forceReload);
+export const getAllEnvVars = async (forceReload: boolean = false): Promise<EnvConfig> => {
+  return await loadAllEnvVars(forceReload);
 };
 
 /**
- * Check if an environment variable exists
+ * Get all environment variables synchronously (process.env only)
+ * @returns Process environment variables
+ */
+export const getAllEnvVarsSync = (): EnvConfig => {
+  return { ...process.env } as EnvConfig;
+};
+
+/**
+ * Check if an environment variable exists (synchronous - uses process.env only)
  * @param key Environment variable key
  * @returns True if the variable exists
  */
 export const hasEnvVar = (key: string): boolean => {
-  const allEnv = loadAllEnvVars();
-  return key in allEnv && allEnv[key] !== undefined && allEnv[key] !== '';
+  return key in process.env && process.env[key] !== undefined && process.env[key] !== '';
 };
 
 /**
- * Get environment variables matching a prefix
+ * Get environment variables matching a prefix (synchronous - uses process.env only)
  * @param prefix Variable name prefix
  * @returns Object with matching environment variables
  */
 export const getEnvVarsWithPrefix = (prefix: string): EnvConfig => {
-  const allEnv = loadAllEnvVars();
   const filtered: EnvConfig = {};
   
-  for (const [key, value] of Object.entries(allEnv)) {
-    if (key.startsWith(prefix)) {
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith(prefix) && value !== undefined) {
       filtered[key] = value;
     }
   }
@@ -303,16 +322,16 @@ export const getEnvVarsWithPrefix = (prefix: string): EnvConfig => {
 };
 
 /**
- * Validate required environment variables
+ * Validate required environment variables (synchronous - uses process.env only)
  * @param requiredVars Array of required variable names
  * @throws Error if any required variables are missing
  */
 export const validateRequiredEnvVars = (requiredVars: string[]): void => {
-  const allEnv = loadAllEnvVars();
   const missing: string[] = [];
   
   for (const varName of requiredVars) {
-    if (!allEnv[varName] || allEnv[varName].trim() === '') {
+    const value = process.env[varName];
+    if (!value || value.trim() === '') {
       missing.push(varName);
     }
   }
@@ -331,12 +350,11 @@ export const clearEnvCache = (): void => {
 };
 
 /**
- * Get Phase.dev service token with comprehensive fallback support
+ * Get Phase.dev service token (synchronous - uses process.env only)
  * @returns Phase.dev service token or null if not available
  */
 export const getPhaseServiceToken = (): string | null => {
-  const allEnv = loadAllEnvVars();
-  return allEnv.PHASE_SERVICE_TOKEN || null;
+  return process.env.PHASE_SERVICE_TOKEN || null;
 };
 
 /**
@@ -357,10 +375,10 @@ export {
 } from './phase';
 
 /**
- * Get environment loading diagnostics
+ * Get environment loading diagnostics (async)
  * @returns Information about loaded files, Phase.dev status, and any errors
  */
-export const getEnvLoadingDiagnostics = (): {
+export const getEnvLoadingDiagnostics = async (): Promise<{
   loadedFiles: string[];
   errors: Array<{ file: string; error: string }>;
   cacheAge: number;
@@ -372,8 +390,8 @@ export const getEnvLoadingDiagnostics = (): {
     error?: string;
     source?: 'phase.dev' | 'fallback';
   };
-} => {
-  const allEnv = loadAllEnvVars();
+}> => {
+  const allEnv = await loadAllEnvVars();
   const now = Date.now();
   
   return {
@@ -487,7 +505,7 @@ export const getEnvVarAsArray = (key: string, defaultValue?: string[]): string[]
 };
 
 /**
- * Get environment-specific configuration
+ * Get environment-specific configuration (synchronous)
  * @returns Environment configuration object
  */
 export const getEnvironmentConfig = () => {
@@ -504,18 +522,31 @@ export const getEnvironmentConfig = () => {
     isTest,
     isStaging,
     phaseServiceToken: getPhaseServiceToken(),
-    isPhaseDevAvailable: isPhaseDevAvailable(),
-    diagnostics: getEnvLoadingDiagnostics()
+    isPhaseDevAvailable: isPhaseDevAvailable()
   };
 };
 
 /**
- * Reload environment variables from files
+ * Get environment-specific configuration with diagnostics (async)
+ * @returns Environment configuration object with diagnostics
+ */
+export const getEnvironmentConfigWithDiagnostics = async () => {
+  const config = getEnvironmentConfig();
+  const diagnostics = await getEnvLoadingDiagnostics();
+  
+  return {
+    ...config,
+    diagnostics
+  };
+};
+
+/**
+ * Reload environment variables from files (async)
  * @param rootPath Optional root path to search for .env files
  * @returns Reloaded environment configuration
  */
-export const reloadEnvironmentVars = (rootPath?: string): EnvConfig => {
+export const reloadEnvironmentVars = async (rootPath?: string): Promise<EnvConfig> => {
   // Clear cache first to ensure fresh load
   clearEnvCache();
-  return loadAllEnvVars(true, rootPath);
+  return await loadAllEnvVars(true, rootPath);
 };

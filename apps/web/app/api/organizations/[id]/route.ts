@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { organizationService } from '@/lib/services/organization-service'
 import { securityAuditService } from '@/lib/services/security-audit-service'
-import { tenantIsolation } from '@/lib/middleware/tenant-isolation'
+import { tenantIsolation, type TenantAwareRequest } from '@/lib/middleware/tenant-isolation'
 import { validateUpdateOrganization } from '@/lib/models/schemas'
 import { ZodError } from 'zod'
 
@@ -15,9 +15,9 @@ import { ZodError } from 'zod'
  * Get organization by ID with tenant isolation
  */
 export const GET = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const params = { id: request.url.split('/').pop()! }
   try {
     if (!request.user) {
       return NextResponse.json(
@@ -90,9 +90,9 @@ export const GET = tenantIsolation.withOrganization()(async (
  * Update organization by ID with tenant isolation
  */
 export const PUT = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const params = { id: request.url.split('/').pop()! }
   try {
     if (!request.user) {
       return NextResponse.json(
@@ -182,9 +182,9 @@ export const PUT = tenantIsolation.withOrganization()(async (
  * Delete organization by ID (soft delete) with tenant isolation
  */
 export const DELETE = tenantIsolation.withOrganization()(async (
-  request,
-  { params }: { params: { id: string } }
+  request: TenantAwareRequest
 ) => {
+  const params = { id: request.url.split('/').pop()! }
   try {
     if (!request.user) {
       return NextResponse.json(

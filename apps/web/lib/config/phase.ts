@@ -497,12 +497,19 @@ async function loadEnvFiles(rootPath: string = process.cwd()): Promise<Record<st
 }
 
 /**
- * Manually load environment variables from .env files
+ * Manually load environment variables from .env files (server-side only)
  * @param rootPath Root path to search for .env files
  * @returns Parsed environment variables
  */
 async function loadEnvFilesManually(rootPath: string): Promise<Record<string, string>> {
   const env: Record<string, string> = {};
+  
+  // Only run on server-side (Node.js environment)
+  if (typeof window !== 'undefined') {
+    console.warn('[Phase.dev] File system access not available in browser environment');
+    return env;
+  }
+  
   const nodeEnv = process.env.NODE_ENV || 'development';
   
   // Define the order of .env files to load (later files override earlier ones)
@@ -512,22 +519,29 @@ async function loadEnvFilesManually(rootPath: string): Promise<Record<string, st
     '.env.local'
   ];
 
-  // Use require for Node.js modules to avoid webpack issues
-  const fs = require('fs');
-  const path = require('path');
+  // Skip file system operations in browser environment
+  if (typeof window !== 'undefined') {
+    console.warn('[Phase.dev] File system access not available in browser environment');
+    return env;
+  }
 
-  for (const envFile of envFiles) {
-    const envPath = path.join(rootPath, envFile);
-    if (fs.existsSync(envPath)) {
-      try {
-        const envContent = fs.readFileSync(envPath, 'utf8');
-        const parsed = parseEnvFileContent(envContent);
-        Object.assign(env, parsed);
-        console.log(`[Phase.dev] Loaded ${Object.keys(parsed).length} variables from ${envFile}`);
-      } catch (error) {
-        console.warn(`[Phase.dev] Failed to load ${envFile}:`, error instanceof Error ? error.message : 'Unknown error');
-      }
+  // Only load files on server-side - use fallback for client-side builds
+  try {
+    // Check if we're in a build environment where fs might not be available
+    if (typeof process === 'undefined' || !process.cwd) {
+      console.warn('[Phase.dev] Process not available, skipping file loading');
+      return env;
     }
+
+    // Use shared config package if available
+    const { getAllEnvVars } = await import('@c9d/config');
+    const allVars = await getAllEnvVars(true);
+    Object.assign(env, allVars);
+    console.log(`[Phase.dev] Loaded ${Object.keys(allVars).length} variables from shared config`);
+  } catch (error) {
+    console.warn('[Phase.dev] Shared config package not available, using process.env only');
+    // Fallback to process.env only
+    Object.assign(env, process.env);
   }
 
   return env;

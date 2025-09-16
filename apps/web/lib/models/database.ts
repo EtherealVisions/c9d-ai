@@ -220,7 +220,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformUserRow(data as UserRow)
+    if (!data) {
+      throw new Error('Failed to create user')
+    }
+    return transformUserRow(data)
   }
 
   async updateUser(id: string, userData: Partial<Omit<User, 'id' | 'clerkUserId' | 'createdAt' | 'updatedAt'>>): Promise<User> {
@@ -241,7 +244,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformUserRow(data as UserRow)
+    if (!data) {
+      throw new Error('User not found for update')
+    }
+    return transformUserRow(data)
   }
 
   async getUserWithMemberships(id: string): Promise<UserWithMemberships | null> {
@@ -328,7 +334,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformOrganizationRow(data as OrganizationRow)
+    if (!data) {
+      throw new Error('Failed to create organization')
+    }
+    return transformOrganizationRow(data)
   }
 
   async updateOrganization(id: string, orgData: Partial<Omit<Organization, 'id' | 'slug' | 'createdAt' | 'updatedAt'>>, userId?: string): Promise<Organization> {
@@ -357,7 +366,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformOrganizationRow(data as OrganizationRow)
+    if (!data) {
+      throw new Error('Organization not found for update')
+    }
+    return transformOrganizationRow(data)
   }
 
   async getOrganizationWithMembers(id: string, userId?: string): Promise<OrganizationWithMembers | null> {
@@ -451,7 +463,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformMembershipRow(data as MembershipRow)
+    if (!data) {
+      throw new Error('Failed to create membership')
+    }
+    return transformMembershipRow(data)
   }
 
   async updateMembership(userId: string, organizationId: string, membershipData: Partial<Pick<Membership, 'roleId' | 'status'>>): Promise<Membership> {
@@ -470,7 +485,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformMembershipRow(data as MembershipRow)
+    if (!data) {
+      throw new Error('Membership not found for update')
+    }
+    return transformMembershipRow(data)
   }
 
   async deleteMembership(userId: string, organizationId: string): Promise<void> {
@@ -524,7 +542,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformRoleRow(data as RoleRow)
+    if (!data) {
+      throw new Error('Failed to create role')
+    }
+    return transformRoleRow(data)
   }
 
   // Permission operations
@@ -551,7 +572,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformPermissionRow(data as PermissionRow)
+    if (!data) {
+      throw new Error('Failed to create permission')
+    }
+    return transformPermissionRow(data)
   }
 
   // Invitation operations
@@ -633,7 +657,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformInvitationRow(data as InvitationRow)
+    if (!data) {
+      throw new Error('Failed to create invitation')
+    }
+    return transformInvitationRow(data)
   }
 
   async updateInvitation(id: string, invitationData: Partial<Pick<Invitation, 'status'>>): Promise<Invitation> {
@@ -650,7 +677,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformInvitationRow(data as InvitationRow)
+    if (!data) {
+      throw new Error('Invitation not found for update')
+    }
+    return transformInvitationRow(data)
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -680,7 +710,10 @@ export class TypedSupabaseClient {
         .single()
     )
 
-    return transformAuditLogRow(data as AuditLogRow)
+    if (!data) {
+      throw new Error('Failed to create audit log')
+    }
+    return transformAuditLogRow(data)
   }
 
   async getAuditLogs(options: QueryOptions & { userId?: string; organizationId?: string } = {}): Promise<AuditLog[]> {

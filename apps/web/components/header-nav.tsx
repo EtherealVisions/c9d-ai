@@ -1,5 +1,6 @@
 "use client" // For DropdownMenu and potential mobile menu state
 
+import React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -95,14 +96,20 @@ export default function HeaderNav() {
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
-              size="icon"
+              asChild
               className="hidden md:inline-flex text-gray-300 hover:bg-gray-700/50 hover:text-white"
             >
-              <UserIcon className="h-5 w-5" />
-              <span className="sr-only">User account</span>
+              <Link href="/sign-in">
+                Sign In
+              </Link>
             </Button>
-            <Button className="hidden md:inline-flex bg-[#2CE4B8] text-[#0A192F] hover:bg-[#2CE4B8]/90 font-semibold">
-              Sign Up
+            <Button 
+              asChild
+              className="hidden md:inline-flex bg-[#2CE4B8] text-[#0A192F] hover:bg-[#2CE4B8]/90 font-semibold"
+            >
+              <Link href="/sign-up">
+                Sign Up
+              </Link>
             </Button>
             <div className="md:hidden">
               <Button
@@ -161,12 +168,22 @@ export default function HeaderNav() {
             <div className="border-t border-gray-700 pt-4 mt-4 space-y-2">
               <Button
                 variant="ghost"
+                asChild
                 className="w-full justify-start text-base font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white"
+                onClick={() => setMobileMenuOpen(false)}
               >
-                <UserIcon className="mr-2 h-5 w-5" /> User Account
+                <Link href="/sign-in">
+                  <UserIcon className="mr-2 h-5 w-5" /> Sign In
+                </Link>
               </Button>
-              <Button className="w-full bg-[#2CE4B8] text-[#0A192F] hover:bg-[#2CE4B8]/90 font-semibold">
-                Sign Up
+              <Button 
+                asChild
+                className="w-full bg-[#2CE4B8] text-[#0A192F] hover:bg-[#2CE4B8]/90 font-semibold"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Link href="/sign-up">
+                  Sign Up
+                </Link>
               </Button>
             </div>
           </nav>

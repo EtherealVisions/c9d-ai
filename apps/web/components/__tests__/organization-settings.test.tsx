@@ -58,7 +58,11 @@ describe('OrganizationSettings', () => {
       hasAnyRole: vi.fn(),
       filterResourcesByPermission: vi.fn()
     })
-    vi.mocked(useToast).mockReturnValue({ toast: mockToast })
+    vi.mocked(useToast).mockReturnValue({ 
+      toast: mockToast,
+      dismiss: vi.fn(),
+      toasts: []
+    })
     mockFetch.mockClear()
     mockToast.mockClear()
     mockRefreshOrganizationData.mockClear()

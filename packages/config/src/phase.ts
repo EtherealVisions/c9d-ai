@@ -1,6 +1,5 @@
 // Phase.dev integration for secure environment variable management
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+// Note: File system operations are only available in Node.js environment
 import { PhaseSDKClient, PhaseSDKResult } from './phase-sdk-client';
 import { TokenSource } from './phase-token-loader';
 
@@ -33,16 +32,26 @@ const DEFAULT_PHASE_CONFIG: Partial<PhaseConfig> = {
 };
 
 /**
- * Get Phase.dev app name from package.json
+ * Get Phase.dev app name from package.json (server-side only)
  * @param rootPath Root path to search for package.json
  * @returns Phase.dev app name or default
  */
-function getPhaseAppNameFromPackageJson(rootPath: string = process.cwd()): string {
+async function getPhaseAppNameFromPackageJson(rootPath: string = process.cwd()): Promise<string> {
+  // Only run on server-side (Node.js environment)
+  if (typeof window !== 'undefined') {
+    console.warn('[Phase.dev] File system access not available in browser environment');
+    return DEFAULT_PHASE_CONFIG.appName || 'AI.C9d.Web';
+  }
+
   try {
-    const packageJsonPath = join(rootPath, 'package.json');
+    // Dynamic imports to avoid bundling in client code
+    const fs = await import('fs');
+    const path = await import('path');
     
-    if (existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    const packageJsonPath = path.join(rootPath, 'package.json');
+    
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       
       // Check for phase.dev configuration in package.json
       if (packageJson.phase?.appName) {
@@ -109,14 +118,38 @@ function getPhaseServiceTokenInternal(): string | null {
 }
 
 /**
- * Get Phase.dev configuration
+ * Get Phase.dev configuration (async)
  * @param overrides Optional configuration overrides
  * @param rootPath Root path to search for package.json
  * @returns Phase.dev configuration object
  */
-export const getPhaseConfig = (
+export const getPhaseConfig = async (
   overrides: Partial<PhaseConfig> = {},
   rootPath?: string
+): Promise<PhaseConfig | null> => {
+  const serviceToken = getPhaseServiceTokenInternal();
+  
+  if (!serviceToken) {
+    return null;
+  }
+  
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const appName = (overrides.appName && overrides.appName.trim()) || await getPhaseAppNameFromPackageJson(rootPath);
+  
+  return {
+    serviceToken,
+    appName,
+    environment: (overrides.environment && overrides.environment.trim()) || nodeEnv
+  };
+};
+
+/**
+ * Get Phase.dev configuration synchronously (uses defaults)
+ * @param overrides Optional configuration overrides
+ * @returns Phase.dev configuration object
+ */
+export const getPhaseConfigSync = (
+  overrides: Partial<PhaseConfig> = {}
 ): PhaseConfig | null => {
   const serviceToken = getPhaseServiceTokenInternal();
   
@@ -125,7 +158,7 @@ export const getPhaseConfig = (
   }
   
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const appName = (overrides.appName && overrides.appName.trim()) || getPhaseAppNameFromPackageJson(rootPath);
+  const appName = (overrides.appName && overrides.appName.trim()) || DEFAULT_PHASE_CONFIG.appName || 'AI.C9d.Web';
   
   return {
     serviceToken,
@@ -205,7 +238,7 @@ export async function loadFromPhase(
   config?: Partial<PhaseConfig>,
   rootPath?: string
 ): Promise<PhaseEnvResult> {
-  const phaseConfig = getPhaseConfig(config, rootPath);
+  const phaseConfig = await getPhaseConfig(config, rootPath);
   
   if (!phaseConfig) {
     return {

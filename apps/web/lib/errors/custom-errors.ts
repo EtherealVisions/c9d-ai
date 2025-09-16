@@ -280,3 +280,10 @@ export class ForbiddenError extends AuthorizationError {
     super(ErrorCode.PERMISSION_DENIED, message);
   }
 }
+
+/**
+ * Type guard to check if an error is a BaseError
+ */
+export function isBaseError(error: unknown): error is BaseError {
+  return error instanceof BaseError;
+}

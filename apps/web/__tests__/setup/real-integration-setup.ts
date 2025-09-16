@@ -96,7 +96,8 @@ export function setupRealIntegrationTests() {
     if (availableServices.includes('clerk')) {
       try {
         const { clerkClient } = await import('@clerk/nextjs/server')
-        const users = await clerkClient.users.getUserList({ limit: 1 })
+        const client = await clerkClient()
+        const users = await client.users.getUserList({ limit: 1 })
         console.log(`✅ Clerk connection verified (${users.totalCount} total users)`)
       } catch (error) {
         console.error('❌ Clerk connection test failed:', error)

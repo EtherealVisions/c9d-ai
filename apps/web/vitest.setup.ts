@@ -15,6 +15,33 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }))
 
+// Mock NextResponse for API tests
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: (data: any, init?: ResponseInit) => {
+      const response = {
+        status: init?.status || 200,
+        statusText: init?.statusText || 'OK',
+        ok: (init?.status || 200) >= 200 && (init?.status || 200) < 300,
+        headers: new Headers(init?.headers),
+        json: vi.fn().mockResolvedValue(data),
+        clone: vi.fn(),
+        body: JSON.stringify(data)
+      }
+      return response
+    },
+    redirect: (url: string, status = 302) => ({
+      status,
+      statusText: 'Redirect',
+      ok: false,
+      headers: new Headers({ Location: url }),
+      json: vi.fn(),
+      clone: vi.fn()
+    })
+  },
+  NextRequest: vi.fn()
+}))
+
 // Mock environment variables with proper test values
 process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmstdGVzdC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ'
 process.env.CLERK_SECRET_KEY = 'sk_test_Y2xlcmstdGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLXB1cnBvc2VzLW9ubHk'
@@ -91,3 +118,59 @@ Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
   })),
   writable: true
 })
+
+// Mock Response for API tests
+global.Response = class MockResponse {
+  status: number
+  statusText: string
+  ok: boolean
+  headers: Headers
+  body: any
+
+  constructor(body?: BodyInit | null, init?: ResponseInit) {
+    this.status = init?.status || 200
+    this.statusText = init?.statusText || 'OK'
+    this.ok = this.status >= 200 && this.status < 300
+    this.headers = new Headers(init?.headers)
+    this.body = body
+  }
+
+  static json(data: any, init?: ResponseInit) {
+    const response = new MockResponse(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers
+      }
+    })
+    response.json = vi.fn().mockResolvedValue(data)
+    return response
+  }
+
+  static error() {
+    return new MockResponse(null, { status: 500, statusText: 'Internal Server Error' })
+  }
+
+  static redirect(url: string, status = 302) {
+    return new MockResponse(null, { 
+      status, 
+      headers: { Location: url }
+    })
+  }
+
+  async json() {
+    return JSON.parse(this.body || '{}')
+  }
+
+  async text() {
+    return this.body || ''
+  }
+
+  clone() {
+    return new MockResponse(this.body, {
+      status: this.status,
+      statusText: this.statusText,
+      headers: this.headers
+    })
+  }
+} as any

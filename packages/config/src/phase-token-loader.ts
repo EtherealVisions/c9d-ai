@@ -1,6 +1,5 @@
 // Phase.dev Service Token Loader with multiple source support
-import { readFileSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
+// Note: File system operations are only available in Node.js environment
 import { PhaseMonitoring } from './phase-monitoring'
 
 /**
@@ -24,11 +23,11 @@ export interface TokenSource {
  */
 export class PhaseTokenLoader {
   /**
-   * Load PHASE_SERVICE_TOKEN from multiple sources with precedence order
+   * Load PHASE_SERVICE_TOKEN from multiple sources with precedence order (async)
    * @param rootPath Optional workspace root path (auto-detected if not provided)
    * @returns TokenSource object with token and source information, or null if not found
    */
-  static loadServiceToken(rootPath?: string): TokenSource | null {
+  static async loadServiceToken(rootPath?: string): Promise<TokenSource | null> {
     // 1. Check process.env first (highest priority)
     if (process.env.PHASE_SERVICE_TOKEN) {
       return {
@@ -36,51 +35,80 @@ export class PhaseTokenLoader {
         token: process.env.PHASE_SERVICE_TOKEN
       }
     }
-    
-    const currentDir = process.cwd()
-    const workspaceRoot = rootPath || this.findWorkspaceRoot(currentDir)
-    
-    // 2. Check local .env.local
-    const localEnvLocal = this.loadTokenFromFile(join(currentDir, '.env.local'))
-    if (localEnvLocal) {
-      return {
-        source: 'local.env.local',
-        token: localEnvLocal,
-        path: join(currentDir, '.env.local')
-      }
+
+    // Only run file system operations on server-side
+    if (typeof window !== 'undefined') {
+      console.warn('[PhaseTokenLoader] File system access not available in browser environment');
+      return null;
     }
-    
-    // 3. Check local .env
-    const localEnv = this.loadTokenFromFile(join(currentDir, '.env'))
-    if (localEnv) {
-      return {
-        source: 'local.env',
-        token: localEnv,
-        path: join(currentDir, '.env')
-      }
-    }
-    
-    // 4. Check root .env.local
-    if (workspaceRoot !== currentDir) {
-      const rootEnvLocal = this.loadTokenFromFile(join(workspaceRoot, '.env.local'))
-      if (rootEnvLocal) {
+
+    try {
+      // Dynamic imports to avoid bundling in client code
+      const path = await import('path');
+      
+      const currentDir = process.cwd()
+      const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
+      
+      // 2. Check local .env.local
+      const localEnvLocal = await this.loadTokenFromFile(join(currentDir, '.env.local'))
+      if (localEnvLocal) {
         return {
-          source: 'root.env.local',
-          token: rootEnvLocal,
-          path: join(workspaceRoot, '.env.local')
+          source: 'local.env.local',
+          token: localEnvLocal,
+          path: join(currentDir, '.env.local')
         }
       }
+      
+      // 3. Check local .env
+      const localEnv = await this.loadTokenFromFile(join(currentDir, '.env'))
+      if (localEnv) {
+        return {
+          source: 'local.env',
+          token: localEnv,
+          path: join(currentDir, '.env')
+        }
+      }
+      
+      // 4. Check root .env.local
+      if (workspaceRoot !== currentDir) {
+        const rootEnvLocal = await this.loadTokenFromFile(join(workspaceRoot, '.env.local'))
+        if (rootEnvLocal) {
+          return {
+            source: 'root.env.local',
+            token: rootEnvLocal,
+            path: join(workspaceRoot, '.env.local')
+          }
+        }
+      }
+      
+      // 5. Check root .env
+      if (workspaceRoot !== currentDir) {
+        const rootEnv = await this.loadTokenFromFile(join(workspaceRoot, '.env'))
+        if (rootEnv) {
+          return {
+            source: 'root.env',
+            token: rootEnv,
+            path: join(workspaceRoot, '.env')
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[PhaseTokenLoader] File system modules not available, using process.env only');
     }
     
-    // 5. Check root .env
-    if (workspaceRoot !== currentDir) {
-      const rootEnv = this.loadTokenFromFile(join(workspaceRoot, '.env'))
-      if (rootEnv) {
-        return {
-          source: 'root.env',
-          token: rootEnv,
-          path: join(workspaceRoot, '.env')
-        }
+    return null
+  }
+
+  /**
+   * Load PHASE_SERVICE_TOKEN synchronously (process.env only)
+   * @returns TokenSource object with token and source information, or null if not found
+   */
+  static loadServiceTokenSync(): TokenSource | null {
+    // Only check process.env for synchronous access
+    if (process.env.PHASE_SERVICE_TOKEN) {
+      return {
+        source: 'process.env',
+        token: process.env.PHASE_SERVICE_TOKEN
       }
     }
     
@@ -88,18 +116,18 @@ export class PhaseTokenLoader {
   }
 
   /**
-   * Load PHASE_SERVICE_TOKEN with monitoring integration
+   * Load PHASE_SERVICE_TOKEN with monitoring integration (async)
    * @param rootPath Optional workspace root path (auto-detected if not provided)
    * @returns TokenSource object with token and source information, or null if not found
    */
-  static loadServiceTokenWithMonitoring(rootPath?: string): TokenSource | null {
+  static async loadServiceTokenWithMonitoring(rootPath?: string): Promise<TokenSource | null> {
     const startTime = performance.now()
     
     // Get diagnostics first (without causing circular dependency)
-    const diagnostics = this.getTokenSourceDiagnosticsInternal(rootPath)
+    const diagnostics = await this.getTokenSourceDiagnosticsInternal(rootPath)
     
     // Load the token
-    const token = this.loadServiceToken(rootPath)
+    const token = await this.loadServiceToken(rootPath)
     
     const loadTime = performance.now() - startTime
     
@@ -114,17 +142,25 @@ export class PhaseTokenLoader {
   }
   
   /**
-   * Load PHASE_SERVICE_TOKEN from a specific .env file
+   * Load PHASE_SERVICE_TOKEN from a specific .env file (async)
    * @param filePath Path to the .env file
    * @returns Token value or null if not found
    */
-  private static loadTokenFromFile(filePath: string): string | null {
-    if (!existsSync(filePath)) {
-      return null
+  private static async loadTokenFromFile(filePath: string): Promise<string | null> {
+    // Only run on server-side
+    if (typeof window !== 'undefined') {
+      return null;
     }
-    
+
     try {
-      const content = readFileSync(filePath, 'utf8')
+      // Dynamic imports to avoid bundling in client code
+      const fs = await import('fs');
+      
+      if (!existsSync(filePath)) {
+        return null
+      }
+      
+      const content = fs.readFileSync(filePath, 'utf8')
       const lines = content.split('\n')
       
       for (const line of lines) {
@@ -161,33 +197,46 @@ export class PhaseTokenLoader {
   }
   
   /**
-   * Find workspace root by looking for workspace indicators
+   * Find workspace root by looking for workspace indicators (async)
    * @param startPath Starting directory path
    * @returns Workspace root path
    */
-  private static findWorkspaceRoot(startPath: string): string {
-    let currentPath = startPath
-    
-    // Look for workspace indicators going up the directory tree
-    while (currentPath !== dirname(currentPath)) {
-      // Check for common workspace root indicators
-      const indicators = [
-        'pnpm-workspace.yaml',
-        'pnpm-lock.yaml',
-        'turbo.json',
-        'lerna.json',
-        'rush.json',
-        '.git'
-      ]
+  private static async findWorkspaceRoot(startPath: string): Promise<string> {
+    // Only run on server-side
+    if (typeof window !== 'undefined') {
+      return startPath;
+    }
+
+    try {
+      // Dynamic imports to avoid bundling in client code
+      const fs = await import('fs');
+      const path = await import('path');
       
-      for (const indicator of indicators) {
-        if (existsSync(join(currentPath, indicator))) {
-          return currentPath
+      let currentPath = startPath
+      
+      // Look for workspace indicators going up the directory tree
+      while (currentPath !== path.dirname(currentPath)) {
+        // Check for common workspace root indicators
+        const indicators = [
+          'pnpm-workspace.yaml',
+          'pnpm-lock.yaml',
+          'turbo.json',
+          'lerna.json',
+          'rush.json',
+          '.git'
+        ]
+        
+        for (const indicator of indicators) {
+          if (existsSync(join(currentPath, indicator))) {
+            return currentPath
+          }
         }
+        
+        // Move up one directory
+        currentPath = path.dirname(currentPath)
       }
-      
-      // Move up one directory
-      currentPath = dirname(currentPath)
+    } catch (error) {
+      console.warn('[PhaseTokenLoader] File system modules not available for workspace root detection');
     }
     
     // If no workspace root found, return the starting path
@@ -195,36 +244,32 @@ export class PhaseTokenLoader {
   }
   
   /**
-   * Get token source information for debugging
+   * Get token source information for debugging (async)
    * @param rootPath Optional workspace root path
    * @returns Array of all potential token sources with their status
    */
-  static getTokenSourceDiagnostics(rootPath?: string): Array<{
+  static async getTokenSourceDiagnostics(rootPath?: string): Promise<Array<{
     source: TokenSource['source']
     path?: string
     exists: boolean
     hasToken: boolean
     isActive: boolean
-  }> {
-    return this.getTokenSourceDiagnosticsInternal(rootPath)
+  }>> {
+    return await this.getTokenSourceDiagnosticsInternal(rootPath)
   }
 
   /**
-   * Internal method to get token source diagnostics without circular dependency
+   * Internal method to get token source diagnostics without circular dependency (async)
    * @param rootPath Optional workspace root path
    * @returns Array of all potential token sources with their status
    */
-  private static getTokenSourceDiagnosticsInternal(rootPath?: string): Array<{
+  private static async getTokenSourceDiagnosticsInternal(rootPath?: string): Promise<Array<{
     source: TokenSource['source']
     path?: string
     exists: boolean
     hasToken: boolean
     isActive: boolean
-  }> {
-    const currentDir = process.cwd()
-    const workspaceRoot = rootPath || this.findWorkspaceRoot(currentDir)
-    const activeToken = this.loadServiceToken(rootPath)
-    
+  }>> {
     const sources: Array<{
       source: TokenSource['source']
       path?: string
@@ -232,57 +277,77 @@ export class PhaseTokenLoader {
       hasToken: boolean
       isActive: boolean
     }> = []
-    
-    // Process.env
+
+    // Process.env (always available)
     sources.push({
       source: 'process.env',
       exists: true,
       hasToken: !!process.env.PHASE_SERVICE_TOKEN,
-      isActive: activeToken?.source === 'process.env'
+      isActive: !!process.env.PHASE_SERVICE_TOKEN
     })
-    
-    // Local .env.local
-    const localEnvLocalPath = join(currentDir, '.env.local')
-    sources.push({
-      source: 'local.env.local',
-      path: localEnvLocalPath,
-      exists: existsSync(localEnvLocalPath),
-      hasToken: !!this.loadTokenFromFile(localEnvLocalPath),
-      isActive: activeToken?.source === 'local.env.local'
-    })
-    
-    // Local .env
-    const localEnvPath = join(currentDir, '.env')
-    sources.push({
-      source: 'local.env',
-      path: localEnvPath,
-      exists: existsSync(localEnvPath),
-      hasToken: !!this.loadTokenFromFile(localEnvPath),
-      isActive: activeToken?.source === 'local.env'
-    })
-    
-    // Root .env.local (only if different from current directory)
-    if (workspaceRoot !== currentDir) {
-      const rootEnvLocalPath = join(workspaceRoot, '.env.local')
-      sources.push({
-        source: 'root.env.local',
-        path: rootEnvLocalPath,
-        exists: existsSync(rootEnvLocalPath),
-        hasToken: !!this.loadTokenFromFile(rootEnvLocalPath),
-        isActive: activeToken?.source === 'root.env.local'
-      })
+
+    // Only check file sources on server-side
+    if (typeof window !== 'undefined') {
+      return sources;
     }
-    
-    // Root .env (only if different from current directory)
-    if (workspaceRoot !== currentDir) {
-      const rootEnvPath = join(workspaceRoot, '.env')
+
+    try {
+      // Dynamic imports to avoid bundling in client code
+      const path = await import('path');
+      const fs = await import('fs');
+      
+      const currentDir = process.cwd()
+      const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
+      const activeToken = await this.loadServiceToken(rootPath)
+      
+      // Update process.env active status based on actual active token
+      sources[0].isActive = activeToken?.source === 'process.env'
+      
+      // Local .env.local
+      const localEnvLocalPath = join(currentDir, '.env.local')
       sources.push({
-        source: 'root.env',
-        path: rootEnvPath,
-        exists: existsSync(rootEnvPath),
-        hasToken: !!this.loadTokenFromFile(rootEnvPath),
-        isActive: activeToken?.source === 'root.env'
+        source: 'local.env.local',
+        path: localEnvLocalPath,
+        exists: existsSync(localEnvLocalPath),
+        hasToken: !!(await this.loadTokenFromFile(localEnvLocalPath)),
+        isActive: activeToken?.source === 'local.env.local'
       })
+      
+      // Local .env
+      const localEnvPath = join(currentDir, '.env')
+      sources.push({
+        source: 'local.env',
+        path: localEnvPath,
+        exists: existsSync(localEnvPath),
+        hasToken: !!(await this.loadTokenFromFile(localEnvPath)),
+        isActive: activeToken?.source === 'local.env'
+      })
+      
+      // Root .env.local (only if different from current directory)
+      if (workspaceRoot !== currentDir) {
+        const rootEnvLocalPath = join(workspaceRoot, '.env.local')
+        sources.push({
+          source: 'root.env.local',
+          path: rootEnvLocalPath,
+          exists: existsSync(rootEnvLocalPath),
+          hasToken: !!(await this.loadTokenFromFile(rootEnvLocalPath)),
+          isActive: activeToken?.source === 'root.env.local'
+        })
+      }
+      
+      // Root .env (only if different from current directory)
+      if (workspaceRoot !== currentDir) {
+        const rootEnvPath = join(workspaceRoot, '.env')
+        sources.push({
+          source: 'root.env',
+          path: rootEnvPath,
+          exists: existsSync(rootEnvPath),
+          hasToken: !!(await this.loadTokenFromFile(rootEnvPath)),
+          isActive: activeToken?.source === 'root.env'
+        })
+      }
+    } catch (error) {
+      console.warn('[PhaseTokenLoader] File system modules not available for diagnostics');
     }
     
     return sources
@@ -304,12 +369,12 @@ export class PhaseTokenLoader {
   }
   
   /**
-   * Get the currently active token with validation
+   * Get the currently active token with validation (async)
    * @param rootPath Optional workspace root path
    * @returns TokenSource with validated token, or null if no valid token found
    */
-  static getValidatedToken(rootPath?: string): TokenSource | null {
-    const tokenSource = this.loadServiceTokenWithMonitoring(rootPath)
+  static async getValidatedToken(rootPath?: string): Promise<TokenSource | null> {
+    const tokenSource = await this.loadServiceTokenWithMonitoring(rootPath)
     
     if (!tokenSource) {
       return null

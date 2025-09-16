@@ -139,7 +139,8 @@ export async function validateDatabaseSchema() {
   }
   
   // Check if all required tables exist
-  for (const table of DATABASE_TABLES) {
+  const tables = ['users', 'organizations', 'organization_memberships', 'roles', 'permissions', 'invitations', 'audit_logs'] as const
+  for (const table of tables) {
     try {
       const { error } = await supabase.from(table).select('*').limit(1)
       results.tables[table] = !error

@@ -19,7 +19,7 @@ const mockOrganization = {
   name: 'Test Organization',
   slug: 'test-org',
   description: 'A test organization',
-  avatarUrl: null,
+  avatarUrl: undefined,
   metadata: {},
   settings: {},
   createdAt: new Date('2024-01-01'),
@@ -86,7 +86,11 @@ const mockOnInvitationsChange = vi.fn()
 describe('InvitationManagement', () => {
   beforeEach(() => {
     vi.mocked(useOrganization).mockReturnValue(mockUseOrganization)
-    vi.mocked(useToast).mockReturnValue({ toast: mockToast })
+    vi.mocked(useToast).mockReturnValue({ 
+      toast: mockToast,
+      dismiss: vi.fn(),
+      toasts: []
+    })
     mockFetch.mockClear()
     mockToast.mockClear()
     mockOnInvitationsChange.mockClear()

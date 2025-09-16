@@ -418,8 +418,24 @@ describe('Tenant Isolation Security Tests', () => {
     it('should not return data from other tenants in list operations', async () => {
       const userId = 'user-123'
       const userOrganizations = [
-        { id: 'org-456', name: 'User Org 1', slug: 'user-org-1' },
-        { id: 'org-789', name: 'User Org 2', slug: 'user-org-2' }
+        { 
+          id: 'org-456', 
+          name: 'User Org 1', 
+          slug: 'user-org-1',
+          metadata: {},
+          settings: {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        { 
+          id: 'org-789', 
+          name: 'User Org 2', 
+          slug: 'user-org-2',
+          metadata: {},
+          settings: {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
       ]
 
       // Mock the organization service to return the user organizations
@@ -454,7 +470,7 @@ describe('Tenant Isolation Security Tests', () => {
       ]
 
       // Mock the security audit service method
-      vi.mocked(securityAuditService.generateSecuritySummary).mockResolvedValue({
+      vi.mocked(securityAuditService.getSecuritySummary).mockResolvedValue({
         events: mockAuditLogs,
         summary: {
           totalEvents: 1,
@@ -464,7 +480,7 @@ describe('Tenant Isolation Security Tests', () => {
         }
       })
 
-      const result = await securityAuditService.generateSecuritySummary(organizationId)
+      const result = await securityAuditService.getSecuritySummary(organizationId)
 
       expect(result.events).toHaveLength(1)
       expect(result.events[0].organizationId).toBe(organizationId)
@@ -563,7 +579,7 @@ describe('Security Audit Service', () => {
       // Mock the getSecuritySummary to return expected result
       vi.mocked(securityAuditService.getSecuritySummary).mockResolvedValue({
         totalEvents: 3,
-        events: mockEvents,
+        recentHighSeverityEvents: mockEvents,
         eventsByType: {
           authentication: 1,
           organization: 2

@@ -458,19 +458,19 @@ describe('Phase.dev Integration Scenarios', () => {
       expect(config?.serviceToken).toBe('env-specific-token')
     })
 
-    it('should handle staging environment Phase.dev config', () => {
+    it('should handle staging environment Phase.dev config', async () => {
       process.env.NODE_ENV = 'staging'
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config?.environment).toBe('staging')
       expect(config?.serviceToken).toBe('env-specific-token')
     })
 
-    it('should default to development when NODE_ENV is not set', () => {
+    it('should default to development when NODE_ENV is not set', async () => {
       delete process.env.NODE_ENV
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config?.environment).toBe('development')
     })

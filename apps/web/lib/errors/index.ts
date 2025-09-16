@@ -2,7 +2,14 @@
 export * from './custom-errors';
 
 // Error utilities and helpers
-export * from './error-utils';
+export { 
+  handleApiError, 
+  createErrorResponse, 
+  logError,
+  formatErrorForClient,
+  getErrorCode,
+  getErrorMessage
+} from './error-utils';
 
 // API error handling
 export * from './api-error-handler';

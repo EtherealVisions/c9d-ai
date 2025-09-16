@@ -113,7 +113,7 @@ export function OrganizationSwitcher({
           >
             <div className="flex items-center space-x-2 min-w-0">
               <Avatar className="h-5 w-5">
-                <AvatarImage src={currentOrganization.avatarUrl} />
+                <AvatarImage src={currentOrganization.avatarUrl || undefined} />
                 <AvatarFallback className="text-xs">
                   {getInitials(currentOrganization.name)}
                 </AvatarFallback>
@@ -142,7 +142,7 @@ export function OrganizationSwitcher({
             disabled
           >
             <Avatar className="h-6 w-6">
-              <AvatarImage src={currentOrganization.avatarUrl} />
+              <AvatarImage src={currentOrganization.avatarUrl || undefined} />
               <AvatarFallback className="text-xs">
                 {getInitials(currentOrganization.name)}
               </AvatarFallback>
@@ -171,7 +171,7 @@ export function OrganizationSwitcher({
                 disabled={isSwitching}
               >
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={org.avatarUrl} />
+                  <AvatarImage src={org.avatarUrl || undefined} />
                   <AvatarFallback className="text-xs">
                     {getInitials(org.name)}
                   </AvatarFallback>

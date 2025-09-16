@@ -37,7 +37,11 @@ vi.mock('@/lib/contexts/organization-context', () => ({
 }))
 
 vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({ toast: mockToast })
+  useToast: () => ({ 
+    toast: mockToast,
+    dismiss: vi.fn(),
+    toasts: []
+  })
 }))
 
 // Mock fetch
@@ -56,10 +60,14 @@ const mockMembers = [
     updatedAt: new Date('2024-01-01'),
     user: {
       id: 'user-1',
+      clerkUserId: 'clerk-user-1',
       email: 'john@example.com',
       firstName: 'John',
       lastName: 'Doe',
-      avatarUrl: 'https://example.com/john.jpg'
+      avatarUrl: 'https://example.com/john.jpg',
+      preferences: {},
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01')
     },
     role: {
       id: 'role-1',
@@ -83,10 +91,14 @@ const mockMembers = [
     updatedAt: new Date('2024-01-02'),
     user: {
       id: 'user-2',
+      clerkUserId: 'clerk-user-2',
       email: 'jane@example.com',
       firstName: undefined,
       lastName: undefined,
-      avatarUrl: undefined
+      avatarUrl: undefined,
+      preferences: {},
+      createdAt: new Date('2024-01-02'),
+      updatedAt: new Date('2024-01-02')
     },
     role: {
       id: 'role-2',

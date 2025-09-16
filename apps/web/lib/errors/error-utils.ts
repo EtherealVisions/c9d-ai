@@ -229,3 +229,65 @@ export const logError = (error: BaseError, context?: Record<string, any>) => {
     console.info('Error:', logData);
   }
 };
+
+/**
+ * Handle API errors and return appropriate response
+ */
+export const handleApiError = (error: unknown, requestId?: string) => {
+  const normalizedError = normalizeError(error, requestId);
+  logError(normalizedError);
+  
+  return {
+    error: getUserFriendlyMessage(normalizedError),
+    code: normalizedError.code,
+    statusCode: normalizedError.statusCode,
+    requestId: normalizedError.requestId
+  };
+};
+
+/**
+ * Create error response for API endpoints
+ */
+export const createErrorResponse = (error: BaseError) => {
+  return {
+    error: getUserFriendlyMessage(error),
+    code: error.code,
+    statusCode: error.statusCode,
+    requestId: error.requestId,
+    details: error.details
+  };
+};
+
+/**
+ * Format error for client consumption
+ */
+export const formatErrorForClient = (error: BaseError) => {
+  return {
+    message: getUserFriendlyMessage(error),
+    code: error.code,
+    requestId: error.requestId
+  };
+};
+
+/**
+ * Get error code from error
+ */
+export const getErrorCode = (error: unknown): ErrorCode => {
+  if (isBaseError(error)) {
+    return error.code;
+  }
+  return ErrorCode.INTERNAL_SERVER_ERROR;
+};
+
+/**
+ * Get error message from error
+ */
+export const getErrorMessage = (error: unknown): string => {
+  if (isBaseError(error)) {
+    return getUserFriendlyMessage(error);
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unknown error occurred';
+};

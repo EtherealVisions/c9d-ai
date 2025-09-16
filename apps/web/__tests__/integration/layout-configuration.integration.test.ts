@@ -171,7 +171,7 @@ describe('Layout Configuration Integration', () => {
             token: 'invalid_token',
             path: '/test/.env.local'
           },
-          fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY'
+          fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const
         },
         variables: {
           NODE_ENV: 'development',
@@ -195,7 +195,7 @@ describe('Layout Configuration Integration', () => {
             userMessage: 'Phase.dev authentication failed. Current token loaded from: local.env.local (/test/.env.local). Check your PHASE_SERVICE_TOKEN is valid.',
             logMessage: 'Phase.dev auth failed: Invalid service token',
             retryable: false,
-            fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY'
+            fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const
           }
         }
       })
@@ -380,7 +380,7 @@ describe('Layout Configuration Integration', () => {
             token: 'pss_valid_token',
             path: '/test/.env.local'
           },
-          fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const
+          fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const as const
         },
         variables: {
           NODE_ENV: 'development',
@@ -396,7 +396,7 @@ describe('Layout Configuration Integration', () => {
             userMessage: 'Phase.dev service unavailable. Using local environment variables.',
             logMessage: 'Phase.dev network error: ECONNREFUSED',
             retryable: true,
-            fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const
+            fallbackStrategy: 'LOCAL_ENVIRONMENT_ONLY' as const as const
           }
         }
       }

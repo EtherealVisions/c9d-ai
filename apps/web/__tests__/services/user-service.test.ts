@@ -30,7 +30,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -79,7 +79,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -121,7 +121,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -135,7 +135,7 @@ describe('UserService', () => {
 
       vi.spyOn(userService['db'], 'getUser').mockResolvedValue(existingUser)
       vi.spyOn(userService['db'], 'updateUser').mockResolvedValue(updatedUser)
-      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue({ id: 'audit-1', action: 'update', resourceType: 'user', createdAt: new Date(), updatedAt: new Date(), metadata: {} })
 
       const result = await userService.updateUserProfile(userId, updateData)
 
@@ -167,7 +167,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -207,8 +207,8 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
-        preferences: { theme: 'light', language: 'en' },
+        avatarUrl: undefined,
+        preferences: { theme: 'light' as const, language: 'en' },
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -224,7 +224,7 @@ describe('UserService', () => {
 
       vi.spyOn(userService['db'], 'getUser').mockResolvedValue(existingUser)
       vi.spyOn(userService['db'], 'updateUser').mockResolvedValue(updatedUser)
-      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue({ id: 'audit-1', action: 'update', resourceType: 'user', createdAt: new Date(), updatedAt: new Date(), metadata: {} })
 
       const result = await userService.updateUserPreferences(userId, newPreferences)
 
@@ -236,7 +236,7 @@ describe('UserService', () => {
     it('should merge preferences correctly', async () => {
       const userId = 'user-123'
       const existingPreferences = {
-        theme: 'light',
+        theme: 'light' as const,
         language: 'en',
         notifications: { email: true, push: false }
       }
@@ -251,14 +251,14 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: existingPreferences,
         createdAt: new Date(),
         updatedAt: new Date()
       }
 
       const expectedMergedPreferences = {
-        theme: 'dark',
+        theme: 'dark' as const,
         language: 'en',
         notifications: { email: false } // Should merge with new values
       }
@@ -271,7 +271,7 @@ describe('UserService', () => {
 
       vi.spyOn(userService['db'], 'getUser').mockResolvedValue(existingUser)
       vi.spyOn(userService['db'], 'updateUser').mockResolvedValue(updatedUser)
-      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue({ id: 'audit-1', action: 'update', resourceType: 'user', createdAt: new Date(), updatedAt: new Date(), metadata: {} })
 
       const result = await userService.updateUserPreferences(userId, newPreferences)
 
@@ -283,7 +283,7 @@ describe('UserService', () => {
     it('should return user preferences with defaults', async () => {
       const userId = 'user-123'
       const userPreferences = {
-        theme: 'dark',
+        theme: 'dark' as const,
         language: 'es'
       }
 
@@ -293,7 +293,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: userPreferences,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -318,7 +318,7 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -346,8 +346,8 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
-        preferences: { theme: 'light' },
+        avatarUrl: undefined,
+        preferences: { theme: 'light' as const },
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -364,7 +364,7 @@ describe('UserService', () => {
 
       vi.spyOn(userService['db'], 'getUser').mockResolvedValue(existingUser)
       vi.spyOn(userService['db'], 'updateUser').mockResolvedValue(deactivatedUser)
-      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(userService['db'], 'createAuditLog').mockResolvedValue({ id: 'audit-1', action: 'update', resourceType: 'user', createdAt: new Date(), updatedAt: new Date(), metadata: {} })
 
       const result = await userService.deactivateUser(userId)
 
@@ -388,8 +388,8 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
-        preferences: { theme: 'light' },
+        avatarUrl: undefined,
+        preferences: { theme: 'light' as const },
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -410,9 +410,9 @@ describe('UserService', () => {
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        avatarUrl: null,
+        avatarUrl: undefined,
         preferences: { 
-          theme: 'light',
+          theme: 'light' as const,
           accountStatus: 'deactivated'
         },
         createdAt: new Date(),

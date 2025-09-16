@@ -65,8 +65,12 @@ export class MembershipService {
         }
       }
 
-      // Create the membership
-      const membership = await this.db.createMembership(validatedData)
+      // Create the membership with ensured joinedAt
+      const membershipWithJoinedAt: Omit<Membership, 'id' | 'createdAt' | 'updatedAt' | 'user' | 'organization' | 'role'> = {
+        ...validatedData,
+        joinedAt: validatedData.joinedAt || new Date()
+      }
+      const membership = await this.db.createMembership(membershipWithJoinedAt)
 
       // Log the membership creation
       await this.logMembershipActivity(
@@ -96,8 +100,9 @@ export class MembershipService {
 
       // Check if it's a Zod validation error
       if (error && typeof error === 'object' && 'issues' in error) {
+        const zodError = error as any
         return {
-          error: JSON.stringify(error.issues || error.errors || []),
+          error: JSON.stringify(zodError.issues || []),
           code: 'VALIDATION_ERROR'
         }
       }
@@ -359,12 +364,14 @@ export class MembershipService {
         }
       }
 
-      // Create the invitation
-      const invitation = await this.db.createInvitation({
+      // Create the invitation with ensured expiresAt
+      const invitationWithExpiresAt: Omit<Invitation, 'id' | 'createdAt' | 'updatedAt' | 'organization' | 'role' | 'inviter'> = {
         ...validatedData,
         token,
-        status: 'pending'
-      })
+        status: 'pending' as const,
+        expiresAt: validatedData.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days default
+      }
+      const invitation = await this.db.createInvitation(invitationWithExpiresAt)
 
       // Log the invitation creation
       await this.logMembershipActivity(

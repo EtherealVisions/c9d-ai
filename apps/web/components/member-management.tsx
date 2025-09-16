@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { useOrganization } from '@/lib/contexts/organization-context'
 import { Users, UserMinus, Shield, MoreHorizontal } from 'lucide-react'
-import type { Membership, Role } from '@/lib/models/types'
+import type { Membership, Role, User } from '@/lib/models/types'
 
 interface MemberManagementProps {
   members: Membership[]
@@ -20,13 +20,7 @@ interface MemberManagementProps {
 }
 
 interface MemberWithDetails extends Membership {
-  user?: {
-    id: string
-    email: string
-    firstName?: string
-    lastName?: string
-    avatarUrl?: string
-  }
+  user?: User
   role?: Role
 }
 

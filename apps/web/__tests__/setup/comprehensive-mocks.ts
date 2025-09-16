@@ -212,7 +212,8 @@ export const createMockMembership = (overrides = {}) => ({
   userId: 'user-123',
   organizationId: 'org-123',
   roleId: 'role-member',
-  status: 'active',
+  status: 'active' as const,
+  joinedAt: new Date('2023-01-01'),
   createdAt: new Date('2023-01-01'),
   updatedAt: new Date('2023-01-01'),
   ...overrides
@@ -222,8 +223,9 @@ export const createMockRole = (overrides = {}) => ({
   id: 'role-123',
   name: 'member',
   description: 'Standard member role',
+  organizationId: 'org-123',
+  isSystemRole: true,
   permissions: ['organization.read'],
-  isSystem: true,
   createdAt: new Date('2023-01-01'),
   updatedAt: new Date('2023-01-01'),
   ...overrides

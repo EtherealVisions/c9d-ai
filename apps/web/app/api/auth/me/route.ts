@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { userSyncService } from '@/lib/services/user-sync'
+import { userSyncService, AuthEventType } from '@/lib/services/user-sync'
+import { authRouterService } from '@/lib/services/auth-router-service'
 import { createSupabaseClient } from '@/lib/database'
 import { initializeAppConfig, getAppConfigSync } from '@/lib/config/init'
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { userId } = auth()
+    const { userId, orgId } = await auth()
     
     if (!userId) {
       return NextResponse.json(
@@ -36,8 +37,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Extract request metadata for logging
+    const userAgent = request.headers.get('user-agent') || undefined
+    const ipAddress = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     undefined
+
     // Sync user with database
-    const syncResult = await userSyncService.syncUser(clerkUser)
+    const syncResult = await userSyncService.syncUser(clerkUser, {
+      source: 'auth_me_endpoint',
+      userAgent,
+      ipAddress
+    })
+    
     if (syncResult.error) {
       return NextResponse.json(
         { error: { code: 'USER_SYNC_FAILED', message: syncResult.error } },
@@ -45,13 +57,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Log authentication event if this is a new session
+    await userSyncService.logAuthEvent(
+      syncResult.user.id,
+      AuthEventType.SIGN_IN,
+      {
+        source: 'auth_me_endpoint',
+        clerkUserId: userId,
+        organizationId: orgId
+      },
+      ipAddress,
+      userAgent
+    )
+
     // Get user's organizations
     const supabase = createSupabaseClient()
     const { data: memberships, error: membershipsError } = await supabase
       .from('organization_memberships')
       .select(`
         *,
-        organization:organizations (*)
+        organization:organizations (*),
+        role:roles (*)
       `)
       .eq('user_id', syncResult.user.id)
       .eq('status', 'active')
@@ -64,12 +90,37 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const organizations = memberships?.map(m => m.organization).filter(Boolean) || []
+    const organizations = memberships?.map((m: any) => ({
+      ...m.organization,
+      membership: {
+        id: m.id,
+        role: m.role,
+        status: m.status,
+        joinedAt: m.joined_at
+      }
+    })).filter(Boolean) || []
+
+    // Get onboarding status
+    const onboardingStatus = await authRouterService.getOnboardingStatus(syncResult.user)
+
+    // Get recommended next destination
+    const nextDestination = await authRouterService.getPostAuthDestination(
+      syncResult.user,
+      undefined,
+      orgId || undefined
+    )
 
     return NextResponse.json({
       user: syncResult.user,
       organizations,
-      isNew: syncResult.isNew
+      onboarding: onboardingStatus,
+      nextDestination,
+      isNew: syncResult.isNew,
+      session: {
+        clerkUserId: userId,
+        organizationId: orgId,
+        lastActivity: new Date().toISOString()
+      }
     })
   } catch (error) {
     console.error('Auth me endpoint error:', error)

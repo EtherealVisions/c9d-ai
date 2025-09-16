@@ -4,30 +4,39 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 
 // Simplified types to avoid import issues during development
-interface User {
+export interface User {
   id: string
   clerkUserId: string
   email: string
   firstName?: string
   lastName?: string
-  avatarUrl?: string
+  avatarUrl?: string | null
   preferences: Record<string, any>
+  createdAt: Date
+  updatedAt: Date
 }
 
-interface Organization {
+export interface Organization {
   id: string
   name: string
   slug: string
   description?: string
-  avatarUrl?: string
+  avatarUrl?: string | null
+  metadata: Record<string, any>
+  settings: Record<string, any>
+  createdAt: Date
+  updatedAt: Date
 }
 
-interface Membership {
+export interface Membership {
   id: string
   userId: string
   organizationId: string
   roleId: string
   status: 'active' | 'inactive' | 'pending'
+  joinedAt: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface AuthContextValue {

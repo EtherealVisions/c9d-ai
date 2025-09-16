@@ -84,7 +84,7 @@ describe('Configuration Initialization', () => {
     it('should handle concurrent initialization calls', async () => {
       let resolveInit: () => void;
       const initPromise = new Promise<CentralizedConfigManager>((resolve) => {
-        resolveInit = () => resolve(mockConfigManager);
+        resolveInit = () => resolve({} as any);
       });
 
       mockInitializeGlobalConfig.mockImplementation(() => initPromise);

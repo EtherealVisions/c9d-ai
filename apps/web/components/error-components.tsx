@@ -90,7 +90,7 @@ export const ErrorDisplay: React.FC<ErrorComponentProps> = ({
               {error instanceof BaseError && (
                 <>
                   <div><strong>Code:</strong> {error.code}</div>
-                  <div><strong>Timestamp:</strong> {error.timestamp}</div>
+                  <div><strong>Timestamp:</strong> {error.timestamp.toISOString()}</div>
                   {error.requestId && (
                     <div><strong>Request ID:</strong> {error.requestId}</div>
                   )}

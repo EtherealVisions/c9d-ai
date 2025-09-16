@@ -1,10 +1,38 @@
-import { createSupabaseClient, type User } from '../database'
+import { createSupabaseClient } from '../database'
+import type { User, UserRow } from '../models/types'
+import { transformUserRow } from '../models/transformers'
 import type { User as ClerkUser } from '@clerk/nextjs/server'
 
 export interface UserSyncResult {
   user: User
   isNew: boolean
   error?: string
+}
+
+export interface AuthEvent {
+  id: string
+  userId: string
+  type: AuthEventType
+  metadata: Record<string, any>
+  ipAddress?: string
+  userAgent?: string
+  timestamp: Date
+}
+
+export enum AuthEventType {
+  SIGN_IN = 'sign_in',
+  SIGN_OUT = 'sign_out',
+  SIGN_UP = 'sign_up',
+  PASSWORD_RESET = 'password_reset',
+  EMAIL_VERIFICATION = 'email_verification',
+  TWO_FACTOR_ENABLED = 'two_factor_enabled',
+  ACCOUNT_LOCKED = 'account_locked',
+  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
+  USER_CREATED = 'user_created',
+  USER_UPDATED = 'user_updated',
+  USER_DELETED = 'user_deleted',
+  SESSION_CREATED = 'session_created',
+  SESSION_ENDED = 'session_ended'
 }
 
 export class UserSyncService {
@@ -14,7 +42,7 @@ export class UserSyncService {
    * Synchronizes a Clerk user with the local database
    * Creates a new user if they don't exist, updates if they do
    */
-  async syncUser(clerkUser: ClerkUser): Promise<UserSyncResult> {
+  async syncUser(clerkUser: ClerkUser, metadata?: Record<string, any>): Promise<UserSyncResult> {
     try {
       // Check if user already exists
       const { data: existingUser, error: fetchError } = await this.supabase
@@ -34,7 +62,18 @@ export class UserSyncService {
         first_name: clerkUser.firstName || null,
         last_name: clerkUser.lastName || null,
         avatar_url: clerkUser.imageUrl || null,
-        preferences: existingUser?.preferences || {}
+        preferences: existingUser?.preferences || {
+          onboardingCompleted: false,
+          onboardingSteps: {},
+          theme: 'system',
+          language: 'en',
+          timezone: 'UTC',
+          notifications: {
+            email: true,
+            push: true,
+            marketing: false
+          }
+        }
       }
 
       if (existingUser) {
@@ -50,8 +89,15 @@ export class UserSyncService {
           throw new Error(`Failed to update user: ${updateError.message}`)
         }
 
+        // Log user update event
+        await this.logAuthEvent(existingUser.id, AuthEventType.USER_UPDATED, {
+          ...metadata,
+          updatedFields: Object.keys(userData),
+          clerkUserId: clerkUser.id
+        })
+
         return {
-          user: updatedUser,
+          user: transformUserRow(updatedUser),
           isNew: false
         }
       } else {
@@ -66,15 +112,22 @@ export class UserSyncService {
           throw new Error(`Failed to create user: ${createError.message}`)
         }
 
-        // Log user creation
+        // Log user creation events
         await this.logUserActivity(newUser.id, 'user.created', 'user', newUser.id)
+        await this.logAuthEvent(newUser.id, AuthEventType.USER_CREATED, {
+          ...metadata,
+          clerkUserId: clerkUser.id,
+          email: userData.email,
+          signUpMethod: clerkUser.externalAccounts?.length > 0 ? 'social' : 'email'
+        })
 
         return {
-          user: newUser,
+          user: transformUserRow(newUser),
           isNew: true
         }
       }
     } catch (error) {
+      console.error('User sync error:', error)
       return {
         user: {} as User,
         isNew: false,
@@ -101,7 +154,7 @@ export class UserSyncService {
         throw new Error(`Failed to fetch user: ${error.message}`)
       }
 
-      return user
+      return transformUserRow(user)
     } catch (error) {
       console.error('Error fetching user by Clerk ID:', error)
       return null
@@ -167,6 +220,38 @@ export class UserSyncService {
   }
 
   /**
+   * Logs authentication events for security monitoring
+   */
+  async logAuthEvent(
+    userId: string,
+    eventType: AuthEventType,
+    metadata: Record<string, any> = {},
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<void> {
+    try {
+      await this.supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: eventType,
+          resource_type: 'authentication',
+          resource_id: userId,
+          metadata: {
+            ...metadata,
+            eventType,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: ipAddress,
+          user_agent: userAgent
+        })
+    } catch (error) {
+      console.error('Failed to log auth event:', error)
+      // Don't throw error for logging failures
+    }
+  }
+
+  /**
    * Logs user activity to audit log
    */
   private async logUserActivity(
@@ -189,6 +274,73 @@ export class UserSyncService {
     } catch (error) {
       console.error('Failed to log user activity:', error)
       // Don't throw error for logging failures
+    }
+  }
+
+  /**
+   * Handles session creation events
+   */
+  async handleSessionCreated(
+    clerkUserId: string,
+    sessionId: string,
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    try {
+      const user = await this.getUserByClerkId(clerkUserId)
+      if (user) {
+        await this.logAuthEvent(user.id, AuthEventType.SESSION_CREATED, {
+          ...metadata,
+          sessionId,
+          clerkUserId
+        })
+      }
+    } catch (error) {
+      console.error('Failed to handle session created event:', error)
+    }
+  }
+
+  /**
+   * Handles session ended events
+   */
+  async handleSessionEnded(
+    clerkUserId: string,
+    sessionId: string,
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    try {
+      const user = await this.getUserByClerkId(clerkUserId)
+      if (user) {
+        await this.logAuthEvent(user.id, AuthEventType.SESSION_ENDED, {
+          ...metadata,
+          sessionId,
+          clerkUserId
+        })
+      }
+    } catch (error) {
+      console.error('Failed to handle session ended event:', error)
+    }
+  }
+
+  /**
+   * Updates user's last sign-in timestamp
+   */
+  async updateLastSignIn(clerkUserId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('users')
+        .update({
+          preferences: this.supabase.raw(`
+            COALESCE(preferences, '{}'::jsonb) || 
+            '{"lastSignInAt": "${new Date().toISOString()}"}'::jsonb
+          `)
+        })
+        .eq('clerk_user_id', clerkUserId)
+
+      if (error) {
+        console.error('Failed to update last sign-in:', error)
+      }
+    } catch (error) {
+      console.error('Failed to update last sign-in:', error)
     }
   }
 }

@@ -1,3 +1,5 @@
+import React from 'react'
+
 // A simple text-based logo component for C9N.AI
 export function C9nLogo({ className }: { className?: string }) {
   return (

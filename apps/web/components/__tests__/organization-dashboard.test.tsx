@@ -94,7 +94,11 @@ const mockToast = vi.fn()
 describe('OrganizationDashboard - Fixed Tests', () => {
   beforeEach(() => {
     vi.mocked(useOrganization).mockReturnValue(mockUseOrganization)
-    vi.mocked(useToast).mockReturnValue({ toast: mockToast })
+    vi.mocked(useToast).mockReturnValue({ 
+      toast: mockToast,
+      dismiss: vi.fn(),
+      toasts: []
+    })
     mockFetch.mockClear()
     mockToast.mockClear()
   })

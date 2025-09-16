@@ -41,7 +41,7 @@ export const userSchema = baseEntitySchema.extend({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   avatarUrl: z.string().url().optional(),
-  preferences: z.record(z.any()).default({})
+  preferences: z.record(z.any())
 }) satisfies z.ZodType<User>
 
 export const createUserSchema = userSchema.omit({
@@ -66,8 +66,8 @@ export const organizationSchema = baseEntitySchema.extend({
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
   description: z.string().max(500, 'Description too long').optional(),
   avatarUrl: z.string().url().optional(),
-  metadata: z.record(z.any()).default({}),
-  settings: z.record(z.any()).default({})
+  metadata: z.record(z.any()),
+  settings: z.record(z.any())
 }) satisfies z.ZodType<Organization>
 
 export const createOrganizationSchema = organizationSchema.omit({
@@ -114,8 +114,8 @@ export const roleSchema = baseEntitySchema.extend({
   name: z.string().min(1, 'Role name is required').max(50, 'Name too long'),
   description: z.string().max(200, 'Description too long').optional(),
   organizationId: z.string().uuid('Invalid organization ID'),
-  isSystemRole: z.boolean().default(false),
-  permissions: z.array(z.string()).default([])
+  isSystemRole: z.boolean(),
+  permissions: z.array(z.string())
 }) satisfies z.ZodType<Role>
 
 export const createRoleSchema = roleSchema.omit({
@@ -178,7 +178,7 @@ export const auditLogSchema = baseEntitySchema.extend({
   action: z.string().min(1, 'Action is required').max(100, 'Action too long'),
   resourceType: z.string().min(1, 'Resource type is required').max(50, 'Resource type too long'),
   resourceId: z.string().optional(),
-  metadata: z.record(z.any()).default({}),
+  metadata: z.record(z.any()),
   ipAddress: z.string().ip().optional(),
   userAgent: z.string().max(500, 'User agent too long').optional()
 }) satisfies z.ZodType<Omit<AuditLog, 'user' | 'organization'>>

@@ -3,10 +3,7 @@ import { PhaseSDKClient, PhaseSDKResult } from './phase-sdk-client'
 import { PhaseTokenLoader, TokenSource } from './phase-token-loader'
 import { PhaseErrorHandler, PhaseErrorHandlingResult, FallbackStrategy } from './phase-error-handler'
 import { PhaseMonitoring } from './phase-monitoring'
-import { existsSync } from 'fs'
-import { join } from 'path'
-import { config as dotenvConfig } from 'dotenv'
-import { expand as dotenvExpand } from 'dotenv-expand'
+// Note: File system operations are only available in Node.js environment
 
 /**
  * Environment configuration result interface
@@ -177,7 +174,7 @@ export class EnvironmentFallbackManager {
         loadingOrder.push('Phase.dev SDK initialization')
         
         // Get token source diagnostics for debugging
-        tokenSourceDiagnostics = PhaseTokenLoader.getTokenSourceDiagnostics(rootPath)
+        tokenSourceDiagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics(rootPath)
         config.diagnostics.tokenSourceDiagnostics = tokenSourceDiagnostics
         
         const sdkClient = new PhaseSDKClient()
@@ -286,7 +283,7 @@ export class EnvironmentFallbackManager {
 
     // Step 2: Load local environment files (fallback or supplement)
     if (fallbackToLocal || !phaseResult?.success) {
-      const localConfig = this.loadLocalEnvironment(environment, rootPath)
+      const localConfig = await this.loadLocalEnvironment(environment, rootPath)
       
       // Merge local variables (local files have lower priority than Phase.dev but higher than process.env defaults)
       const localVarCount = Object.keys(localConfig.variables).length
@@ -392,20 +389,26 @@ export class EnvironmentFallbackManager {
   }
 
   /**
-   * Load local environment variables from .env files
+   * Load local environment variables from .env files (server-side only)
    * @param environment Current environment (development, production, etc.)
    * @param rootPath Root path to search for .env files
    * @returns Local environment configuration
    */
-  static loadLocalEnvironment(environment: string = 'development', rootPath: string = process.cwd()): {
+  static async loadLocalEnvironment(environment: string = 'development', rootPath: string = process.cwd()): Promise<{
     variables: Record<string, string>
     loadedFiles: string[]
     errors: Array<{ file: string; error: string }>
-  } {
+  }> {
     const result = {
       variables: {} as Record<string, string>,
       loadedFiles: [] as string[],
       errors: [] as Array<{ file: string; error: string }>
+    }
+
+    // Only run on server-side (Node.js environment)
+    if (typeof window !== 'undefined') {
+      console.warn('[EnvironmentFallbackManager] File system access not available in browser environment');
+      return result;
     }
 
     // Determine which .env files to load based on environment
@@ -414,82 +417,92 @@ export class EnvironmentFallbackManager {
     console.log(`[EnvironmentFallbackManager] Loading local environment files for: ${environment}`)
     console.log(`[EnvironmentFallbackManager] Checking files: ${envFiles.join(', ')}`)
 
-    // Get workspace root for loading root .env files
-    const currentDir = process.cwd()
-    let workspaceRoot: string
-    
     try {
-      // Try to access the private method for workspace root detection
-      workspaceRoot = (PhaseTokenLoader as any)['findWorkspaceRoot']?.(currentDir) || currentDir
-    } catch (error) {
-      // Fallback to current directory if method is not available (e.g., in tests)
-      workspaceRoot = currentDir
-    }
-    
-    // Determine directories to check for .env files
-    const dirsToCheck: Array<{ path: string; label: string }> = []
-    
-    // Always check workspace root first (lowest priority)
-    if (workspaceRoot !== currentDir) {
-      dirsToCheck.push({ path: workspaceRoot, label: 'workspace root' })
-    }
-    
-    // Then check current directory (higher priority)
-    dirsToCheck.push({ path: rootPath, label: 'current directory' })
+      // Dynamic imports to avoid bundling in client code
+      const fs = await import('fs');
+      const path = await import('path');
+      const { config: dotenvConfig } = await import('dotenv');
+      const { expand: dotenvExpand } = await import('dotenv-expand');
 
-    // Load files in order (later directories and files override earlier ones)
-    for (const { path: dirPath, label } of dirsToCheck) {
-      for (const envFile of envFiles) {
-        const envPath = join(dirPath, envFile)
-        
-        if (existsSync(envPath)) {
-          try {
-            // Use dotenv to parse the file without affecting process.env
-            const parsed = dotenvConfig({ path: envPath, processEnv: {} })
-            
-            if (parsed.error) {
-              result.errors.push({
-                file: `${label}/${envFile}`,
-                error: parsed.error.message
-              })
-              continue
-            }
-            
-            if (parsed.parsed) {
-              // First, merge the parsed values into our result
-              Object.assign(result.variables, parsed.parsed)
+      // Get workspace root for loading root .env files
+      const currentDir = process.cwd()
+      let workspaceRoot: string
+      
+      try {
+        // Try to access the private method for workspace root detection
+        workspaceRoot = (PhaseTokenLoader as any)['findWorkspaceRoot']?.(currentDir) || currentDir
+      } catch (error) {
+        // Fallback to current directory if method is not available (e.g., in tests)
+        workspaceRoot = currentDir
+      }
+      
+      // Determine directories to check for .env files
+      const dirsToCheck: Array<{ path: string; label: string }> = []
+      
+      // Always check workspace root first (lowest priority)
+      if (workspaceRoot !== currentDir) {
+        dirsToCheck.push({ path: workspaceRoot, label: 'workspace root' })
+      }
+      
+      // Then check current directory (higher priority)
+      dirsToCheck.push({ path: rootPath, label: 'current directory' })
+
+      // Load files in order (later directories and files override earlier ones)
+      for (const { path: dirPath, label } of dirsToCheck) {
+        for (const envFile of envFiles) {
+          const envPath = path.join(dirPath, envFile)
+          
+          if (fs.existsSync(envPath)) {
+            try {
+              // Use dotenv to parse the file without affecting process.env
+              const parsed = dotenvConfig({ path: envPath, processEnv: {} })
               
-              // Then expand variables using the complete context
-              const expanded = dotenvExpand({ parsed: result.variables, processEnv: {} })
-              
-              if (expanded.error) {
+              if (parsed.error) {
                 result.errors.push({
                   file: `${label}/${envFile}`,
-                  error: expanded.error.message
+                  error: parsed.error.message
                 })
                 continue
               }
               
-              // Update result with expanded values
-              if (expanded.parsed) {
-                result.variables = expanded.parsed
+              if (parsed.parsed) {
+                // First, merge the parsed values into our result
+                Object.assign(result.variables, parsed.parsed)
+                
+                // Then expand variables using the complete context
+                const expanded = dotenvExpand({ parsed: result.variables, processEnv: {} })
+                
+                if (expanded.error) {
+                  result.errors.push({
+                    file: `${label}/${envFile}`,
+                    error: expanded.error.message
+                  })
+                  continue
+                }
+                
+                // Update result with expanded values
+                if (expanded.parsed) {
+                  result.variables = expanded.parsed
+                }
+                
+                const fileLabel = dirPath === workspaceRoot && workspaceRoot !== currentDir ? `${envFile} (workspace root)` : envFile
+                result.loadedFiles.push(fileLabel)
+                
+                console.log(`[EnvironmentFallbackManager] Loaded ${Object.keys(parsed.parsed || {}).length} variables from ${fileLabel}`)
               }
-              
-              const fileLabel = dirPath === workspaceRoot && workspaceRoot !== currentDir ? `${envFile} (workspace root)` : envFile
-              result.loadedFiles.push(fileLabel)
-              
-              console.log(`[EnvironmentFallbackManager] Loaded ${Object.keys(parsed.parsed || {}).length} variables from ${fileLabel}`)
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+              result.errors.push({
+                file: `${label}/${envFile}`,
+                error: errorMessage
+              })
+              console.warn(`[EnvironmentFallbackManager] Failed to load ${label}/${envFile}:`, errorMessage)
             }
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-            result.errors.push({
-              file: `${label}/${envFile}`,
-              error: errorMessage
-            })
-            console.warn(`[EnvironmentFallbackManager] Failed to load ${label}/${envFile}:`, errorMessage)
           }
         }
       }
+    } catch (error) {
+      console.warn('[EnvironmentFallbackManager] File system modules not available, skipping .env file loading');
     }
 
     return result

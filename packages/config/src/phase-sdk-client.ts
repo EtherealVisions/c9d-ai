@@ -82,7 +82,7 @@ export class PhaseSDKClient {
       PhaseMonitoring.startOperation(operationId, 'sdk-initialization')
       
       // Load service token from multiple sources
-      this.tokenSource = PhaseTokenLoader.getValidatedToken(rootPath)
+      this.tokenSource = await PhaseTokenLoader.getValidatedToken(rootPath)
       
       if (!this.tokenSource) {
         throw this.createError(

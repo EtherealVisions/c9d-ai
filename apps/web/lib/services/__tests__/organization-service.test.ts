@@ -169,7 +169,7 @@ describe('OrganizationService', () => {
         throw new ValidationError('Name is required')
       })
 
-      const result = await organizationService.createOrganization('user-123', {})
+      const result = await organizationService.createOrganization('user-123', { name: '' })
 
       expect(result.error).toBe('Name is required')
       expect(result.code).toBe('VALIDATION_ERROR')

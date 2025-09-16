@@ -381,6 +381,7 @@ export default async function RootLayout({
   // Check if we're in development with test keys
   const isDevelopment = envConfig.isDevelopment;
   const isTestKey = clerkPublishableKey?.includes('test') || clerkPublishableKey?.includes('development');
+  const isValidProductionKey = clerkPublishableKey?.startsWith('pk_live_');
   
   // Show configuration error display for critical issues in production
   if (!isDevelopment) {
@@ -388,6 +389,11 @@ export default async function RootLayout({
     if (!clerkPublishableKey) missingCriticalVars.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
     if (!criticalConfig.supabaseUrl) missingCriticalVars.push('NEXT_PUBLIC_SUPABASE_URL');
     if (!criticalConfig.supabaseAnonKey) missingCriticalVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    
+    // In production, require live keys
+    if (clerkPublishableKey && !isValidProductionKey) {
+      missingCriticalVars.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (production key required)');
+    }
     
     if (missingCriticalVars.length > 0) {
       const productionError = new Error(`Critical environment variables missing in production: ${missingCriticalVars.join(', ')}`);
@@ -414,9 +420,19 @@ export default async function RootLayout({
     );
   }
   
-  // Render without ClerkProvider if Clerk is not properly configured
-  if (!hasValidClerkKeys || (isDevelopment && isTestKey)) {
-    console.warn('[Layout] Clerk not properly configured or using test keys, rendering without authentication');
+  // Determine if Clerk should be enabled
+  // In development: allow test keys (pk_test_) or live keys (pk_live_)
+  // In production: only allow live keys (pk_live_)
+  const shouldEnableClerk = hasValidClerkKeys && (isDevelopment || isValidProductionKey);
+  
+  if (!shouldEnableClerk) {
+    const reason = !hasValidClerkKeys 
+      ? 'Invalid or missing Clerk publishable key'
+      : !isDevelopment && !isValidProductionKey
+      ? 'Production environment requires live Clerk key (pk_live_)'
+      : 'Unknown Clerk configuration issue';
+      
+    console.warn(`[Layout] Clerk disabled: ${reason}`);
     
     return (
       <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
@@ -435,6 +451,8 @@ export default async function RootLayout({
   }
 
   // Render with ClerkProvider for properly configured authentication
+  console.log(`[Layout] Enabling Clerk authentication with ${isTestKey ? 'test' : 'live'} key`);
+  
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>

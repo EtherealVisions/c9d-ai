@@ -228,7 +228,7 @@ export function OrganizationBreadcrumb({
                       {/* Show organization avatar for organization breadcrumb */}
                       {item.label === currentOrganization?.name && showOrganizationIcon && (
                         <Avatar className="h-4 w-4">
-                          <AvatarImage src={currentOrganization.avatarUrl} />
+                          <AvatarImage src={currentOrganization.avatarUrl || undefined} />
                           <AvatarFallback className="text-xs">
                             {getInitials(currentOrganization.name)}
                           </AvatarFallback>
@@ -243,7 +243,7 @@ export function OrganizationBreadcrumb({
                     {/* Show organization avatar for organization breadcrumb */}
                     {item.label === currentOrganization?.name && showOrganizationIcon && (
                       <Avatar className="h-4 w-4">
-                        <AvatarImage src={currentOrganization.avatarUrl} />
+                        <AvatarImage src={currentOrganization.avatarUrl || undefined} />
                         <AvatarFallback className="text-xs">
                           {getInitials(currentOrganization.name)}
                         </AvatarFallback>

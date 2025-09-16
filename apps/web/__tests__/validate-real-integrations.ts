@@ -351,7 +351,8 @@ async function validateClerkIntegration(): Promise<ValidationResult> {
     // Test Clerk connection
     const { clerkClient } = await import('@clerk/nextjs/server')
     
-    if (!clerkClient || !clerkClient.users) {
+    const client = await clerkClient()
+    if (!client || !client.users) {
       console.log('   ❌ Clerk client not properly initialized')
       result.issues.push('Clerk client initialization failed')
       result.fixes.push('Check Clerk SDK installation and configuration')
@@ -361,7 +362,7 @@ async function validateClerkIntegration(): Promise<ValidationResult> {
     
     // Test API connectivity
     try {
-      const users = await clerkClient.users.getUserList({ limit: 1 })
+      const users = await client.users.getUserList({ limit: 1 })
       console.log(`   ✅ Clerk API connection successful (${users.totalCount} total users)`)
       
       // Test user operations

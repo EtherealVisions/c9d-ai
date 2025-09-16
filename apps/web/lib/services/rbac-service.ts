@@ -131,9 +131,9 @@ export class RBACService {
 
       // Transform and validate the roles
       const roles = data
-        ?.map(item => item.roles)
+        ?.map((item: any) => item.roles)
         .filter(Boolean)
-        .map(role => ({
+        .map((role: any) => ({
           id: role.id,
           name: role.name,
           description: role.description,
@@ -144,7 +144,7 @@ export class RBACService {
           updatedAt: new Date(role.updated_at)
         })) || []
 
-      return roles.map(role => validateRole(role))
+      return roles.map((role: any) => validateRole(role))
     } catch (error) {
       console.error('Error getting user roles:', error)
       throw error
@@ -399,7 +399,7 @@ export class RBACService {
         throw new Error(`Failed to get organization roles: ${error.message}`)
       }
 
-      return data.map(role => validateRole({
+      return data.map((role: any) => validateRole({
         id: role.id,
         name: role.name,
         description: role.description,
@@ -430,7 +430,7 @@ export class RBACService {
         throw new Error(`Failed to get permissions: ${error.message}`)
       }
 
-      return data.map(permission => ({
+      return data.map((permission: any) => ({
         id: permission.id,
         name: permission.name,
         description: permission.description,

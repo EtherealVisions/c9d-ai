@@ -42,7 +42,7 @@ describe('Organization Management Integration Tests', () => {
           name: orgData.name,
           description: orgData.description,
           slug: 'test-organization',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -51,18 +51,7 @@ describe('Organization Management Integration Tests', () => {
       })
 
       // Mock admin role assignment
-      vi.spyOn(rbacService, 'assignRole').mockResolvedValue({
-        data: {
-          id: 'assignment-123',
-          userId,
-          organizationId: 'org-123',
-          roleId: 'role-admin',
-          assignedBy: userId,
-          assignedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      })
+      vi.spyOn(rbacService, 'assignRole').mockResolvedValue(undefined)
 
       const result = await organizationService.createOrganization(userId, orgData)
 
@@ -84,6 +73,7 @@ describe('Organization Management Integration Tests', () => {
 
       // Mock duplicate name error
       vi.spyOn(organizationService, 'createOrganization').mockResolvedValue({
+        data: undefined,
         error: 'Organization name already exists',
         code: 'DUPLICATE_ORGANIZATION'
       })
@@ -107,7 +97,7 @@ describe('Organization Management Integration Tests', () => {
           name: orgData.name,
           description: null,
           slug: 'my-great-organization', // Auto-generated from name
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -140,7 +130,7 @@ describe('Organization Management Integration Tests', () => {
           name: updateData.name,
           description: updateData.description,
           slug: 'updated-organization-name',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -185,7 +175,7 @@ describe('Organization Management Integration Tests', () => {
           name: 'Test Organization',
           description: 'A test organization',
           slug: 'test-organization',
-          avatarUrl: null,
+          avatarUrl: undefined,
           metadata: {},
           settings: {},
           createdAt: new Date(),
@@ -209,7 +199,7 @@ describe('Organization Management Integration Tests', () => {
             name: 'Organization 1',
             slug: 'org-1',
             description: null,
-            avatarUrl: null,
+            avatarUrl: undefined,
             metadata: {},
             settings: {},
             createdAt: new Date(),
@@ -220,7 +210,7 @@ describe('Organization Management Integration Tests', () => {
             name: 'Organization 2',
             slug: 'org-2',
             description: null,
-            avatarUrl: null,
+            avatarUrl: undefined,
             metadata: {},
             settings: {},
             createdAt: new Date(),

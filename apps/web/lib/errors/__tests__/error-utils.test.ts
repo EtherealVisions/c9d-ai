@@ -319,7 +319,7 @@ describe('Error Utils', () => {
     it('should log other errors with console.info', () => {
       // Create a custom error with status code < 400
       const error = new (class extends InternalServerError {
-        readonly statusCode = 200;
+        readonly statusCode = 500;
       })('Info error');
       
       logError(error);
