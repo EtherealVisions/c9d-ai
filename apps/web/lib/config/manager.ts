@@ -1,11 +1,10 @@
 import { 
-  PhaseConfig, 
-  PhaseEnvironmentLoader, 
-  PhaseError,
-  loadEnvironmentWithFallback, 
-  validatePhaseConfig, 
-  createPhaseConfigFromEnv 
-} from './phase';
+  loadFromPhase, 
+  getPhaseConfig,
+  EnvironmentFallbackManager,
+  PhaseSDKError,
+  PhaseSDKErrorCode
+} from '@c9d/config';
 
 /**
  * Configuration manager interface
@@ -32,7 +31,6 @@ export interface ValidationRule {
  * Configuration manager options
  */
 export interface ConfigManagerOptions {
-  phaseConfig?: PhaseConfig;
   validationRules?: ValidationRule[];
   enableCaching?: boolean;
   cacheTTL?: number;
@@ -45,24 +43,22 @@ export interface ConfigManagerOptions {
 export class CentralizedConfigManager implements ConfigManager {
   private config: Record<string, string> = {};
   private initialized: boolean = false;
-  private phaseConfig: PhaseConfig | null = null;
   private validationRules: ValidationRule[] = [];
   private enableCaching: boolean = true;
   private cacheTTL: number = 5 * 60 * 1000; // 5 minutes
   private fallbackToEnv: boolean = true;
   private lastRefresh: number = 0;
-  private phaseLoader: PhaseEnvironmentLoader;
+  private fallbackManager: EnvironmentFallbackManager;
   private lastError: Error | null = null;
   private lastPhaseError: Error | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
 
   constructor(options: ConfigManagerOptions = {}) {
-    this.phaseConfig = options.phaseConfig || createPhaseConfigFromEnv();
     this.validationRules = options.validationRules || [];
     this.enableCaching = options.enableCaching ?? true;
     this.cacheTTL = options.cacheTTL ?? this.cacheTTL;
     this.fallbackToEnv = options.fallbackToEnv ?? true;
-    this.phaseLoader = new PhaseEnvironmentLoader();
+    this.fallbackManager = new EnvironmentFallbackManager();
   }
 
   /**
@@ -72,29 +68,31 @@ export class CentralizedConfigManager implements ConfigManager {
     try {
       this.logInfo('Initializing configuration manager...');
       
-      if (this.phaseConfig) {
-        try {
-          // Validate Phase.dev configuration
-          validatePhaseConfig(this.phaseConfig);
-          
-          // Load environment variables from Phase.dev with fallback
-          this.config = await loadEnvironmentWithFallback(this.phaseConfig, this.fallbackToEnv);
-        } catch (error) {
-          // Track the Phase.dev error for statistics
-          this.lastPhaseError = error instanceof Error ? error : new Error('Phase.dev configuration failed');
-          
-          if (this.fallbackToEnv) {
-            this.logWarn('Phase.dev configuration failed, falling back to environment variables');
-            this.config = { ...process.env } as Record<string, string>;
-          } else {
-            this.logError('Phase.dev configuration failed and fallback is disabled', error instanceof Error ? error : new Error(String(error)));
-            this.lastError = this.lastPhaseError;
-            throw error;
-          }
+      // Use the new EnvironmentFallbackManager to load configuration
+      const result = await this.fallbackManager.loadEnvironment('AI.C9d.Web', 'development', {
+        fallbackToLocal: this.fallbackToEnv,
+        forceReload: true
+      });
+      
+      if (result.success) {
+        this.config = result.variables;
+        this.logInfo(`Successfully loaded ${Object.keys(this.config).length} variables from ${result.source}`);
+        
+        if (result.tokenSource) {
+          this.logInfo(`Token source: ${result.tokenSource.source}`);
         }
       } else {
-        this.logInfo('No Phase.dev configuration found, using local environment only');
-        this.config = { ...process.env } as Record<string, string>;
+        // Track the Phase.dev error for statistics
+        this.lastPhaseError = new Error(result.error || 'Phase.dev configuration failed');
+        
+        if (this.fallbackToEnv) {
+          this.logWarn('Phase.dev configuration failed, falling back to environment variables');
+          this.config = { ...process.env } as Record<string, string>;
+        } else {
+          this.logError('Phase.dev configuration failed and fallback is disabled', this.lastPhaseError);
+          this.lastError = this.lastPhaseError;
+          throw this.lastPhaseError;
+        }
       }
 
       // Validate required configuration (with fallback handling)
@@ -113,10 +111,8 @@ export class CentralizedConfigManager implements ConfigManager {
       this.lastRefresh = Date.now();
       this.lastError = null;
       
-      // Start health check monitoring if Phase.dev is configured
-      if (this.phaseConfig) {
-        this.startHealthCheckMonitoring();
-      }
+      // Start health check monitoring
+      this.startHealthCheckMonitoring();
       
       this.logInfo(`Successfully initialized with ${Object.keys(this.config).length} configuration variables`);
       
@@ -124,7 +120,7 @@ export class CentralizedConfigManager implements ConfigManager {
       this.lastError = error instanceof Error ? error : new Error('Unknown initialization error');
       this.logError('Failed to initialize configuration manager', this.lastError);
       
-      if (this.fallbackToEnv && !(error instanceof PhaseError && !error.retryable)) {
+      if (this.fallbackToEnv) {
         this.logWarn('Falling back to local environment variables');
         this.config = { ...process.env } as Record<string, string>;
         
@@ -189,15 +185,21 @@ export class CentralizedConfigManager implements ConfigManager {
     try {
       this.logInfo('Refreshing configuration...');
       
-      if (this.phaseConfig) {
-        const newConfig = await loadEnvironmentWithFallback(this.phaseConfig, this.fallbackToEnv);
-        this.config = newConfig;
+      const result = await this.fallbackManager.loadEnvironment('AI.C9d.Web', 'development', {
+        fallbackToLocal: this.fallbackToEnv,
+        forceReload: true
+      });
+      
+      if (result.success) {
+        this.config = result.variables;
         this.validateConfiguration();
         this.lastError = null; // Clear error on successful refresh
+        this.logInfo(`Configuration refreshed successfully from ${result.source}`);
+      } else {
+        throw new Error(result.error || 'Failed to refresh configuration');
       }
 
       this.lastRefresh = Date.now();
-      this.logInfo('Configuration refreshed successfully');
       
     } catch (error) {
       // Restore backup configuration on failure
@@ -206,8 +208,8 @@ export class CentralizedConfigManager implements ConfigManager {
       this.lastError = error instanceof Error ? error : new Error('Unknown refresh error');
       this.logError('Failed to refresh configuration', this.lastError);
       
-      // Don't throw if we have fallback configuration and error is retryable
-      if (this.fallbackToEnv && error instanceof PhaseError && error.retryable) {
+      // Don't throw if we have fallback configuration
+      if (this.fallbackToEnv) {
         this.logWarn('Refresh failed but continuing with existing configuration');
         return;
       }
@@ -287,7 +289,7 @@ export class CentralizedConfigManager implements ConfigManager {
       configCount: Object.keys(this.config).length,
       lastRefresh: new Date(this.lastRefresh),
       cacheEnabled: this.enableCaching,
-      phaseConfigured: this.phaseConfig !== null,
+      phaseConfigured: true, // Always true with new SDK integration
       lastError: this.lastError || this.lastPhaseError,
       healthy: this.isHealthy()
     };
@@ -310,7 +312,7 @@ export class CentralizedConfigManager implements ConfigManager {
       healthy: this.isHealthy(),
       initialized: this.initialized,
       lastError: this.lastError,
-      phaseHealth: this.phaseConfig ? this.phaseLoader.getHealthStatus() : null,
+      phaseHealth: null, // Health status is now handled by the SDK
       configValidation
     };
   }
@@ -335,10 +337,14 @@ export class CentralizedConfigManager implements ConfigManager {
       configValidation: true
     };
 
-    // Check Phase.dev connection if configured
-    if (this.phaseConfig && this.initialized) {
+    // Check Phase.dev connection using new SDK
+    if (this.initialized) {
       try {
-        await this.phaseLoader.loadEnvironment(this.phaseConfig);
+        const result = await loadFromPhase(true);
+        if (!result.success) {
+          checks.phaseConnection = false;
+          errors.push(`Phase.dev connection failed: ${result.error || 'Unknown error'}`);
+        }
       } catch (error) {
         checks.phaseConnection = false;
         errors.push(`Phase.dev connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

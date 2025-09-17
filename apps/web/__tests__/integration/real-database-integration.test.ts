@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 import { createTypedSupabaseClient } from '@/lib/models/database'
-import { loadEnvironmentWithFallback, createPhaseConfigFromEnv } from '@/lib/config/phase'
+import { loadFromPhase, getPhaseConfig } from '@c9d/config'
 
 // Test configuration - will be loaded from Phase.dev
 let TEST_DATABASE_URL: string | undefined
@@ -21,18 +21,25 @@ describe('Real Database Integration Tests', () => {
 
   beforeAll(async () => {
     try {
-      // Load configuration from Phase.dev
-      phaseConfig = createPhaseConfigFromEnv()
+      // Load configuration from Phase.dev using new SDK
+      phaseConfig = await getPhaseConfig()
       
       if (phaseConfig) {
         console.log('🔗 Loading database configuration from Phase.dev...')
-        const envVars = await loadEnvironmentWithFallback(phaseConfig, true)
+        const result = await loadFromPhase(true)
         
-        // Extract database configuration
-        TEST_DATABASE_URL = envVars.TEST_DATABASE_URL || envVars.NEXT_PUBLIC_SUPABASE_URL
-        TEST_SERVICE_ROLE_KEY = envVars.TEST_SUPABASE_SERVICE_ROLE_KEY || envVars.SUPABASE_SERVICE_ROLE_KEY
-        
-        console.log(`✅ Loaded configuration from Phase.dev (app: ${phaseConfig.appName})`)
+        if (result.success) {
+          // Extract database configuration
+          TEST_DATABASE_URL = result.variables.TEST_DATABASE_URL || result.variables.NEXT_PUBLIC_SUPABASE_URL
+          TEST_SERVICE_ROLE_KEY = result.variables.TEST_SUPABASE_SERVICE_ROLE_KEY || result.variables.SUPABASE_SERVICE_ROLE_KEY
+          
+          console.log(`✅ Loaded configuration from Phase.dev (app: ${phaseConfig.appName})`)
+        } else {
+          console.warn('⚠️  Failed to load from Phase.dev:', result.error)
+          // Fallback to local environment variables
+          TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+          TEST_SERVICE_ROLE_KEY = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+        }
       } else {
         // Fallback to local environment variables
         console.warn('⚠️  No Phase.dev configuration found, checking local environment...')

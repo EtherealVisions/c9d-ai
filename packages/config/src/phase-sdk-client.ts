@@ -2,6 +2,7 @@
 import { PhaseTokenLoader, TokenSource } from './phase-token-loader'
 import { PhaseErrorHandler } from './phase-error-handler'
 import { PhaseMonitoring } from './phase-monitoring'
+import { getPhaseSDKCache } from './phase-sdk-cache'
 
 // Import Phase SDK
 import Phase from '@phase.dev/phase-node'
@@ -198,6 +199,20 @@ export class PhaseSDKClient {
       }
     }
 
+    // Check cache first
+    const cache = getPhaseSDKCache()
+    const cachedSecrets = this.tokenSource ? cache.get(this.config.appName, this.config.environment, this.tokenSource) : undefined
+    
+    if (cachedSecrets) {
+      console.log(`[PhaseSDKClient] Using cached secrets for ${this.config.appName}:${this.config.environment}`)
+      return {
+        success: true,
+        secrets: cachedSecrets,
+        source: 'phase-sdk',
+        tokenSource: this.tokenSource || undefined
+      }
+    }
+
     const operationId = `secret-retrieval-${Date.now()}`
     const startTime = performance.now()
     
@@ -250,6 +265,11 @@ export class PhaseSDKClient {
       })
 
       console.log(`[PhaseSDKClient] Successfully fetched ${variableCount} secrets`)
+      
+      // Cache the secrets for future use
+      if (this.tokenSource) {
+        cache.set(this.config.appName, this.config.environment, secretsMap, this.tokenSource)
+      }
       
       return {
         success: true,
@@ -310,8 +330,9 @@ export class PhaseSDKClient {
    * Clear any cached data and reset client state
    */
   clearCache(): void {
-    // Phase.dev SDK handles its own caching, so we just log this action
-    console.log(`[PhaseSDKClient] Cache clear requested (SDK handles internal caching)`)
+    const cache = getPhaseSDKCache()
+    cache.clear()
+    console.log(`[PhaseSDKClient] Cache cleared`)
   }
 
   /**

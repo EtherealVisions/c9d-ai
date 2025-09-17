@@ -70,13 +70,18 @@ async function checkEnvironmentVariables(requiredVars: string[]): Promise<{ avai
   
   try {
     // Try to load from Phase.dev first
-    const { loadEnvironmentWithFallback, createPhaseConfigFromEnv } = await import('../lib/config/phase')
-    const phaseConfig = createPhaseConfigFromEnv()
+    const { loadFromPhase, getPhaseConfig } = await import('@c9d/config')
+    const phaseConfig = await getPhaseConfig()
     
     if (phaseConfig) {
       console.log('🔗 Checking Phase.dev configuration...')
-      envVars = await loadEnvironmentWithFallback(phaseConfig, true)
-      source = 'Phase.dev'
+      const result = await loadFromPhase(true)
+      if (result.success) {
+        envVars = result.variables
+        source = 'Phase.dev'
+      } else {
+        throw new Error(result.error || 'Failed to load from Phase.dev')
+      }
     } else {
       envVars = { ...process.env } as Record<string, string>
     }
@@ -281,8 +286,8 @@ async function main() {
   
   // Check Phase.dev availability
   try {
-    const { createPhaseConfigFromEnv } = await import('../lib/config/phase')
-    const phaseConfig = createPhaseConfigFromEnv()
+    const { getPhaseConfig } = await import('@c9d/config')
+    const phaseConfig = await getPhaseConfig()
     
     if (phaseConfig) {
       console.log(`✅ Phase.dev configured (app: ${phaseConfig.appName})`)

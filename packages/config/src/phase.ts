@@ -1,7 +1,7 @@
 // Phase.dev integration for secure environment variable management
 // Note: File system operations are only available in Node.js environment
 import { PhaseSDKClient, PhaseSDKResult } from './phase-sdk-client';
-import { TokenSource } from './phase-token-loader';
+import { PhaseTokenLoader, TokenSource } from './phase-token-loader';
 
 /**
  * Phase.dev configuration interface
@@ -101,23 +101,6 @@ let globalSDKClient: PhaseSDKClient | null = null;
 // Note: getPhaseServiceToken and isPhaseDevAvailable are now defined in env.ts to avoid circular dependencies
 
 /**
- * Get Phase.dev service token with fallback
- * This function is defined here to avoid circular dependencies
- * @returns Phase.dev service token or null
- */
-function getPhaseServiceTokenInternal(): string | null {
-  // Use PhaseTokenLoader for comprehensive token loading
-  try {
-    const { PhaseTokenLoader } = require('./phase-token-loader');
-    const tokenSource = PhaseTokenLoader.loadServiceToken();
-    return tokenSource ? tokenSource.token : null;
-  } catch (error) {
-    // Fallback to simple process.env check if PhaseTokenLoader fails
-    return process.env.PHASE_SERVICE_TOKEN || null;
-  }
-}
-
-/**
  * Get Phase.dev configuration (async)
  * @param overrides Optional configuration overrides
  * @param rootPath Root path to search for package.json
@@ -127,9 +110,9 @@ export const getPhaseConfig = async (
   overrides: Partial<PhaseConfig> = {},
   rootPath?: string
 ): Promise<PhaseConfig | null> => {
-  const serviceToken = getPhaseServiceTokenInternal();
+  const tokenSource = await PhaseTokenLoader.getValidatedToken(rootPath);
   
-  if (!serviceToken) {
+  if (!tokenSource) {
     return null;
   }
   
@@ -137,7 +120,7 @@ export const getPhaseConfig = async (
   const appName = (overrides.appName && overrides.appName.trim()) || await getPhaseAppNameFromPackageJson(rootPath);
   
   return {
-    serviceToken,
+    serviceToken: tokenSource.token,
     appName,
     environment: (overrides.environment && overrides.environment.trim()) || nodeEnv
   };
@@ -151,9 +134,9 @@ export const getPhaseConfig = async (
 export const getPhaseConfigSync = (
   overrides: Partial<PhaseConfig> = {}
 ): PhaseConfig | null => {
-  const serviceToken = getPhaseServiceTokenInternal();
+  const tokenSource = PhaseTokenLoader.loadServiceTokenSync();
   
-  if (!serviceToken) {
+  if (!tokenSource) {
     return null;
   }
   
@@ -161,7 +144,7 @@ export const getPhaseConfigSync = (
   const appName = (overrides.appName && overrides.appName.trim()) || DEFAULT_PHASE_CONFIG.appName || 'AI.C9d.Web';
   
   return {
-    serviceToken,
+    serviceToken: tokenSource.token,
     appName,
     environment: (overrides.environment && overrides.environment.trim()) || nodeEnv
   };
@@ -327,6 +310,15 @@ export const clearPhaseCache = (): void => {
     globalSDKClient.clearCache();
     globalSDKClient = null;
   }
+  
+  // Also clear the comprehensive cache
+  try {
+    const { clearPhaseSDKCache } = require('./phase-sdk-cache');
+    clearPhaseSDKCache();
+  } catch (error) {
+    // Ignore if cache module is not available
+  }
+  
   console.log('[Phase.dev SDK] Cache and client cleared');
 };
 

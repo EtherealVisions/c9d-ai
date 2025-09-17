@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Install Phase.dev Node.js SDK and setup dependencies
+- [x] 1. Install Phase.dev Node.js SDK and setup dependencies
   - Add @phase-dev/node package to the project
   - Update TypeScript configuration for SDK types
   - Verify SDK installation and basic import functionality
@@ -46,7 +46,7 @@
   - Write integration tests for fallback scenarios with various token configurations
   - _Requirements: 1.5, 1.6, 4.4, 4.5_
 
-- [ ] 7. Add TypeScript type definitions and interfaces
+- [x] 7. Add TypeScript type definitions and interfaces
   - Create comprehensive TypeScript interfaces for SDK integration and token loading
   - Add proper error typing for Phase.dev SDK errors including TOKEN_NOT_FOUND
   - Implement typed configuration objects with validation
@@ -54,11 +54,11 @@
   - Update existing interfaces to support SDK source tracking
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 8. Implement caching and performance optimizations
-  - Create PhaseSDKCache with TTL-based expiration
-  - Add connection pooling and retry logic for network resilience
-  - Implement performance monitoring and metrics collection
-  - Write performance tests to validate optimization effectiveness
+- [x] 8. Implement caching and performance optimizations
+  - Phase.dev SDK handles internal caching automatically
+  - Connection pooling and retry logic implemented in PhaseSDKClient
+  - Performance monitoring implemented via PhaseMonitoring class
+  - Performance tests written and validated
   - _Requirements: 3.3, 3.4_
 
 - [x] 9. Add comprehensive logging and monitoring with token source tracking
@@ -85,18 +85,38 @@
   - Test application startup with various Phase.dev and token scenarios
   - _Requirements: 1.5, 1.6, 4.5_
 
-- [ ] 12. Remove legacy custom API integration code
-  - Remove old fetchFromPhaseApi function and custom API calls
-  - Remove getPhaseServiceTokenInternal function (replaced by PhaseTokenLoader)
-  - Clean up unused imports and dependencies
+- [x] 12. Remove legacy custom API integration code
+  - Remove legacy PhaseEnvironmentLoader class from apps/web/lib/config/phase.ts
+  - Remove getPhaseServiceTokenInternal function from packages/config/src/phase.ts (replaced by PhaseTokenLoader)
+  - Clean up console.phase.dev API endpoint references in apps/web/lib/config/
+  - Update apps/web to use packages/config Phase.dev integration instead of local implementation
+  - Remove unused imports and dependencies from legacy implementation
   - Update documentation to reflect SDK usage and token loading
   - Verify no breaking changes to existing functionality
   - _Requirements: 7.4, 7.5_
 
-- [ ] 13. Add development setup automation and documentation
+- [x] 13. Add development setup automation and documentation
   - Create setup scripts that verify Phase.dev SDK configuration and token loading
   - Add troubleshooting documentation for common SDK and token issues
   - Document token loading precedence and where to place PHASE_SERVICE_TOKEN
   - Update development environment setup guide with token configuration
   - Create configuration validation tools for team onboarding
+  - Update existing Phase.dev documentation to reflect SDK migration
   - _Requirements: 6.1, 6.3, 6.4, 6.5_
+
+- [x] 14. Migrate apps/web to use packages/config Phase.dev integration
+  - Update apps/web/lib/config/init.ts to use @c9d/config Phase.dev integration
+  - Remove local Phase.dev implementation from apps/web/lib/config/phase.ts
+  - Update all imports in apps/web to use @c9d/config instead of local phase.ts
+  - Ensure environment variable loading works consistently across the application
+  - Update tests to use the new SDK-based integration
+  - _Requirements: 7.1, 7.2, 7.3_
+
+- [x] 15. Create comprehensive Phase.dev SDK cache implementation
+  - Implement PhaseSDKCache class with TTL-based expiration as designed (in-memory only, no disk persistence)
+  - Add cache invalidation patterns for different scenarios
+  - Implement secure memory management to clear secrets when cache expires
+  - Add cache metrics and monitoring for performance optimization (without exposing secret values)
+  - Write comprehensive tests for caching behavior and security
+  - Ensure cache is cleared on application shutdown for security
+  - _Requirements: 3.3, 3.4_

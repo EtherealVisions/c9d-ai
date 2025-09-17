@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { loadEnvironmentWithFallback, createPhaseConfigFromEnv } from '@/lib/config/phase'
+import { loadFromPhase, getPhaseConfig } from '@c9d/config'
 
 // Test configuration - will be loaded from Phase.dev
 let TEST_CLERK_SECRET_KEY: string | undefined
@@ -20,18 +20,25 @@ describe('Real Clerk Integration Tests', () => {
 
   beforeAll(async () => {
     try {
-      // Load configuration from Phase.dev
-      phaseConfig = createPhaseConfigFromEnv()
+      // Load configuration from Phase.dev using new SDK
+      phaseConfig = await getPhaseConfig()
       
       if (phaseConfig) {
         console.log('🔗 Loading Clerk configuration from Phase.dev...')
-        const envVars = await loadEnvironmentWithFallback(phaseConfig, true)
+        const result = await loadFromPhase(true)
         
-        // Extract Clerk configuration
-        TEST_CLERK_SECRET_KEY = envVars.CLERK_SECRET_KEY || envVars.TEST_CLERK_SECRET_KEY
-        TEST_USER_EMAIL = envVars.TEST_USER_EMAIL || 'test@example.com'
-        
-        console.log(`✅ Loaded configuration from Phase.dev (app: ${phaseConfig.appName})`)
+        if (result.success) {
+          // Extract Clerk configuration
+          TEST_CLERK_SECRET_KEY = result.variables.CLERK_SECRET_KEY || result.variables.TEST_CLERK_SECRET_KEY
+          TEST_USER_EMAIL = result.variables.TEST_USER_EMAIL || 'test@example.com'
+          
+          console.log(`✅ Loaded configuration from Phase.dev (app: ${phaseConfig.appName})`)
+        } else {
+          console.warn('⚠️  Failed to load from Phase.dev:', result.error)
+          // Fallback to local environment variables
+          TEST_CLERK_SECRET_KEY = process.env.TEST_CLERK_SECRET_KEY || process.env.CLERK_SECRET_KEY
+          TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test@example.com'
+        }
       } else {
         // Fallback to local environment variables
         console.warn('⚠️  No Phase.dev configuration found, checking local environment...')

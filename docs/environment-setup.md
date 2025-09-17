@@ -47,7 +47,28 @@ Phase.dev provides secure, centralized environment variable management across di
    - `staging` (optional)
    - `production`
 
-### 3. Add Environment Variables
+### 3. Get Service Token
+
+1. In Phase.dev Console, go to **Settings** → **Service Tokens**
+2. Generate a new service token with appropriate permissions
+3. Copy the token (starts with `pss_`)
+4. Add to your local environment:
+   ```bash
+   # Add to .env.local (recommended)
+   echo "PHASE_SERVICE_TOKEN=pss_your_token_here" >> .env.local
+   
+   # Or export as environment variable
+   export PHASE_SERVICE_TOKEN=pss_your_token_here
+   ```
+
+### 4. Validate Setup
+
+Run the automated setup validation:
+```bash
+pnpm run setup:phase-dev
+```
+
+### 5. Add Environment Variables
 
 In the Phase.dev console, add the following variables for each environment:
 

@@ -8,6 +8,14 @@ export interface UserSyncResult {
   user: User
   isNew: boolean
   error?: string
+  syncMetadata?: UserSyncMetadata
+}
+
+export interface UserSyncMetadata {
+  syncedAt: Date
+  source: 'webhook' | 'api' | 'manual'
+  changes: string[]
+  previousValues?: Record<string, any>
 }
 
 export interface AuthEvent {
@@ -18,6 +26,15 @@ export interface AuthEvent {
   ipAddress?: string
   userAgent?: string
   timestamp: Date
+}
+
+export interface UserProfileUpdateData {
+  firstName?: string
+  lastName?: string
+  avatarUrl?: string
+  email?: string
+  preferences?: Record<string, any>
+  customFields?: Record<string, any>
 }
 
 export enum AuthEventType {
@@ -42,6 +59,7 @@ export class UserSyncService {
   /**
    * Synchronizes a Clerk user with the local database
    * Creates a new user if they don't exist, updates if they do
+   * Enhanced with better change tracking and metadata support
    */
   async syncUser(clerkUser: ClerkUser | UserResource, metadata?: Record<string, any>): Promise<UserSyncResult> {
     try {
@@ -331,16 +349,24 @@ export class UserSyncService {
   }
 
   /**
-   * Updates user's last sign-in timestamp
+   * Updates user's last sign-in timestamp with enhanced session metadata
    */
-  async updateLastSignIn(clerkUserId: string): Promise<void> {
+  async updateLastSignIn(
+    clerkUserId: string, 
+    sessionMetadata?: Record<string, any>
+  ): Promise<void> {
     try {
+      const signInData = {
+        lastSignInAt: new Date().toISOString(),
+        ...(sessionMetadata && { lastSessionMetadata: sessionMetadata })
+      }
+
       const { error } = await this.supabase
         .from('users')
         .update({
           preferences: this.supabase.raw(`
             COALESCE(preferences, '{}'::jsonb) || 
-            '{"lastSignInAt": "${new Date().toISOString()}"}'::jsonb
+            '${JSON.stringify(signInData)}'::jsonb
           `)
         })
         .eq('clerk_user_id', clerkUserId)
@@ -350,6 +376,473 @@ export class UserSyncService {
       }
     } catch (error) {
       console.error('Failed to update last sign-in:', error)
+    }
+  }
+
+  /**
+   * Updates user profile with enhanced change tracking
+   * Requirement 6.3: Support custom fields, validation rules, and user metadata collection
+   */
+  async updateUserProfile(
+    clerkUserId: string, 
+    profileData: UserProfileUpdateData,
+    metadata?: Record<string, any>
+  ): Promise<UserSyncResult> {
+    try {
+      // Get current user to track changes
+      const currentUser = await this.getUserByClerkId(clerkUserId)
+      if (!currentUser) {
+        return {
+          user: {} as User,
+          isNew: false,
+          error: 'User not found'
+        }
+      }
+
+      // Track what fields are being changed
+      const changes: string[] = []
+      const previousValues: Record<string, any> = {}
+
+      if (profileData.firstName !== undefined && profileData.firstName !== currentUser.firstName) {
+        changes.push('firstName')
+        previousValues.firstName = currentUser.firstName
+      }
+      if (profileData.lastName !== undefined && profileData.lastName !== currentUser.lastName) {
+        changes.push('lastName')
+        previousValues.lastName = currentUser.lastName
+      }
+      if (profileData.avatarUrl !== undefined && profileData.avatarUrl !== currentUser.avatarUrl) {
+        changes.push('avatarUrl')
+        previousValues.avatarUrl = currentUser.avatarUrl
+      }
+      if (profileData.email !== undefined && profileData.email !== currentUser.email) {
+        changes.push('email')
+        previousValues.email = currentUser.email
+      }
+
+      // Handle preferences updates with deep merge
+      let updatedPreferences = currentUser.preferences
+      if (profileData.preferences) {
+        changes.push('preferences')
+        previousValues.preferences = currentUser.preferences
+        updatedPreferences = {
+          ...currentUser.preferences,
+          ...profileData.preferences
+        }
+      }
+
+      // Handle custom fields (Requirement 6.3)
+      if (profileData.customFields) {
+        changes.push('customFields')
+        previousValues.customFields = currentUser.preferences?.customFields
+        updatedPreferences = {
+          ...updatedPreferences,
+          customFields: {
+            ...updatedPreferences?.customFields,
+            ...profileData.customFields
+          }
+        }
+      }
+
+      // Update user in database
+      const updateData = {
+        ...(profileData.firstName !== undefined && { first_name: profileData.firstName }),
+        ...(profileData.lastName !== undefined && { last_name: profileData.lastName }),
+        ...(profileData.avatarUrl !== undefined && { avatar_url: profileData.avatarUrl }),
+        ...(profileData.email !== undefined && { email: profileData.email }),
+        preferences: updatedPreferences
+      }
+
+      const { data: updatedUser, error: updateError } = await this.supabase
+        .from('users')
+        .update(updateData)
+        .eq('clerk_user_id', clerkUserId)
+        .select()
+        .single()
+
+      if (updateError) {
+        throw new Error(`Failed to update user profile: ${updateError.message}`)
+      }
+
+      // Log profile update event with detailed change tracking
+      await this.logAuthEvent(updatedUser.id, AuthEventType.USER_UPDATED, {
+        ...metadata,
+        changes,
+        previousValues,
+        source: 'profile_update',
+        updatedFields: Object.keys(updateData)
+      })
+
+      const syncMetadata: UserSyncMetadata = {
+        syncedAt: new Date(),
+        source: 'api',
+        changes,
+        previousValues
+      }
+
+      return {
+        user: transformUserRow(updatedUser),
+        isNew: false,
+        syncMetadata
+      }
+    } catch (error) {
+      console.error('User profile update error:', error)
+      return {
+        user: {} as User,
+        isNew: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+
+  /**
+   * Bulk update user preferences with validation
+   * Requirement 6.3: Support custom fields, validation rules, and user metadata collection
+   */
+  async updateUserPreferences(
+    clerkUserId: string,
+    preferences: Record<string, any>,
+    validateCustomFields: boolean = true
+  ): Promise<UserSyncResult> {
+    try {
+      const currentUser = await this.getUserByClerkId(clerkUserId)
+      if (!currentUser) {
+        return {
+          user: {} as User,
+          isNew: false,
+          error: 'User not found'
+        }
+      }
+
+      // Validate custom fields if enabled (Requirement 6.3)
+      if (validateCustomFields && preferences.customFields) {
+        const validationResult = this.validateCustomFields(preferences.customFields)
+        if (!validationResult.isValid) {
+          return {
+            user: {} as User,
+            isNew: false,
+            error: `Custom field validation failed: ${validationResult.errors.join(', ')}`
+          }
+        }
+      }
+
+      // Merge preferences with existing ones
+      const updatedPreferences = {
+        ...currentUser.preferences,
+        ...preferences,
+        updatedAt: new Date().toISOString()
+      }
+
+      const { data: updatedUser, error: updateError } = await this.supabase
+        .from('users')
+        .update({ preferences: updatedPreferences })
+        .eq('clerk_user_id', clerkUserId)
+        .select()
+        .single()
+
+      if (updateError) {
+        throw new Error(`Failed to update user preferences: ${updateError.message}`)
+      }
+
+      // Log preferences update
+      await this.logAuthEvent(updatedUser.id, AuthEventType.USER_UPDATED, {
+        action: 'preferences_updated',
+        updatedPreferences: Object.keys(preferences),
+        hasCustomFields: !!preferences.customFields
+      })
+
+      return {
+        user: transformUserRow(updatedUser),
+        isNew: false,
+        syncMetadata: {
+          syncedAt: new Date(),
+          source: 'api',
+          changes: ['preferences']
+        }
+      }
+    } catch (error) {
+      console.error('User preferences update error:', error)
+      return {
+        user: {} as User,
+        isNew: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+
+  /**
+   * Get user analytics and engagement data
+   * Requirement 8.1: Provide admin interfaces for user lookup, status management, and account actions
+   */
+  async getUserAnalytics(clerkUserId: string): Promise<{
+    user: User | null
+    analytics: {
+      signInCount: number
+      lastSignInAt: string | null
+      accountAge: number
+      sessionCount: number
+      securityEvents: number
+      organizationMemberships: number
+    }
+    error?: string
+  }> {
+    try {
+      const user = await this.getUserByClerkId(clerkUserId)
+      if (!user) {
+        return {
+          user: null,
+          analytics: {
+            signInCount: 0,
+            lastSignInAt: null,
+            accountAge: 0,
+            sessionCount: 0,
+            securityEvents: 0,
+            organizationMemberships: 0
+          },
+          error: 'User not found'
+        }
+      }
+
+      // Get analytics data from audit logs
+      const { data: authEvents, error: eventsError } = await this.supabase
+        .from('audit_logs')
+        .select('action, created_at')
+        .eq('user_id', user.id)
+        .in('action', [
+          AuthEventType.SIGN_IN,
+          AuthEventType.SESSION_CREATED,
+          AuthEventType.SUSPICIOUS_ACTIVITY,
+          AuthEventType.ACCOUNT_LOCKED
+        ])
+
+      if (eventsError) {
+        console.error('Failed to fetch user analytics:', eventsError)
+      }
+
+      // Get organization memberships count
+      const { count: membershipCount, error: membershipError } = await this.supabase
+        .from('organization_memberships')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+
+      if (membershipError) {
+        console.error('Failed to fetch membership count:', membershipError)
+      }
+
+      const events = authEvents || []
+      const signInEvents = events.filter((e: any) => e.action === AuthEventType.SIGN_IN)
+      const sessionEvents = events.filter((e: any) => e.action === AuthEventType.SESSION_CREATED)
+      const securityEvents = events.filter((e: any) => 
+        e.action === AuthEventType.SUSPICIOUS_ACTIVITY || 
+        e.action === AuthEventType.ACCOUNT_LOCKED
+      )
+
+      const accountAge = Math.floor(
+        (new Date().getTime() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      )
+
+      const lastSignInAt = user.preferences?.lastSignInAt || null
+
+      return {
+        user,
+        analytics: {
+          signInCount: signInEvents.length,
+          lastSignInAt,
+          accountAge,
+          sessionCount: sessionEvents.length,
+          securityEvents: securityEvents.length,
+          organizationMemberships: membershipCount || 0
+        }
+      }
+    } catch (error) {
+      console.error('Error getting user analytics:', error)
+      return {
+        user: null,
+        analytics: {
+          signInCount: 0,
+          lastSignInAt: null,
+          accountAge: 0,
+          sessionCount: 0,
+          securityEvents: 0,
+          organizationMemberships: 0
+        },
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+
+  /**
+   * Admin function to manage user account status
+   * Requirement 8.1: Provide admin interfaces for user lookup, status management, and account actions
+   */
+  async updateUserStatus(
+    clerkUserId: string,
+    status: 'active' | 'suspended' | 'deactivated',
+    reason?: string,
+    adminUserId?: string
+  ): Promise<UserSyncResult> {
+    try {
+      const user = await this.getUserByClerkId(clerkUserId)
+      if (!user) {
+        return {
+          user: {} as User,
+          isNew: false,
+          error: 'User not found'
+        }
+      }
+
+      const updatedPreferences = {
+        ...user.preferences,
+        accountStatus: status,
+        statusUpdatedAt: new Date().toISOString(),
+        statusReason: reason,
+        statusUpdatedBy: adminUserId
+      }
+
+      const { data: updatedUser, error: updateError } = await this.supabase
+        .from('users')
+        .update({ preferences: updatedPreferences })
+        .eq('clerk_user_id', clerkUserId)
+        .select()
+        .single()
+
+      if (updateError) {
+        throw new Error(`Failed to update user status: ${updateError.message}`)
+      }
+
+      // Log status change
+      await this.logAuthEvent(user.id, AuthEventType.USER_UPDATED, {
+        action: 'status_updated',
+        newStatus: status,
+        previousStatus: user.preferences?.accountStatus || 'active',
+        reason,
+        adminUserId
+      })
+
+      return {
+        user: transformUserRow(updatedUser),
+        isNew: false,
+        syncMetadata: {
+          syncedAt: new Date(),
+          source: 'manual',
+          changes: ['accountStatus']
+        }
+      }
+    } catch (error) {
+      console.error('User status update error:', error)
+      return {
+        user: {} as User,
+        isNew: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+
+  /**
+   * Validate custom fields according to defined rules
+   * Requirement 6.3: Support custom fields, validation rules, and user metadata collection
+   */
+  private validateCustomFields(customFields: Record<string, any>): {
+    isValid: boolean
+    errors: string[]
+  } {
+    const errors: string[] = []
+
+    // Define validation rules for custom fields
+    const validationRules = {
+      department: {
+        type: 'string',
+        maxLength: 100,
+        required: false
+      },
+      jobTitle: {
+        type: 'string',
+        maxLength: 100,
+        required: false
+      },
+      phoneNumber: {
+        type: 'string',
+        pattern: /^\+?[\d\s\-\(\)]+$/,
+        required: false
+      },
+      dateOfBirth: {
+        type: 'string',
+        pattern: /^\d{4}-\d{2}-\d{2}$/,
+        required: false
+      },
+      emergencyContact: {
+        type: 'object',
+        required: false,
+        properties: {
+          name: { type: 'string', maxLength: 100 },
+          phone: { type: 'string', pattern: /^\+?[\d\s\-\(\)]+$/ }
+        }
+      }
+    }
+
+    // Validate each custom field
+    for (const [fieldName, fieldValue] of Object.entries(customFields)) {
+      const rule = validationRules[fieldName as keyof typeof validationRules]
+      
+      if (!rule) {
+        errors.push(`Unknown custom field: ${fieldName}`)
+        continue
+      }
+
+      if (fieldValue === null || fieldValue === undefined) {
+        if (rule.required) {
+          errors.push(`Required field missing: ${fieldName}`)
+        }
+        continue
+      }
+
+      // Type validation
+      if (rule.type === 'string' && typeof fieldValue !== 'string') {
+        errors.push(`Field ${fieldName} must be a string`)
+        continue
+      }
+
+      if (rule.type === 'object' && typeof fieldValue !== 'object') {
+        errors.push(`Field ${fieldName} must be an object`)
+        continue
+      }
+
+      // String-specific validations
+      if (rule.type === 'string' && typeof fieldValue === 'string') {
+        if ('maxLength' in rule && rule.maxLength && fieldValue.length > rule.maxLength) {
+          errors.push(`Field ${fieldName} exceeds maximum length of ${rule.maxLength}`)
+        }
+
+        if ('pattern' in rule && rule.pattern && !rule.pattern.test(fieldValue)) {
+          errors.push(`Field ${fieldName} has invalid format`)
+        }
+      }
+
+      // Object-specific validations
+      if (rule.type === 'object' && 'properties' in rule && rule.properties && typeof fieldValue === 'object') {
+        for (const [propName, propRule] of Object.entries(rule.properties)) {
+          const propValue = fieldValue[propName]
+          const typedPropRule = propRule as any
+          
+          if (typedPropRule.type === 'string' && propValue && typeof propValue !== 'string') {
+            errors.push(`Property ${fieldName}.${propName} must be a string`)
+          }
+
+          if (typedPropRule.maxLength && propValue && propValue.length > typedPropRule.maxLength) {
+            errors.push(`Property ${fieldName}.${propName} exceeds maximum length`)
+          }
+
+          if (typedPropRule.pattern && propValue && !typedPropRule.pattern.test(propValue)) {
+            errors.push(`Property ${fieldName}.${propName} has invalid format`)
+          }
+        }
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
     }
   }
 }

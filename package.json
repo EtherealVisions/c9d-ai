@@ -26,6 +26,8 @@
     "test:phase": "node scripts/test-phase-integration.js",
     "test:phase-env": "node scripts/test-phase-env-integration.js",
     "test:integration": "node scripts/test-phase-integration.js && turbo test:run",
+    "setup:phase-dev": "node scripts/setup-phase-dev.js",
+    "debug:phase-config": "node scripts/debug-phase-config.js",
     "test:coverage": "turbo test:coverage",
     "test:e2e": "pnpm --filter '@c9d/web' run test:e2e",
     "coverage:generate": "node scripts/coverage-reporter.js generate",

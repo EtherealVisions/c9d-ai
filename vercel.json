@@ -1,8 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "rootDirectory": "apps/web",
   "buildCommand": "node ../../scripts/run-with-env.js turbo build --filter=@c9d/web",
-  "outputDirectory": "apps/web/.next",
+  "outputDirectory": ".next",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
   "functions": {
@@ -17,7 +18,8 @@
     "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
     "CLERK_SECRET_KEY": "$CLERK_SECRET_KEY",
     "NEXT_PUBLIC_SUPABASE_URL": "$NEXT_PUBLIC_SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY"
+    "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "$NEXT_PUBLIC_SUPABASE_ANON_KEY"
   },
   "build": {
     "env": {
@@ -26,7 +28,8 @@
       "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
       "CLERK_SECRET_KEY": "$CLERK_SECRET_KEY",
       "NEXT_PUBLIC_SUPABASE_URL": "$NEXT_PUBLIC_SUPABASE_URL",
-      "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY"
+      "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "$NEXT_PUBLIC_SUPABASE_ANON_KEY"
     }
   },
   "headers": [

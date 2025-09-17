@@ -55,7 +55,7 @@ describe('Configuration Initialization', () => {
     });
 
     it('should handle initialization errors gracefully', async () => {
-      mockInitializeGlobalConfig.mockRejectedValue(new Error('Phase.dev error'));
+      mockInitializeGlobalConfig.mockRejectedValue(new Error('Configuration error'));
 
       // Should not throw
       await expect(initializeAppConfig()).resolves.toBeUndefined();
@@ -206,7 +206,7 @@ describe('Configuration Initialization', () => {
   });
 
   describe('Error Recovery and Resilience', () => {
-    it('should handle Phase.dev timeout gracefully', async () => {
+    it('should handle configuration timeout gracefully', async () => {
       const timeoutError = new Error('Request timeout');
       mockInitializeGlobalConfig.mockRejectedValue(timeoutError);
 
@@ -224,7 +224,7 @@ describe('Configuration Initialization', () => {
     });
 
     it('should handle network errors during initialization', async () => {
-      const networkError = new Error('ENOTFOUND console.phase.dev');
+      const networkError = new Error('ENOTFOUND config.service.com');
       mockInitializeGlobalConfig.mockRejectedValue(networkError);
 
       await initializeAppConfig();

@@ -565,6 +565,173 @@ export class SecurityEventTracker {
   }
 
   /**
+   * Track session events (creation, end, revocation)
+   */
+  async trackSessionEvent(
+    userId: string,
+    sessionId: string,
+    eventType: 'session_created' | 'session_ended' | 'session_revoked',
+    context: SecurityEventContext
+  ): Promise<void> {
+    try {
+      // Log session event
+      await securityAuditService.logAuthenticationEvent(
+        userId,
+        eventType === 'session_created' ? 'login' : 'logout',
+        {
+          sessionId,
+          eventType,
+          sessionData: context.metadata?.sessionData,
+          ...context.metadata
+        },
+        context.ipAddress,
+        context.userAgent
+      )
+
+      // Monitor for suspicious session patterns
+      if (eventType === 'session_created') {
+        await securityMonitoringService.monitorAuthenticationEvent(
+          userId,
+          'login',
+          {
+            sessionId,
+            deviceInfo: context.deviceInfo,
+            location: context.location,
+            ...context.metadata
+          },
+          context.ipAddress,
+          context.userAgent
+        )
+      }
+
+      // Track session revocations as potential security events
+      if (eventType === 'session_revoked') {
+        await this.trackSecurityEvent(userId, 'session_revoked', {
+          sessionId,
+          revokedBy: context.metadata?.revokedBy,
+          reason: context.metadata?.reason,
+          ...context.metadata
+        })
+      }
+
+    } catch (error) {
+      console.error('Error tracking session event:', error)
+    }
+  }
+
+  /**
+   * Track general security events
+   */
+  async trackSecurityEvent(
+    userId: string | undefined,
+    eventType: string,
+    context: Record<string, any>
+  ): Promise<void> {
+    try {
+      await securityAuditService.logSecurityEvent({
+        userId,
+        action: `security.${eventType}`,
+        resourceType: 'security_event',
+        resourceId: userId || 'system',
+        severity: this.determineSeverity(eventType),
+        metadata: {
+          eventType,
+          timestamp: new Date().toISOString(),
+          ...context
+        },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent
+      })
+
+      // Send notifications for high-severity events
+      if (userId && this.isHighSeverityEvent(eventType)) {
+        await securityNotificationService.sendSecurityNotification({
+          userId,
+          type: 'security_alert',
+          title: this.getEventTitle(eventType),
+          message: this.getEventMessage(eventType, context),
+          severity: this.determineSeverity(eventType),
+          variables: {
+            timestamp: new Date().toISOString(),
+            eventType,
+            ...context
+          },
+          metadata: context
+        })
+      }
+
+    } catch (error) {
+      console.error('Error tracking security event:', error)
+    }
+  }
+
+  /**
+   * Determine event severity based on event type
+   */
+  private determineSeverity(eventType: string): 'info' | 'warning' | 'error' | 'critical' {
+    const criticalSeverityEvents = [
+      'account_banned',
+      'brute_force_detected'
+    ]
+    
+    const errorSeverityEvents = [
+      'session_revoked',
+      'suspicious_login'
+    ]
+    
+    const warningSeverityEvents = [
+      'password_changed',
+      'two_factor_enabled'
+    ]
+
+    if (criticalSeverityEvents.includes(eventType)) return 'critical'
+    if (errorSeverityEvents.includes(eventType)) return 'error'
+    if (warningSeverityEvents.includes(eventType)) return 'warning'
+    return 'info'
+  }
+
+  /**
+   * Check if event type requires immediate notification
+   */
+  private isHighSeverityEvent(eventType: string): boolean {
+    const highSeverityEvents = [
+      'session_revoked',
+      'account_banned',
+      'suspicious_login',
+      'brute_force_detected'
+    ]
+    return highSeverityEvents.includes(eventType)
+  }
+
+  /**
+   * Get user-friendly title for event type
+   */
+  private getEventTitle(eventType: string): string {
+    const titles: Record<string, string> = {
+      'session_revoked': 'Session Revoked',
+      'account_banned': 'Account Suspended',
+      'email_verified': 'Email Verified',
+      'password_changed': 'Password Changed',
+      'two_factor_enabled': 'Two-Factor Authentication Enabled'
+    }
+    return titles[eventType] || 'Security Event'
+  }
+
+  /**
+   * Get user-friendly message for event type
+   */
+  private getEventMessage(eventType: string, context: Record<string, any>): string {
+    const messages: Record<string, string> = {
+      'session_revoked': 'Your session has been revoked for security reasons.',
+      'account_banned': 'Your account has been suspended. Please contact support.',
+      'email_verified': 'Your email address has been successfully verified.',
+      'password_changed': 'Your password has been changed.',
+      'two_factor_enabled': 'Two-factor authentication has been enabled on your account.'
+    }
+    return messages[eventType] || `Security event: ${eventType}`
+  }
+
+  /**
    * Get security incidents for organization
    */
   async getSecurityIncidents(

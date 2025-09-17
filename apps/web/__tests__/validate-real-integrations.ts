@@ -196,8 +196,8 @@ async function validatePhaseDevIntegration(): Promise<ValidationResult> {
   
   try {
     // Test Phase.dev connection by trying to load configuration
-    const { loadEnvironmentWithFallback, createPhaseConfigFromEnv } = await import('../lib/config/phase')
-    const phaseConfig = createPhaseConfigFromEnv()
+    const { loadFromPhase, getPhaseConfig } = await import('@c9d/config')
+    const phaseConfig = await getPhaseConfig()
     
     if (!phaseConfig) {
       result.issues.push('Phase.dev configuration could not be created')
@@ -209,7 +209,12 @@ async function validatePhaseDevIntegration(): Promise<ValidationResult> {
     console.log(`   ✅ Phase.dev app: ${phaseConfig.appName}`)
     
     try {
-      const envVars = await loadEnvironmentWithFallback(phaseConfig, false)
+      const phaseResult = await loadFromPhase(true)
+      if (!phaseResult.success) {
+        throw new Error(phaseResult.error || 'Failed to load from Phase.dev')
+      }
+      
+      const envVars = phaseResult.variables
       console.log(`   ✅ Successfully loaded ${Object.keys(envVars).length} variables from Phase.dev`)
       
       // Check if required variables are available in Phase.dev

@@ -7,11 +7,22 @@ import { getAppConfigSync } from '@/lib/config/init'
 
 export async function POST(req: NextRequest) {
   try {
-    // Get the headers
-    const headerPayload = await headers()
-    const svix_id = headerPayload.get('svix-id')
-    const svix_timestamp = headerPayload.get('svix-timestamp')
-    const svix_signature = headerPayload.get('svix-signature')
+    // Get the headers - handle both runtime and test environments
+    let svix_id: string | null
+    let svix_timestamp: string | null
+    let svix_signature: string | null
+    
+    try {
+      const headerPayload = await headers()
+      svix_id = headerPayload.get('svix-id')
+      svix_timestamp = headerPayload.get('svix-timestamp')
+      svix_signature = headerPayload.get('svix-signature')
+    } catch (error) {
+      // Fallback for test environment - use request headers directly
+      svix_id = req.headers.get?.('svix-id') || null
+      svix_timestamp = req.headers.get?.('svix-timestamp') || null
+      svix_signature = req.headers.get?.('svix-signature') || null
+    }
 
     // If there are no headers, error out
     if (!svix_id || !svix_timestamp || !svix_signature) {
@@ -75,11 +86,12 @@ export async function POST(req: NextRequest) {
 
       switch (eventType) {
         case 'user.created':
-          // Sync user data when user is created
+          // Sync user data when user is created with enhanced tracking
           const createResult = await userSyncService.syncUser(evt.data, {
             ...metadata,
             source: 'clerk_webhook',
-            action: 'user_created'
+            action: 'user_created',
+            webhookEvent: true
           })
           
           if (createResult.error) {
@@ -93,16 +105,18 @@ export async function POST(req: NextRequest) {
           console.log(`User created and synced:`, {
             userId: createResult.user.id,
             email: createResult.user.email,
-            isNew: createResult.isNew
+            isNew: createResult.isNew,
+            syncMetadata: createResult.syncMetadata
           })
           break
 
         case 'user.updated':
-          // Sync user data when user is updated
+          // Sync user data when user is updated with enhanced change tracking
           const updateResult = await userSyncService.syncUser(evt.data, {
             ...metadata,
             source: 'clerk_webhook',
-            action: 'user_updated'
+            action: 'user_updated',
+            webhookEvent: true
           })
           
           if (updateResult.error) {
@@ -113,7 +127,7 @@ export async function POST(req: NextRequest) {
             )
           }
           
-          // Handle 2FA enablement/disablement
+          // Handle 2FA enablement/disablement with enhanced logging
           if (evt.data.two_factor_enabled !== undefined) {
             await userSyncService.logAuthEvent(
               updateResult.user.id,
@@ -121,19 +135,23 @@ export async function POST(req: NextRequest) {
               {
                 ...metadata,
                 twoFactorEnabled: evt.data.two_factor_enabled,
-                action: evt.data.two_factor_enabled ? 'enabled' : 'disabled'
+                action: evt.data.two_factor_enabled ? 'enabled' : 'disabled',
+                securityEnhancement: true
               }
             )
             
             console.log(`2FA ${evt.data.two_factor_enabled ? 'enabled' : 'disabled'} for user:`, {
               userId: updateResult.user.id,
-              email: updateResult.user.email
+              email: updateResult.user.email,
+              securityLevel: evt.data.two_factor_enabled ? 'enhanced' : 'standard'
             })
           }
           
           console.log(`User updated and synced:`, {
             userId: updateResult.user.id,
-            email: updateResult.user.email
+            email: updateResult.user.email,
+            changes: updateResult.syncMetadata?.changes || [],
+            syncSource: updateResult.syncMetadata?.source
           })
           break
 
@@ -152,41 +170,83 @@ export async function POST(req: NextRequest) {
           break
 
         case 'session.created':
-          // Handle session creation
+          // Handle session creation with enhanced tracking
           await userSyncService.handleSessionCreated(
             evt.data.user_id,
             evt.data.id,
             {
               ...metadata,
               source: 'clerk_webhook',
-              action: 'session_created'
+              action: 'session_created',
+              sessionData: {
+                status: evt.data.status,
+                lastActiveAt: evt.data.last_active_at,
+                expireAt: evt.data.expire_at,
+                abandonAt: evt.data.abandon_at
+              }
             }
           )
           
-          // Update last sign-in timestamp
-          await userSyncService.updateLastSignIn(evt.data.user_id)
-          
-          console.log('Session created:', {
+          // Update last sign-in timestamp with enhanced metadata
+          await userSyncService.updateLastSignIn(evt.data.user_id, {
             sessionId: evt.data.id,
-            userId: evt.data.user_id
+            sessionStatus: evt.data.status,
+            timestamp: new Date().toISOString()
+          })
+          
+          // Track session creation for security monitoring
+          await securityEventTracker.trackSessionEvent(
+            evt.data.user_id,
+            evt.data.id,
+            'session_created',
+            {
+              ...metadata,
+              sessionData: evt.data
+            }
+          )
+          
+          console.log('Session created with enhanced tracking:', {
+            sessionId: evt.data.id,
+            userId: evt.data.user_id,
+            status: evt.data.status,
+            expireAt: evt.data.expire_at
           })
           break
 
         case 'session.ended':
-          // Handle session end
+          // Handle session end with enhanced tracking
           await userSyncService.handleSessionEnded(
             evt.data.user_id,
             evt.data.id,
             {
               ...metadata,
               source: 'clerk_webhook',
-              action: 'session_ended'
+              action: 'session_ended',
+              sessionData: {
+                status: evt.data.status,
+                endedAt: new Date().toISOString(),
+                reason: evt.data.status === 'expired' ? 'expired' : 'user_logout'
+              }
             }
           )
           
-          console.log('Session ended:', {
+          // Track session end for security monitoring
+          await securityEventTracker.trackSessionEvent(
+            evt.data.user_id,
+            evt.data.id,
+            'session_ended',
+            {
+              ...metadata,
+              sessionData: evt.data,
+              endReason: evt.data.status === 'expired' ? 'expired' : 'user_logout'
+            }
+          )
+          
+          console.log('Session ended with enhanced tracking:', {
             sessionId: evt.data.id,
-            userId: evt.data.user_id
+            userId: evt.data.user_id,
+            status: evt.data.status,
+            endReason: evt.data.status === 'expired' ? 'expired' : 'user_logout'
           })
           break
 
@@ -201,15 +261,188 @@ export async function POST(req: NextRequest) {
                 {
                   ...metadata,
                   emailAddress: evt.data.email_address,
-                  verified: true
+                  verified: true,
+                  verificationStrategy: evt.data.verification?.strategy
+                }
+              )
+              
+              // Track email verification for security monitoring
+              await securityEventTracker.trackSecurityEvent(
+                user.id,
+                'email_verified',
+                {
+                  emailAddress: evt.data.email_address,
+                  verificationMethod: evt.data.verification?.strategy,
+                  ...metadata
                 }
               )
             }
           }
           break
 
+        case 'session.revoked':
+          // Handle session revocation (security event)
+          const revokedUser = await userSyncService.getUserByClerkId(evt.data.user_id)
+          if (revokedUser) {
+            await userSyncService.logAuthEvent(
+              revokedUser.id,
+              AuthEventType.SESSION_ENDED,
+              {
+                ...metadata,
+                sessionId: evt.data.id,
+                reason: 'revoked',
+                revokedBy: evt.data.revoked_by || 'system'
+              }
+            )
+            
+            // Track session revocation as security event
+            await securityEventTracker.trackSecurityEvent(
+              revokedUser.id,
+              'session_revoked',
+              {
+                sessionId: evt.data.id,
+                revokedBy: evt.data.revoked_by || 'system',
+                reason: 'security_revocation',
+                ...metadata
+              }
+            )
+          }
+          
+          console.log('Session revoked:', {
+            sessionId: evt.data.id,
+            userId: evt.data.user_id,
+            revokedBy: evt.data.revoked_by
+          })
+          break
+
+        case 'user.banned':
+          // Handle user ban events
+          const bannedUser = await userSyncService.getUserByClerkId(evt.data.id)
+          if (bannedUser) {
+            await userSyncService.updateUserStatus(
+              evt.data.id,
+              'suspended',
+              'Account banned by administrator',
+              'system'
+            )
+            
+            await userSyncService.logAuthEvent(
+              bannedUser.id,
+              AuthEventType.ACCOUNT_LOCKED,
+              {
+                ...metadata,
+                reason: 'banned',
+                bannedBy: 'administrator'
+              }
+            )
+            
+            // Create security incident for user ban
+            await securityEventTracker.createSecurityIncident({
+              type: 'account_takeover',
+              severity: 'high',
+              userId: bannedUser.id,
+              description: `User account ${evt.data.id} has been banned`,
+              evidence: {
+                clerkEvent: evt,
+                timestamp: new Date().toISOString()
+              },
+              actions: ['account_suspended', 'sessions_revoked']
+            })
+          }
+          
+          console.log('User banned:', {
+            userId: evt.data.id,
+            bannedAt: new Date().toISOString()
+          })
+          break
+
+        case 'user.unbanned':
+          // Handle user unban events
+          const unbannedUser = await userSyncService.getUserByClerkId(evt.data.id)
+          if (unbannedUser) {
+            await userSyncService.updateUserStatus(
+              evt.data.id,
+              'active',
+              'Account unbanned by administrator',
+              'system'
+            )
+            
+            await userSyncService.logAuthEvent(
+              unbannedUser.id,
+              AuthEventType.USER_UPDATED,
+              {
+                ...metadata,
+                action: 'unbanned',
+                unbannedBy: 'administrator'
+              }
+            )
+          }
+          
+          console.log('User unbanned:', {
+            userId: evt.data.id,
+            unbannedAt: new Date().toISOString()
+          })
+          break
+
+        case 'organizationMembership.created':
+          // Handle organization membership creation
+          const memberUser = await userSyncService.getUserByClerkId(evt.data.public_user_data?.user_id)
+          if (memberUser) {
+            await userSyncService.logAuthEvent(
+              memberUser.id,
+              AuthEventType.USER_UPDATED,
+              {
+                ...metadata,
+                action: 'organization_membership_created',
+                organizationId: evt.data.organization?.id,
+                role: evt.data.role
+              }
+            )
+          }
+          
+          console.log('Organization membership created:', {
+            userId: evt.data.public_user_data?.user_id,
+            organizationId: evt.data.organization?.id,
+            role: evt.data.role
+          })
+          break
+
+        case 'organizationMembership.deleted':
+          // Handle organization membership deletion
+          const formerMemberUser = await userSyncService.getUserByClerkId(evt.data.public_user_data?.user_id)
+          if (formerMemberUser) {
+            await userSyncService.logAuthEvent(
+              formerMemberUser.id,
+              AuthEventType.USER_UPDATED,
+              {
+                ...metadata,
+                action: 'organization_membership_deleted',
+                organizationId: evt.data.organization?.id,
+                previousRole: evt.data.role
+              }
+            )
+          }
+          
+          console.log('Organization membership deleted:', {
+            userId: evt.data.public_user_data?.user_id,
+            organizationId: evt.data.organization?.id,
+            previousRole: evt.data.role
+          })
+          break
+
         default:
           console.log(`Unhandled webhook event type: ${eventType}`)
+          
+          // Log unhandled events for monitoring
+          await securityEventTracker.trackSecurityEvent(
+            undefined,
+            'webhook_unhandled_event',
+            {
+              eventType,
+              eventData: evt.data,
+              ...metadata
+            }
+          )
       }
 
       return NextResponse.json({ 

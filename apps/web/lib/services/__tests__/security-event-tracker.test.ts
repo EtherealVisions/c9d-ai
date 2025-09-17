@@ -615,4 +615,189 @@ describe('SecurityEventTracker', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Error resolving security incident:', expect.any(Error))
     })
   })
+
+  describe('trackSessionEvent', () => {
+    it('should track session created events', async () => {
+      const context = {
+        userId: 'user_123',
+        sessionId: 'sess_456',
+        ipAddress: '192.168.1.1',
+        userAgent: 'Mozilla/5.0',
+        metadata: {
+          sessionData: {
+            status: 'active',
+            expireAt: 1234567890
+          }
+        }
+      }
+
+      mockSecurityAuditService.logAuthenticationEvent.mockResolvedValue()
+      mockSecurityMonitoringService.monitorAuthenticationEvent.mockResolvedValue()
+
+      await tracker.trackSessionEvent('user_123', 'sess_456', 'session_created', context)
+
+      expect(mockSecurityAuditService.logAuthenticationEvent).toHaveBeenCalledWith(
+        'user_123',
+        'login',
+        expect.objectContaining({
+          sessionId: 'sess_456',
+          eventType: 'session_created',
+          sessionData: context.metadata.sessionData
+        }),
+        '192.168.1.1',
+        'Mozilla/5.0'
+      )
+
+      expect(mockSecurityMonitoringService.monitorAuthenticationEvent).toHaveBeenCalledWith(
+        'user_123',
+        'login',
+        expect.objectContaining({
+          sessionId: 'sess_456'
+        }),
+        '192.168.1.1',
+        'Mozilla/5.0'
+      )
+    })
+
+    it('should track session ended events', async () => {
+      const context = {
+        userId: 'user_123',
+        sessionId: 'sess_456',
+        metadata: {
+          endReason: 'expired'
+        }
+      }
+
+      mockSecurityAuditService.logAuthenticationEvent.mockResolvedValue()
+
+      await tracker.trackSessionEvent('user_123', 'sess_456', 'session_ended', context)
+
+      expect(mockSecurityAuditService.logAuthenticationEvent).toHaveBeenCalledWith(
+        'user_123',
+        'logout',
+        expect.objectContaining({
+          sessionId: 'sess_456',
+          eventType: 'session_ended'
+        }),
+        undefined,
+        undefined
+      )
+    })
+
+    it('should track session revoked events as security events', async () => {
+      const context = {
+        userId: 'user_123',
+        sessionId: 'sess_456',
+        metadata: {
+          revokedBy: 'admin_789',
+          reason: 'security_violation'
+        }
+      }
+
+      mockSecurityAuditService.logAuthenticationEvent.mockResolvedValue()
+      mockSecurityAuditService.logSecurityEvent.mockResolvedValue()
+
+      await tracker.trackSessionEvent('user_123', 'sess_456', 'session_revoked', context)
+
+      expect(mockSecurityAuditService.logAuthenticationEvent).toHaveBeenCalledWith(
+        'user_123',
+        'logout',
+        expect.objectContaining({
+          sessionId: 'sess_456',
+          eventType: 'session_revoked'
+        }),
+        undefined,
+        undefined
+      )
+
+      expect(mockSecurityAuditService.logSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user_123',
+          action: 'security.session_revoked',
+          resourceType: 'security_event',
+          severity: 'error'
+        })
+      )
+    })
+  })
+
+  describe('trackSecurityEvent', () => {
+    it('should track general security events', async () => {
+      const context = {
+        eventType: 'email_verified',
+        emailAddress: 'test@example.com',
+        ipAddress: '192.168.1.1'
+      }
+
+      mockSecurityAuditService.logSecurityEvent.mockResolvedValue()
+
+      await tracker.trackSecurityEvent('user_123', 'email_verified', context)
+
+      expect(mockSecurityAuditService.logSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user_123',
+          action: 'security.email_verified',
+          resourceType: 'security_event',
+          severity: 'info',
+          metadata: expect.objectContaining({
+            eventType: 'email_verified',
+            emailAddress: 'test@example.com'
+          })
+        })
+      )
+    })
+
+    it('should send notifications for high-severity events', async () => {
+      const context = {
+        eventType: 'session_revoked',
+        sessionId: 'sess_456'
+      }
+
+      mockSecurityAuditService.logSecurityEvent.mockResolvedValue()
+      mockSecurityNotificationService.sendSecurityNotification.mockResolvedValue([])
+
+      await tracker.trackSecurityEvent('user_123', 'session_revoked', context)
+
+      expect(mockSecurityNotificationService.sendSecurityNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user_123',
+          type: 'security_alert',
+          title: 'Session Revoked',
+          message: 'Your session has been revoked for security reasons.',
+          severity: 'error'
+        })
+      )
+    })
+
+    it('should not send notifications for low-severity events', async () => {
+      const context = {
+        eventType: 'profile_updated'
+      }
+
+      mockSecurityAuditService.logSecurityEvent.mockResolvedValue()
+
+      await tracker.trackSecurityEvent('user_123', 'profile_updated', context)
+
+      expect(mockSecurityNotificationService.sendSecurityNotification).not.toHaveBeenCalled()
+    })
+
+    it('should handle events without userId', async () => {
+      const context = {
+        eventType: 'webhook_unhandled_event',
+        eventData: { type: 'unknown.event' }
+      }
+
+      mockSecurityAuditService.logSecurityEvent.mockResolvedValue()
+
+      await tracker.trackSecurityEvent(undefined, 'webhook_unhandled_event', context)
+
+      expect(mockSecurityAuditService.logSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: undefined,
+          action: 'security.webhook_unhandled_event',
+          resourceId: 'system'
+        })
+      )
+    })
+  })
 })
