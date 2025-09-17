@@ -12,22 +12,12 @@
     }
   },
   "env": {
-    "PHASE_SERVICE_TOKEN": "@phase_service_token_staging",
-    "DATABASE_URL": "@database_url_staging",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key_staging",
-    "CLERK_SECRET_KEY": "@clerk_secret_key_staging",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url_staging",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key_staging",
+    "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
     "NODE_ENV": "staging"
   },
   "build": {
     "env": {
-      "PHASE_SERVICE_TOKEN": "@phase_service_token_staging",
-      "DATABASE_URL": "@database_url_staging",
-      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key_staging",
-      "CLERK_SECRET_KEY": "@clerk_secret_key_staging",
-      "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url_staging",
-      "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key_staging",
+      "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
       "NODE_ENV": "staging"
     }
   },
