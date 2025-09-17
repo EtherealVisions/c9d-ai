@@ -121,15 +121,10 @@ export class AuthOnboardingIntegrationService {
       organizationId: context.organizationId,
       userRole: context.userRole || await this.determineUserRole(user, context.organizationId),
       subscriptionTier: context.subscriptionTier || 'free',
-      invitationToken: context.invitationToken,
+
       preferences: {
         ...user.preferences,
         redirectAfterOnboarding: context.redirectAfterOnboarding
-      },
-      metadata: {
-        authenticationMethod: 'clerk',
-        registrationSource: 'web_app',
-        hasExistingOrganization: !!context.organizationId
       }
     }
 

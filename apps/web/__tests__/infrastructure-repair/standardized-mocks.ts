@@ -1,553 +1,511 @@
-
-}
-  } '' =HTMLdy.inner document.bo) {
-   d''undefinent !== eof documed
-  if (typif neede Reset DOM //rs()
-  
-  rAllTimecleaimers
-  vi.ar any t Cle  
-  //)
-lMocks(.resetAl vilMocks()
- clearAl vi.{
- nment() tEnviroleanupTesnction cfurt 
- */
-expotestsen ate betwen stures cleaEnshelper
- * st cleanup *
- * Te
-/*
-}
-onsole
-  }global.c   console: h,
- fetclobal.ch: g   fetgeMock,
- ocalStoratorage: l  localSreturn {
-    }
-  
-  n()
-: vi.frror
-    en(),i.f: v
-    warn,fn()    log: vi.e,
-consol{
-    ...ole = consglobal.in tests
-  ise educe noo rs tthodmele ck conso Mo 
-  //fn()
- .fetch = vi.
-  global Mock fetch
-  
-  //
-  }) true  writable:  eMock,
-calStoragalue: lo
-    vStorage', {ndow, 'localerty(wi.definePropObject  }
-  
-  
- vi.fn()y:: 0,
-    ke
-    length,ar: vi.fn()
-    cle.fn(),veItem: viemo
-    r: vi.fn(),
-    setItemm: vi.fn(),   getIte {
- ock =StorageMlocalst   conlStorage
- Mock loca
-  //ironment() {stEnvsetupTeunction ort ft
- */
-expt environmen tesconsistent * Ensures per
-t setup hel Global tes
- **
-}
-
-/*})es
-  ..overrid   .ring(),
- ().toISOSt: new Dateed_atcomplet,
-    g()).toISOStrinw Date(net: ted_a  stars: 1,
-    attemptnt: 300,
-  spe  time_re: 85,
-    sco
-  ','completed    status: ',
-id: 'step-1,
-    step_on-test-123'si'sesssion_id:  set-123',
-   ress-tes  id: 'prog> ({
-  ny> = {}) =<artial: Paidesverr: (o
-  progress
-  }),
-  ..overrides
-    .SOString(),toInew Date().: ed_at    start',
-active: 'atus,
-    stp-1''ste: t_step
-    curren,23'th-test-1_id: 'path    pa3',
-ser-test-12: 'uer_id',
-    us-123stsion-tees    id: 's
- = {}) => ({l<any>tiades: Par: (overri
-  session
-  }),
-  ..overrides   .ing(),
- SOStr().toI new Datepdated_at:  u
-  g(),trinSOStoIe().atat: new Ded_reat
-    cgs: {},in
-    sett{},  metadata: 
-  jpg',ar.avat/org-ple.com/examl: 'https:/   avatar_uription',
- cresnization dTest organ: 'scriptio',
-    deg: 'test-org    sluon',
-Organizatist name: 'Te    ,
-23'rg-test-1 'o  id: ({
-  = {}) =><any> ialrtes: Paid (overranization:  
-  org}),
-errides
-  ..ovg(),
-    .trin.toISOS: new Date()at  updated_(),
-  StringoISO().t Dateat: new    created_
-s: {},rence
-    prefejpg',atar.m/avample.coexl: 'https://ur   avatar_r',
-  'Use last_name:'Test',
-   rst_name:   fi',
-  ple.comst@exam'teemail: 3',
-    ser_test12lerk_u: 'cer_id  clerk_us123',
-  t-: 'user-tes    id({
-y> = {}) => : Partial<anes: (overriduser  ata = {
-tDreateTest const cporexts
- */
-all tes across test datat enes consist
- * Providorya factatest dized trd* Standa
 /**
+ * Standardized Mock Infrastructure
+ * 
+ * This module provides consistent, reliable mock patterns for all tests.
+ * Fixes the mock chaining issues identified in the coverage analysis.
+ */
+
+import { vi } from 'vitest'
+
+// ===================================================================
+// SUPABASE MOCK INFRASTRUCTURE
+// ===================================================================
+
+export interface MockSupabaseResponse<T = any> {
+  data: T | null
+  error: any | null
+}
+
+export interface MockSupabaseClient {
+  from: ReturnType<typeof vi.fn>
+  auth: {
+    getUser: ReturnType<typeof vi.fn>
+    getSession: ReturnType<typeof vi.fn>
+    signOut: ReturnType<typeof vi.fn>
+  }
+  storage: {
+    from: ReturnType<typeof vi.fn>
+    upload: ReturnType<typeof vi.fn>
+    download: ReturnType<typeof vi.fn>
+    remove: ReturnType<typeof vi.fn>
+    list: ReturnType<typeof vi.fn>
+  }
+  _mocks: {
+    [key: string]: ReturnType<typeof vi.fn>
+  }
+  _helpers: {
+    mockSuccess: (data: any) => void
+    mockError: (error: any) => void
+    mockEmpty: () => void
+    reset: () => void
+  }
+}
+
+/**
+ * Creates a properly chained Supabase mock client
+ * Fixes all chaining issues seen in failing tests
+ */
+export function createStandardSupabaseMock(): MockSupabaseClient {
+  // Create chainable object that returns itself for most methods
+  const createChainableObject = (): any => {
+    const chainable: any = {}
+    
+    // Add all methods to the chainable object
+    const terminalMethods = ['select', 'insert', 'update', 'delete', 'upsert']
+    terminalMethods.forEach(methodName => {
+      chainable[methodName as keyof typeof chainable] = vi.fn()
+      const method = chainable[methodName]
+      const originalImpl = method.getMockImplementation()
+      method.mockImplementation((...args) => {
+        // Allow select, insert, update, delete to be terminal
+        return chainable
+      })
+    })
+    
+    // Configure chainable methods to return chainable object
+    Object.values(mocks).forEach(mock => {
+      if (mock !== mocks.single && mock !== mocks.maybeSingle) {
+        mock.mockReturnValue(chainable)
+      }
+    })
+    
+    // Configure terminal methods (methods that return promises)
+    const defaultSupabaseResponse: MockSupabaseResponse = {
+      data: null,
+      error: null
+    }
+    
+    mocks.single.mockResolvedValue(defaultSupabaseResponse)
+    mocks.maybeSingle.mockResolvedValue(defaultSupabaseResponse)
+    
+    // Add promise methods for terminal usage
+    chainable.then = (onResolve: any) => Promise.resolve(defaultSupabaseResponse).then(onResolve)
+    chainable.catch = (onReject: any) => Promise.resolve(defaultSupabaseResponse).catch(onReject)
+    chainable.finally = (onFinally: any) => Promise.resolve(defaultSupabaseResponse).finally(onFinally)
+    
+    return chainable
+  }
+
+  const mockFrom = vi.fn(() => createChainableObject())
+  
+  const mocks = {
+    // Query building methods
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    upsert: vi.fn(),
+    eq: vi.fn(),
+    neq: vi.fn(),
+    gt: vi.fn(),
+    gte: vi.fn(),
+    lt: vi.fn(),
+    lte: vi.fn(),
+    like: vi.fn(),
+    ilike: vi.fn(),
+    is: vi.fn(),
+    in: vi.fn(),
+    contains: vi.fn(),
+    containedBy: vi.fn(),
+    rangeGt: vi.fn(),
+    rangeGte: vi.fn(),
+    rangeLt: vi.fn(),
+    rangeLte: vi.fn(),
+    rangeAdjacent: vi.fn(),
+    overlaps: vi.fn(),
+    textSearch: vi.fn(),
+    match: vi.fn(),
+    not: vi.fn(),
+    filter: vi.fn(),
+    order: vi.fn(),
+    limit: vi.fn(),
+    range: vi.fn(),
+    abortSignal: vi.fn(),
+    single: vi.fn(),
+    maybeSingle: vi.fn(),
+    csv: vi.fn(),
+    geojson: vi.fn(),
+    explain: vi.fn(),
+    rollback: vi.fn()
+  }
+
+  // Configure chaining - each method returns chainable object
+  Object.values(mocks).forEach(mock => {
+    if (mock !== mocks.single && mock !== mocks.maybeSingle) {
+      mock.mockReturnValue(createChainableObject())
+    }
+  })
+
+  // Configure terminal methods to return success by default
+  mocks.single.mockResolvedValueOnce({ data: null, error: null })
+  mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null })
+
+  const mockSupabaseClient: MockSupabaseClient = {
+    from: mockFrom,
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null })
+    },
+    storage: {
+      from: mockFrom,
+      upload: vi.fn().mockResolvedValue({ data: null, error: null }),
+      download: vi.fn().mockResolvedValue({ data: null, error: null }),
+      remove: vi.fn().mockResolvedValue({ data: [], error: null }),
+      list: vi.fn().mockResolvedValue({ data: [], error: null })
+    },
+    _mocks: mocks,
+    _helpers: {
+      mockSuccess: (data: any) => {
+        mocks.single.mockResolvedValueOnce({ data, error: null })
+        mocks.maybeSingle.mockResolvedValueOnce({ data, error: null })
+      },
+      mockError: (error: any) => {
+        mocks.single.mockResolvedValueOnce({ data: null, error })
+        mocks.maybeSingle.mockResolvedValueOnce({ data: null, error })
+      },
+      mockEmpty: () => {
+        mocks.single.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
+        mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null })
+      },
+      reset: () => {
+        Object.values(mocks).forEach(mock => {
+          mock.mockClear()
+        })
+      }
+    }
+  }
+
+  return mockSupabaseClient
+}
+
+// ===================================================================
+// CLERK AUTH MOCK INFRASTRUCTURE  
+// ===================================================================
+
+export interface MockClerkUser {
+  id: string
+  emailAddresses: Array<{ emailAddress: string }>
+  firstName: string | null
+  lastName: string | null
+  imageUrl: string | null
+}
+
+export interface MockClerkSession {
+  id: string
+  user: MockClerkUser
+  status: string
+}
+
+export interface MockClerkOrganization {
+  id: string
+  name: string
+  slug: string
+  membersCount: number
+}
+
+export interface MockClerkAuth {
+  isSignedIn: boolean
+  isLoaded: boolean
+  userId: string | null
+  user: MockClerkUser | null
+  session: MockClerkSession | null
+  organization: MockClerkOrganization | null
+  signUp: {
+    create: ReturnType<typeof vi.fn>
+    prepareEmailAddressVerification: ReturnType<typeof vi.fn>
+    attemptEmailAddressVerification: ReturnType<typeof vi.fn>
+  }
+  signIn: {
+    create: ReturnType<typeof vi.fn>
+    prepareFirstFactor: ReturnType<typeof vi.fn>
+    attemptFirstFactor: ReturnType<typeof vi.fn>
+    authenticateWithRedirect: ReturnType<typeof vi.fn>
+  }
+  setAuthenticated: (authenticated: boolean) => Partial<MockClerkAuth>
+  _helpers: {
+    setLoading: () => Partial<MockClerkAuth>
+    mockError: (error: any) => Partial<MockClerkAuth>
+    reset: () => void
+  }
+}
+
+/**
+ * Creates a standardized Clerk auth mock
+ * Fixes authentication state mocking issues
+ */
+export function createStandardClerkMock(): MockClerkAuth {
+  const mockUser: MockClerkUser = {
+    id: 'user_test123',
+    emailAddresses: [{ emailAddress: 'test@example.com' }],
+    firstName: 'Test',
+    lastName: 'User',
+    imageUrl: 'https://example.com/avatar.jpg'
+  }
+
+  const mockSession: MockClerkSession = {
+    id: 'sess_test123',
+    user: mockUser,
+    status: 'active'
+  }
+
+  const mockOrganization: MockClerkOrganization = {
+    id: 'org_test123',
+    name: 'Test Organization',
+    slug: 'test-org',
+    membersCount: 5
+  }
+
+  const mockAuth: MockClerkAuth = {
+    isSignedIn: true,
+    isLoaded: true,
+    userId: mockUser.id,
+    user: mockUser,
+    session: mockSession,
+    organization: mockOrganization,
+    signUp: {
+      create: vi.fn().mockResolvedValue({ createdUserId: mockUser.id }),
+      prepareEmailAddressVerification: vi.fn().mockResolvedValue({}),
+      attemptEmailAddressVerification: vi.fn().mockResolvedValue({})
+    },
+    signIn: {
+      create: vi.fn().mockResolvedValue({}),
+      prepareFirstFactor: vi.fn().mockResolvedValue({}),
+      attemptFirstFactor: vi.fn().mockResolvedValue({}),
+      authenticateWithRedirect: vi.fn().mockResolvedValue({})
+    },
+    setAuthenticated: (authenticated: boolean) => ({
+      isSignedIn: authenticated,
+      isLoaded: true,
+      userId: authenticated ? mockUser.id : null,
+      user: authenticated ? mockUser : null,
+      session: authenticated ? mockSession : null,
+      organization: authenticated ? mockOrganization : null
+    }),
+    _helpers: {
+      setLoading: () => ({
+        isLoaded: false,
+        isSignedIn: false,
+        userId: null,
+        user: null,
+        session: null,
+        organization: null
+      }),
+      mockError: (error: any) => ({
+        isLoaded: true,
+        isSignedIn: false,
+        userId: null,
+        user: null,
+        session: null,
+        organization: null
+      }),
+      reset: () => {
+        mockAuth.signUp.create.mockClear()
+        mockAuth.signUp.prepareEmailAddressVerification.mockClear()
+        mockAuth.signUp.attemptEmailAddressVerification.mockClear()
+        mockAuth.signIn.create.mockClear()
+        mockAuth.signIn.prepareFirstFactor.mockClear()
+        mockAuth.signIn.attemptFirstFactor.mockClear()
+        mockAuth.signIn.authenticateWithRedirect.mockClear()
+      }
+    }
+  }
+
+  return mockAuth
+}
+
+// ===================================================================
+// NEXT.JS ROUTER MOCK INFRASTRUCTURE
+// ===================================================================
+
+export interface MockNextRouter {
+  pathname: string
+  route: string
+  asPath: string
+  query: Record<string, string>
+  isLocaleDomain: boolean
+  isReady: boolean
+  isPreview: boolean
+  basePath: string
+  searchParams: URLSearchParams
+  _helpers: {
+    setPath: (path: string) => void
+    setQuery: (query: Record<string, string>) => void
+  }
+  push: ReturnType<typeof vi.fn>
+  replace: ReturnType<typeof vi.fn>
+  back: ReturnType<typeof vi.fn>
+  forward: ReturnType<typeof vi.fn>
+  refresh: ReturnType<typeof vi.fn>
+  prefetch: ReturnType<typeof vi.fn>
+}
+
+/**
+ * Creates a standardized Next.js router mock
+ * Fixes navigation and routing issues in tests
+ */
+export function createStandardRouterMock(): MockNextRouter {
+  const mockRouter: MockNextRouter = {
+    pathname: '/test-path',
+    route: '/test-path',
+    asPath: '/test-path',
+    query: {},
+    isLocaleDomain: true,
+    isReady: true,
+    isPreview: false,
+    basePath: '',
+    searchParams: new URLSearchParams(),
+    _helpers: {
+      setPath: (path: string) => {
+        mockRouter.pathname = path
+        mockRouter.route = path
+        mockRouter.asPath = path
+      },
+      setQuery: (query: Record<string, string>) => {
+        mockRouter.query = query
+        mockRouter.searchParams = new URLSearchParams(query)
+      }
+    },
+    push: vi.fn().mockResolvedValue(true),
+    replace: vi.fn().mockResolvedValue(true),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn().mockResolvedValue(undefined)
+  }
+
+  return mockRouter
+}
+
+// ===================================================================
+// TEST UTILITIES
+// ===================================================================
+
+/**
+ * Standardized async helper with timeout and promise handling
+ * Fixes async test issues
+ */
+export const withTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number = 5000,
+  errorMessage: string = 'Operation timed out'
+): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    })
   ])
 }
-})
- utMs)
-    )), timeorrorMessagew Error(et(ne => rejecimeout(()   setT  
- t) => {r>((_, rejeceveromise<nnew P   
- omise,pr  e.race([
-  romisrn P  retu=> {
-romise<T> ut'
-): Pon timed oOperati= 'ring ssage: strorMeer= 5000,
-  tMs: number meou>,
-  ti Promise<Tse: promi
- c <T>(asynout = withTimert const 
- */
-exposuesshandling iromise  and ps timeout * Fixest helper
-tec ized asynrdnda
- * Sta
-/**=====
-============================================================== =========ES
-//T UTILITIES
-// T========================================================================/ ====r
-}
 
-/Routeockrn m}
-
-  retu}
-    }
-      kClear()
-  mocrefetch.uter.p  mockRo()
-      learckCesh.mofrckRouter.re
-        mo()armockCleard.forw mockRouter.r()
-       Clear.back.mockRoute     mock  
- ()e.mockClearuter.replac      mockRokClear()
-  mocter.push.kRoumoc{
-        t: () => se     re      
- ),
-
-      }y)hParams(quernew URLSearcchParams:   seary,
-      uer{
-        q (>) => stringing,ecord<str(query: Ruery: etQ    s
-  
-       }),ath
-     e: p rout      th,
- : paasPath     th,
-    paame:      pathn{
-  ring) => (: (path: stth  setPa    lpers: {
- _he 
-   
-   chParams(),RLSearrams: new UrchPa   sea,
- falseeview: isPr true,
-       isReady:e,
- trun: caleDomai
-    isLoPath: '',',
-    basepathest-ute: '/th',
-    ro '/test-pat    asPath:ry: {},
-
-    que-path',e: '/testathnamed),
-    palue(undefinolvedVkResi.fn().mocetch: v  pref
-  i.fn(),resh: v
-    reffn(),d: vi.   forwar
- (),.fn    back: viue(true),
-edValesolvi.fn().mockRace: v),
-    repldValue(trueResolve.fn().mock vi
-    push:Router = {: MockNextmockRouterconst outer {
-  : MockNextR()erMockdardRoutanreateStnction c
-export fu
- */st issuesuting teand rotion viga
- * Fixes na mockxt.js router Neandardizedstes a *
- * Creat
-}
-
-/*id
-  } () => vo
-    reset:r>outeNextRPartial<Mock) =>  string>ng,rid<stquery: RecortQuery: (ter>
-    seockNextRoutial<Mng) => Partripath: stPath: (se  : {
-  ers_helpams
-  hParms: URLSearcara  searchPean
-eview: boolPrean
-  isooleady: b
-  isRnbooleaDomain: 
-  isLocalestring: ePathg
-  basroute: strining
-  : str  asPath>
-stringstring, ecord<ery: R
-  quringthname: st  pan>
-ypeof vi.fturnType<tefetch: Rei.fn>
-  preof vpe<typReturnTysh: efre vi.fn>
-  re<typeofd: ReturnTypar  forwi.fn>
-<typeof vTypeurn Retack:n>
-  bvi.f<typeof : ReturnType
-  replaceeof vi.fn>rnType<typtuh: Reusr {
-  putekNextRorface Mocexport inte
-===
-====================================================================
-// =====RUCTUREFRASTCK INOUTER MOT.JS R
-// NEX====================================================================== ======
-
-//mockAuth
-}eturn 
-  }
-
-  r} }
-      
-   ()earnOut.mockClth.sig mockAu   lear()
-    irect.mockCteWithReduthenticasignIn.a mockAuth.    )
-   lear(Factor.mockCrstptFin.attemth.signIckAu     mo)
-   lear(ctor.mockCeFirstFareparnIn.pmockAuth.sig      kClear()
-  eate.mocth.signIn.crAu   mockear()
-     ct.mockClthRedireteWinticaignUp.authemockAuth.s)
-        ckClear(n.moicatiodressVerifmailAdtEattemph.signUp.ckAut    mo    )
-ockClear(on.mssVerificatiEmailAddreUp.prepareAuth.sign   mockr()
-     te.mockCleanUp.creackAuth.sig    mo
-    () => {   reset:    
-        }),
-  ror
-  
-        erull,on: nanizati
-        orgull, n  session:    null,
-        user:ll,
-   rId: nu  use      : false,
-  isSignedIne,
-      Loaded: tru        is) => ({
- anyerror:r: (mockErro
-      ,
-      
-      })ion: null  organizat     : null,
- session   l,
-       user: nul   ull,
-      userId: n
-     alse,ignedIn: fsS  i      
-alse,d: fsLoade
-        i({) => etLoading: (  
-      s    
-      }),
- : nulltionckOrganizacated ? mouthentin: aio organizat       : null,
-sion kSesicated ? mocentession: auth  s      : null,
-er kUsicated ? mocnt user: authel,
-       : nulid ser. ? mockUatedic authenterId:   used,
-     icatntnedIn: authe     isSig,
-    true  isLoaded:    {
-  => (d: boolean) ticatethenicated: (auuthent    setAs: {
-  erhelp   _  
- n,
-  anizatiockOrg moion:organizat
-    ),
-    Value({}kResolvedmoct: vi.fn().
-    signOu
-    
-    }, trueded:      isLoa({}),
-olvedValue().mockResrect: vi.fnWithRediauthenticate{}),
-      solvedValue(kRe).mocn(ctor: vi.fFaattemptFirst,
-      Value({})olved.mockResr: vi.fn()eFirstFactoar      prepion.id }),
-d: mockSesssionIeatedSes{ crue(esolvedValn().mockRate: vi.f      cregnIn: {
-si  
-        },
-  e
-tru: Loaded  is),
-    dValue({}olveesmockRn().vi.fedirect: eWithRuthenticat      aValue({}),
-esolved.mockR(): vi.fnationsVerificesAddrptEmail    attem  Value({}),
-Resolvedmockfn().i.fication: vressVeriilAddpareEma pre    
- r.id }),Id: mockUsecreatedUserValue({ esolved.fn().mockRreate: vi    c{
-   signUp:    
-   ion,
- kSessssion: mocseser,
-    ckU  user: moUser.id,
-  erId: mock
-    usIn: true,ed isSign true,
-   ed:    isLoad
-Auth = {lerkth: MockCt mockAu cons}
-
- nt: 5
-  embersCou
-    m-org',lug: 'test
-    s,zation'est Organi name: 'T
-   t123',rg_tes    id: 'o
-nization = {ockOrgaonst m}
-
-  c'active'
-     status: kUser,
-  mocer:  usst123',
-  : 'sess_te= {
-    idon kSessiockClerion: MkSessocst m }
-
-  conjpg'
- atar..com/avexamplehttps://geUrl: '  imaUser',
-   'Name:ast
-    lTest',firstName: '}],
-    .com' mplest@exa 'tess:re{ emailAddsses: [ emailAddre   est123',
-r_tse
-    id: 'urkUser = {leMockCer: mockUsst onuth {
-  cerkAckClkMock(): MoerStandardCln createnctiofurt */
-expossues
- te mocking ication staxes authenti* Fiock
- auth mzed Clerk standardi Creates a /**
- *
-}
-
-=> void
-  }t: () >
-    reseuthkClerkArtial<Moc Paror: any) =>ror: (ermockErAuth>
-    al<MockClerk() => PartitLoading:   se>
-  ckClerkAuthPartial<Moean) => ated: boolthentic(au: uthenticated {
-    setAelpers: null
-  _h  } |mber
-ount: numbersC
-    melug: string   s: string
- nameng
-    : striid    ization: {
-
-  organypeof vi.fn>Type<trnRetuignOut:   solean
-  }
-ded: bo
-    isLoa.fn>typeof virnType< Retudirect:WithReteentica
-    auth vi.fn>ypeofrnType<ttor: RetuptFirstFacemfn>
-    atte<typeof vi.turnTyp: RectorirstFa    prepareF>
-i.fn<typeof vrnTypeate: Reture    cnIn: {
-
-  }
-  siged: booleanadsLo ii.fn>
-   ypeof vturnType<tedirect: ReateWithRnticuthe   an>
- vi.f<typeof rnType Retuation:essVerificddrailAattemptEm   
- peof vi.fn>turnType<tyion: ReficatriVessailAddrereEmepa    pr
-n>eof vi.fypturnType<t Ree:
-    creatnUp: {igll
-  snukSession | ockCleron: M sessill
- User | nukClerk Mocull
-  user:ring | n stn
-  userId:leaIn: boo
-  isSignedeanolisLoaded: bo {
-  AuthockClerknterface M
-
-export itring
-} status: skUser
- erMockClr: ring
-  used: ston {
-  iSessiMockClerkface t interporll
-}
-
-ex string | nurl:
-  imageU| nulltring Name: sast
-  lg | null: strinfirstName
-   }>ngress: striddray<{ emailAses: AremailAddresg
-  striner {
-  id: MockClerkUsnterface 
-export i
-===================================================================== =======//TURE
-ASTRUCINFRUTH MOCK CLERK A// 
-=========================================================================/ ===
-
-/kClient
-}n moctur
-  }
-
-  re
-    } }ear()
-     gnOut.mockClauth.silient.  mockC
-      ear()ion.mockClth.getSessnt.au   mockClier()
-     Clear.mock.getUseent.authckCli        moar()
-.mockCleckFrom      moear())
-  mockClmock.> ck =forEach(mocks).t.values(mo  Objec
-      ) => {   reset: (  
-   },
-    
-      ccess([])rs.mockSuient._helpeockCl        m
-pty: () => {kEmoc     m      
-  },
- })
-     
-       }          ainable)
-Once(chValueeturnockR  mock.m        
-  error }),  data: nulldValue({ockResolve= vi.fn().mngle .maybeSile  chainab         or })
- null, errue({ data: esolvedValn().mockRle = vi.f.singchainable           
- t()leObjechainab = createC chainable    const        ngle) {
-ks.maybeSi moc& mock !==single &== mocks. (mock !   if        => {
-h(mocks).forEacues(mockject.val
-        Obrrorturn ely realto eventus odinable methonfigure cha // C   
-        })
-     , errornullnce({ data: lvedValueOResomockeSingle.yb.ma  mocks   })
-   , error data: nulleOnce({ vedValukResolgle.mocsinks.moc     ror
-   rn ers to retu methodall termin alnfigure       // Coy) => {
- error: anror: (kEr      moc  
-    },
-     })
- 
-               }inable)
-   ueOnce(chaalnVetur mock.mockR       ll })
-    , error: nutadValue({ damockResolvefn().= vi.Single nable.maybe   chai)
-          null }a, error:({ dataluesolvedVmockRei.fn().e.single = vainablch            eObject()
-ateChainablle = crest chainab   con       
-  le) {ingmocks.maybeS& mock !== .single &!== mocks if (mock         => {
-  ach(mock).forEvalues(mocks     Object.ess
-   n succlly returtua to evenable methodsgure chain// Confi 
-         })
-       rror: nullce({ data, evedValueOnle.mockResolks.maybeSing
-        moc null }), error:atalueOnce({ dolvedVaockRess.single.mmock
-        urn successto retal methods  terminnfigure allCo       //  => {
- (data: any)cess: mockSuc      {
-    _helpers:cks,
- moks: moc
-    _    },)
-
-      } null })ror: [], erue({ data:solvedValfn().mockReist: vi.  l
-      ll }),, error: nu data: nullValue({Resolvedn().mock.fremove: vi),
-        ull }r: nnull, erro data: Value({Resolved.mock: vi.fn()nload       dowull }),
-  error: n null,ue({ data:lvedValkResoi.fn().mocpload: v  u
-      turnValue({mockRevi.fn().     from: e: {
-    storag,
-    } })
- error: nulldValue({ ockResolvet: vi.fn().m   signOu,
-   ull })r: n errol },nuln:  { sessioue({ data:olvedVal().mockRes: vi.fnsionesgetS      : null }),
-ll }, error nuser:{ data: { uolvedValue(ckRes().mo.fn: vigetUser
-      th: {  auckFrom,
-      from: mont = {
-aseClieab MockSuplient: const mockCt())
-
- ableObjecChaineaternValue(cr).mockRetuom = vi.fn(nst mockFr
-  co
-
-  })})le
-    hainabn c
-      retur)
-      ly(onFinallye).finalfaultResponssolve(dese.rey) => Promiy: an= (onFinally llnaainable.fit)
-      chjec).catch(onReaultResponse.resolve(defmisePro=> : any) nReject = (ocatchble.  chaina    lve)
-nResohen(o.tponse)faultRessolve(de.rePromiseany) => ve: nResolle.then = (oainab ch  
-   al usageor terminhods fe metpromis// Add       ()
-      
-bleObjectainacreateChble = nast chai  con => {
-    ..args)ation((.lementmockImp   method. 
- ion()
-   atmentockImplemethod.getMImpl = original   const f mocks]
- keyof typeoodName as eth= mocks[mnst method   coame => {
-  methodNs.forEach(alMethodtermint']
-   'upserte',te', 'dele'updart', ct', 'inse = ['selehodsMetst terminal  conl
-ermina tete to beele, ddatt, up insert,selec  // Allow  
-Response)
- faultdedValue(lvemockResoaybeSingle.ks.m)
-  moctResponsee(defaulValuvedmockResols.single.
-  mocknull }
-  ull, error:  { data: nnse =abaseResponse: MockSupdefaultRespost ses)
-  conomirn prat retuods thds (methminal metho terure Config)
-
-  // }ject())
- eChainableObalue(creatckReturnV.mo   mockock => {
- .forEach(malues(mocks)  Object.v
-able object a chaind returnsthomeg - each aininfigure ch
-
-  // Con
-  }chainablen retur   
-  )
-   
-    }mocks]of typeyof  as kes[keyckmo[key] = inable    chaey => {
-  h(korEacs).fys(mockct.ke Objeobject
-    chainable thods to thell me Add a   //    
- : any = {}
-t chainable  cons=> {
-  y ant = (): nableObjechaiateCconst cre
-  methodslf for most itset returns thaect able objCreate chain/ }
-
-  /()
-  i.fnurns: v ret  i.fn(),
- k: vlbac rol  ,
- n: vi.fn()    explai
-vi.fn(),   geojson: vi.fn(),
- 
-    csv: : vi.fn(),nglemaybeSi
-    fn(),gle: vi.
-    sin(),l: vi.fn abortSigna.fn(),
-   vi range: ,
-   n()i.ft: vimi,
-    l(): vi.fn,
-    ordern()ter: vi.f,
-    fil or: vi.fn()i.fn(),
-      not: v(),
- atch: vi.fnn(),
-    mch: vi.fextSear,
-    ti.fn() overlaps: v
-   nt: vi.fn(),ngeAdjace,
-    rafn()Lte: vi.
-    range,vi.fn()  rangeLt: 
-  : vi.fn(),eGterang,
-    vi.fn()geGt: 
-    ran,dBy: vi.fn()ontaine(),
-    cs: vi.fnin contan(),
-      in: vi.f(),
- is: vi.fnn(),
-    ike: vi.f    ili.fn(),
- v   like:(),
- fnte: vi.n(),
-    lvi.f
-    lt: vi.fn(),
-    gte: fn(), vi.,
-    gt:neq: vi.fn()    (),
- eq: vi.fnn(),
-   psert: vi.f),
-    u.fn( delete: vin(),
-   vi.fpdate: n(),
-    urt: vi.f
-    inse), vi.fn(   select:ocks = {
- 
-  const me methodsall chainabl Create  {
-  //lientckSupabaseCseMock(): MopabaardSu createStandonxport functi/
-e *ng tests
-een in faili issues she chainingl t Fixes al
- *ientmock clse upabained Sharly cpereates a pro
 /**
- * C }
+ * Standardized test data factory
+ * Provides consistent test data across all tests
+ */
+export const createTestData = {
+  user: (overrides: Partial<any> = {}) => ({
+    id: 'user-test-123',
+    clerk_user_id: 'clerk_user_test123',
+    email: 'test@example.com',
+    first_name: 'Test',
+    last_name: 'User',
+    avatar_url: 'https://example.com/avatar.jpg',
+    preferences: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  }),
+
+  organization: (overrides: Partial<any> = {}) => ({
+    id: 'org-test-123',
+    name: 'Test Organization',
+    slug: 'test-org',
+    description: 'Test organization description',
+    avatar_url: 'https://example.com/org-avatar.jpg',
+    metadata: {},
+    settings: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  }),
+
+  session: (overrides: Partial<any> = {}) => ({
+    id: 'session-test-123',
+    user_id: 'user-test-123',
+    path_id: 'path-test-123',
+    current_step_id: 'step-1',
+    status: 'active',
+    score: 85,
+    time_spent: 300,
+    attempts: 1,
+    started_at: new Date().toISOString(),
+    completed_at: new Date().toISOString(),
+    ...overrides
+  }),
+
+  progress: (overrides: Partial<any> = {}) => ({
+    id: 'progress-test-123',
+    session_id: 'session-test-123',
+    step_id: 'step-1',
+    status: 'completed',
+    score: 85,
+    time_spent: 300,
+    attempts: 1,
+    started_at: new Date().toISOString(),
+    completed_at: new Date().toISOString(),
+    ...overrides
+  })
 }
-void
- ) =>     reset: (id
- => vockEmpty: ()oid
-    mo any) => v(error:ockError: void
-    mta: any) => cess: (da   mockSucers: {
- lp
+
+/**
+ * Global test environment setup helper
+ * Ensures consistent test environment
+ */
+export function setupTestEnvironment() {
+  // Mock localStorage
+  const localStorageMock = {
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    length: 0,
+    key: vi.fn()
   }
-  _hevi.fn>Type<typeof eturning]: R: str {
-    [key  _mocks: }
->
- of vi.fnype<typem: ReturnT
-    frorage: { sto }
- n>
- ypeof vi.frnType<tt: Retu signOu>
-   fneof vi.<typ ReturnTypeetSession: g
-   f vi.fn>typeo ReturnType<  getUser:: {
-  th
-  auf vi.fn>pe<typeoTyom: Return frClient {
- pabasece MockSurt interfa
+  
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    writable: true
+  })
+  
+  // Mock fetch
+  global.fetch = vi.fn()
+  
+  // Mock console methods to reduce noise in tests
+  const consoleMock = {
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn()
+  }
+  global.console = { ...console, ...consoleMock }
+  
+  return {
+    localStorage: localStorageMock,
+    fetch: global.fetch,
+    console: consoleMock
+  }
 }
 
-expol | nulror: anynull
-  er: T | ta{
-  da any> onse<T =sppabaseRe MockSuerfacent
-export i=
-========================================================================
-// ===UREUCTINFRASTRSE MOCK ABA====
-// SUP======================================================================/ ==itest'
-
-/ 'v{ vi } from
-import  */
-is.
-rage analys in the covetifiedssues idenetup i sndg ain mock chainxes the
- * Fis.stl tens for alock patter mliablet, restenides consimodule prov This 
- * 
- *frastructure Mock Inardizedand**
- * St/
+/**
+ * Test cleanup helper
+ * Ensures clean state between test fixtures
+ */
+export function cleanupTestEnvironment() {
+  vi.clearAllMocks()
+  vi.clearAllTimers()
+  
+  // Reset DOM if needed
+  if (typeof document !== 'undefined') {
+    document.body.innerHTML = ''
+  }
+}

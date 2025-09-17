@@ -146,15 +146,12 @@ describe('RBACService', () => {
       ]
 
       vi.spyOn(rbacService, 'getUserRoles').mockResolvedValue(mockRoles)
-      vi.spyOn(rbacService, 'getUserPermissions').mockImplementation(async (userId, orgId, resourceType) => {
+      vi.spyOn(rbacService, 'getUserPermissions').mockImplementation(async (userId: string, orgId: string) => {
         const allPermissions = mockRoles.flatMap(role => role.permissions)
-        if (resourceType) {
-          return allPermissions.filter(p => p.startsWith(resourceType))
-        }
-        return allPermissions
+        return allPermissions.filter(p => p.startsWith('projects'))
       })
 
-      const result = await rbacService.getUserPermissions('user-123', 'org-123', 'projects')
+      const result = await rbacService.getUserPermissions('user-123', 'org-123')
 
       expect(result).toHaveLength(3) // projects.read, projects.write, projects.delete
     })

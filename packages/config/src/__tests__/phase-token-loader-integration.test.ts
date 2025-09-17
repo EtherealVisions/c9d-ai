@@ -34,12 +34,12 @@ describe('PhaseTokenLoader Integration', () => {
   })
   
   describe('Integration with getPhaseConfig', () => {
-    it('should work with process.env token (direct integration)', () => {
+    it('should work with process.env token (direct integration)', async () => {
       // Setup - token in process.env
       process.env.PHASE_SERVICE_TOKEN = 'process-env-token'
       
       // Execute
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       // Verify
       expect(config).not.toBeNull()
@@ -47,18 +47,18 @@ describe('PhaseTokenLoader Integration', () => {
       expect(config?.appName).toBe('AI.C9d.Web')
     })
     
-    it('should return null when PhaseTokenLoader finds no token', () => {
+    it('should return null when PhaseTokenLoader finds no token', async () => {
       // Setup - no token in any source
       mockExistsSync.mockReturnValue(false)
       
       // Execute
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       // Verify
       expect(config).toBeNull()
     })
     
-    it('should demonstrate PhaseTokenLoader functionality independently', () => {
+    it('should demonstrate PhaseTokenLoader functionality independently', async () => {
       // Setup - token in .env file
       mockExistsSync.mockImplementation((path) => {
         const pathStr = String(path)
@@ -73,7 +73,7 @@ describe('PhaseTokenLoader Integration', () => {
       })
       
       // Execute - test PhaseTokenLoader directly
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(tokenSource).not.toBeNull()
@@ -130,7 +130,7 @@ describe('PhaseTokenLoader Integration', () => {
   })
   
   describe('Token Source Diagnostics', () => {
-    it('should provide comprehensive diagnostics for debugging', () => {
+    it('should provide comprehensive diagnostics for debugging', async () => {
       // Setup - multiple sources with different states
       process.env.PHASE_SERVICE_TOKEN = 'process-env-token'
       
@@ -150,7 +150,7 @@ describe('PhaseTokenLoader Integration', () => {
       })
       
       // Execute
-      const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics()
+      const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics()
       
       // Verify
       expect(diagnostics).toHaveLength(3) // process.env, local.env.local, local.env
@@ -179,7 +179,7 @@ describe('PhaseTokenLoader Integration', () => {
   })
   
   describe('Token Validation', () => {
-    it('should validate token format and reject invalid tokens', () => {
+    it('should validate token format and reject invalid tokens', async () => {
       // Setup - invalid token in .env file
       mockExistsSync.mockImplementation((path) => 
         String(path).endsWith('/.env')
@@ -192,13 +192,13 @@ describe('PhaseTokenLoader Integration', () => {
       })
       
       // Execute
-      const validatedToken = PhaseTokenLoader.getValidatedToken()
+      const validatedToken = await PhaseTokenLoader.getValidatedToken()
       
       // Verify - should reject invalid token
       expect(validatedToken).toBeNull()
     })
     
-    it('should accept valid token format', () => {
+    it('should accept valid token format', async () => {
       // Setup - valid token in .env file
       mockExistsSync.mockImplementation((path) => 
         String(path).endsWith('/.env')
@@ -211,7 +211,7 @@ describe('PhaseTokenLoader Integration', () => {
       })
       
       // Execute
-      const validatedToken = PhaseTokenLoader.getValidatedToken()
+      const validatedToken = await PhaseTokenLoader.getValidatedToken()
       
       // Verify - should accept valid token
       expect(validatedToken).not.toBeNull()
@@ -221,7 +221,7 @@ describe('PhaseTokenLoader Integration', () => {
   })
   
   describe('Workspace Root Detection', () => {
-    it('should detect workspace root and check root .env files', () => {
+    it('should detect workspace root and check root .env files', async () => {
       // Setup - simulate monorepo structure
       mockExistsSync.mockImplementation((path) => {
         const pathStr = String(path)
@@ -241,7 +241,7 @@ describe('PhaseTokenLoader Integration', () => {
       
       try {
         // Execute
-        const tokenSource = PhaseTokenLoader.loadServiceToken()
+        const tokenSource = await PhaseTokenLoader.loadServiceToken()
         
         // Verify
         expect(tokenSource).not.toBeNull()

@@ -171,7 +171,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
   useEffect(() => {
     if (session?.status === 'active') {
       setIsSessionActive(true)
-    } else if (session && (session.status !== 'active')) {
+    } else if (session && session.status === 'pending') {
       setIsSessionActive(false)
       setSessionInfo(null)
       setActiveSessions([])

@@ -1,5 +1,5 @@
 // Phase.dev Monitoring and Logging System with Token Source Tracking
-import { TokenSource } from './phase-token-loader'
+import { TokenSource } from './types'
 import { PhaseSDKError, PhaseSDKErrorCode } from './phase-sdk-client'
 import { FallbackStrategy } from './phase-error-handler'
 

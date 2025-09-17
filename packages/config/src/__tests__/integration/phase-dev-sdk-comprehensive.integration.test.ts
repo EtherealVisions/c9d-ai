@@ -184,14 +184,14 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
         // Test 1: process.env should win (highest priority)
         process.env.PHASE_SERVICE_TOKEN = tokens.processEnv
         
-        let tokenSource = PhaseTokenLoader.loadServiceToken(workspaceTestDir)
+        let tokenSource = await PhaseTokenLoader.loadServiceToken(workspaceTestDir)
         expect(tokenSource?.source).toBe('process.env')
         expect(tokenSource?.token).toBe(tokens.processEnv)
         
         // Test 2: local.env.local should win when no process.env
         delete process.env.PHASE_SERVICE_TOKEN
         
-        tokenSource = PhaseTokenLoader.loadServiceToken(workspaceTestDir)
+        tokenSource = await PhaseTokenLoader.loadServiceToken(workspaceTestDir)
         expect(tokenSource?.source).toBe('local.env.local')
         expect(tokenSource?.token).toBe(tokens.localEnvLocal)
         expect(tokenSource?.path).toBe(join(testDir, '.env.local'))
@@ -199,7 +199,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
         // Test 3: local.env should win when no local.env.local
         rmSync(join(testDir, '.env.local'))
         
-        tokenSource = PhaseTokenLoader.loadServiceToken(workspaceTestDir)
+        tokenSource = await PhaseTokenLoader.loadServiceToken(workspaceTestDir)
         expect(tokenSource?.source).toBe('local.env')
         expect(tokenSource?.token).toBe(tokens.localEnv)
         expect(tokenSource?.path).toBe(join(testDir, '.env'))
@@ -207,7 +207,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
         // Test 4: root.env.local should win when no local files
         rmSync(join(testDir, '.env'))
         
-        tokenSource = PhaseTokenLoader.loadServiceToken(workspaceTestDir)
+        tokenSource = await PhaseTokenLoader.loadServiceToken(workspaceTestDir)
         expect(tokenSource?.source).toBe('root.env.local')
         expect(tokenSource?.token).toBe(tokens.rootEnvLocal)
         expect(tokenSource?.path).toBe(join(workspaceTestDir, '.env.local'))
@@ -215,7 +215,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
         // Test 5: root.env should be last resort
         rmSync(join(workspaceTestDir, '.env.local'))
         
-        tokenSource = PhaseTokenLoader.loadServiceToken(workspaceTestDir)
+        tokenSource = await PhaseTokenLoader.loadServiceToken(workspaceTestDir)
         expect(tokenSource?.source).toBe('root.env')
         expect(tokenSource?.token).toBe(tokens.rootEnv)
         expect(tokenSource?.path).toBe(join(workspaceTestDir, '.env'))
@@ -225,14 +225,14 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
       }
     })
 
-    it('should provide comprehensive token source diagnostics', () => {
+    it('should provide comprehensive token source diagnostics', async () => {
       // Setup: Create files with mixed token availability
       writeFileSync(join(testDir, '.env.local'), 'OTHER_VAR=value')  // No token
       writeFileSync(join(testDir, '.env'), `PHASE_SERVICE_TOKEN=${originalToken}`)
       
       process.env.PHASE_SERVICE_TOKEN = originalToken
       
-      const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics(testDir)
+      const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics(testDir)
       
       // Should have at least 3 sources (process.env, local.env.local, local.env)
       // May have more if workspace root is different
@@ -454,7 +454,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
       writeFileSync(join(testDir, '.env'), 'ANOTHER_VAR=value2')
       
       // Test token loading with explicit path to avoid finding tokens elsewhere
-      const tokenSource = PhaseTokenLoader.loadServiceToken(testDir)
+      const tokenSource = await PhaseTokenLoader.loadServiceToken(testDir)
       
       // If a token is still found, it means there's a token in the workspace root
       // This is actually correct behavior - the test should account for this
@@ -480,7 +480,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
       }
     })
 
-    it('should provide helpful diagnostics when no token is found in test directory', () => {
+    it('should provide helpful diagnostics when no token is found in test directory', async () => {
       // Setup: No token in process.env, create test directory without tokens
       const originalToken = process.env.PHASE_SERVICE_TOKEN
       delete process.env.PHASE_SERVICE_TOKEN
@@ -490,7 +490,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
       writeFileSync(join(testDir, '.env'), 'ANOTHER_VAR=value2')
       
       try {
-        const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics(testDir)
+        const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics(testDir)
         
         // Process.env should show no token
         const processEnvDiag = diagnostics.find(d => d.source === 'process.env')
@@ -668,7 +668,7 @@ describe('Phase.dev SDK Comprehensive Integration Tests', () => {
       
       const startTime = Date.now()
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken(testDir)
+      const tokenSource = await PhaseTokenLoader.loadServiceToken(testDir)
       
       const loadTime = Date.now() - startTime
       

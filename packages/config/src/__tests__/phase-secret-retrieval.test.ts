@@ -54,7 +54,7 @@ describe('Phase.dev Secret Retrieval with SDK', () => {
     
     // Setup default mocks
     vi.mocked(PhaseSDKClient).mockImplementation(() => mockSDKClient as any)
-    vi.mocked(PhaseTokenLoader.loadServiceToken).mockReturnValue(mockTokenSource)
+    vi.mocked(PhaseTokenLoader.loadServiceToken).mockResolvedValue(mockTokenSource)
     
     // Reset mock implementations
     mockSDKClient.initialize.mockResolvedValue(true)
@@ -121,7 +121,7 @@ describe('Phase.dev Secret Retrieval with SDK', () => {
     })
 
     it('should handle missing service token', async () => {
-      vi.mocked(PhaseTokenLoader.loadServiceToken).mockReturnValue(null)
+      vi.mocked(PhaseTokenLoader.loadServiceToken).mockResolvedValue(null)
       
       // Also clear process.env to ensure no fallback
       const originalToken = process.env.PHASE_SERVICE_TOKEN
@@ -410,7 +410,7 @@ describe('Phase.dev Secret Retrieval with SDK', () => {
         path: '/path/to/.env.local'
       }
 
-      vi.mocked(PhaseTokenLoader.loadServiceToken).mockReturnValue(customTokenSource)
+      vi.mocked(PhaseTokenLoader.loadServiceToken).mockResolvedValue(customTokenSource)
       
       mockSDKClient.getSecrets.mockResolvedValue({
         success: true,

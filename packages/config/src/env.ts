@@ -506,7 +506,7 @@ export const getEnvVarAsArray = (key: string, defaultValue?: string[]): string[]
 
 /**
  * Get environment-specific configuration (synchronous)
- * @returns Environment configuration object
+ * @returns Environment configuration object with basic diagnostics
  */
 export const getEnvironmentConfig = () => {
   const nodeEnv = getOptionalEnvVar('NODE_ENV', 'development');
@@ -515,6 +515,21 @@ export const getEnvironmentConfig = () => {
   const isTest = nodeEnv === 'test';
   const isStaging = nodeEnv === 'staging';
   
+  // Basic diagnostics for synchronous access
+  const basicDiagnostics = {
+    loadedFiles: envCache?.loadedFiles || [],
+    errors: envCache?.errors || [],
+    cacheAge: Date.now() - cacheTimestamp,
+    totalVariables: Object.keys(process.env).length,
+    phaseDevStatus: {
+      available: isPhaseDevAvailable(),
+      success: envCache?.phaseResult?.success,
+      variableCount: envCache?.phaseResult?.variableCount,
+      error: envCache?.phaseResult?.error,
+      source: envCache?.phaseResult?.source
+    }
+  };
+  
   return {
     nodeEnv,
     isDevelopment,
@@ -522,22 +537,18 @@ export const getEnvironmentConfig = () => {
     isTest,
     isStaging,
     phaseServiceToken: getPhaseServiceToken(),
-    isPhaseDevAvailable: isPhaseDevAvailable()
+    isPhaseDevAvailable: isPhaseDevAvailable(),
+    diagnostics: basicDiagnostics
   };
 };
 
 /**
  * Get environment-specific configuration with diagnostics (async)
+ * @deprecated Use getEnvironmentConfig() instead - it now includes diagnostics by default
  * @returns Environment configuration object with diagnostics
  */
 export const getEnvironmentConfigWithDiagnostics = async () => {
-  const config = getEnvironmentConfig();
-  const diagnostics = await getEnvLoadingDiagnostics();
-  
-  return {
-    ...config,
-    diagnostics
-  };
+  return await getEnvironmentConfig();
 };
 
 /**

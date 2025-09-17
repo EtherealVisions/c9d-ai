@@ -160,11 +160,19 @@ describe('AuthError', () => {
     const originalEnv = process.env.NODE_ENV
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true,
+        configurable: true
+      })
     })
 
     it('should show debug information in development mode', () => {
-      process.env.NODE_ENV = 'development'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true
+      })
       const errorWithStack = new Error('Test error')
       errorWithStack.stack = 'Error: Test error\n    at test.js:1:1'
       
@@ -174,7 +182,11 @@ describe('AuthError', () => {
     })
 
     it('should not show debug information in production mode', () => {
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true
+      })
       
       render(<AuthError error={mockError} reset={mockReset} />)
       

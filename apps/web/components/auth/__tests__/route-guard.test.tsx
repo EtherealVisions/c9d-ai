@@ -14,7 +14,7 @@ vi.mock('next/navigation', () => ({
   useRouter: vi.fn()
 }))
 
-vi.mock('../../lib/services/auth-router-service', () => ({
+vi.mock('../../../lib/services/auth-router-service', () => ({
   authRouterService: {
     getOnboardingStatus: vi.fn(),
     getOnboardingDestination: vi.fn(),

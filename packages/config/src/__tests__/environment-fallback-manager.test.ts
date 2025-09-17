@@ -36,7 +36,7 @@ describe('EnvironmentFallbackManager', () => {
     
     mockPhaseSDKClient.mockImplementation(() => mockSDKClient)
     
-    mockPhaseTokenLoader.getTokenSourceDiagnostics.mockReturnValue([
+    mockPhaseTokenLoader.getTokenSourceDiagnostics.mockResolvedValue([
       {
         source: 'process.env',
         exists: true,
@@ -436,7 +436,7 @@ describe('EnvironmentFallbackManager', () => {
         .mockReturnValueOnce({ parsed: { BASE_VAR: 'base', DEV_VAR: 'dev', LOCAL_VAR: 'local', SHARED_VAR: 'from-local' } })
       
       // Execute
-      const result = EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
+      const result = await EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
       
       // Verify
       expect(result.loadedFiles).toEqual(['.env', '.env.development', '.env.local'])
@@ -451,7 +451,7 @@ describe('EnvironmentFallbackManager', () => {
       mockExistsSync.mockReturnValue(false)
       
       // Execute
-      const result = EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
+      const result = await EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
       
       // Verify
       expect(result.loadedFiles).toEqual([])
@@ -473,7 +473,7 @@ describe('EnvironmentFallbackManager', () => {
       })
       
       // Execute
-      const result = EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
+      const result = await EnvironmentFallbackManager.loadLocalEnvironment('development', '/test')
       
       // Verify
       expect(result.loadedFiles).toEqual([])
@@ -483,7 +483,7 @@ describe('EnvironmentFallbackManager', () => {
   })
 
   describe('mergeWithLocalEnv', () => {
-    it('should merge Phase.dev secrets with local variables correctly', () => {
+    it('should merge Phase.dev secrets with local variables correctly', async () => {
       const phaseSecrets = {
         'DATABASE_URL': 'postgres://phase-db',
         'PHASE_VAR': 'phase-value'
@@ -511,7 +511,7 @@ describe('EnvironmentFallbackManager', () => {
   })
 
   describe('cache management', () => {
-    it('should clear cache correctly', () => {
+    it('should clear cache correctly', async () => {
       // Setup cache with some data
       EnvironmentFallbackManager['cache'].set('test-key', {
         config: EnvironmentFallbackManager.createTestConfig(),
@@ -528,7 +528,7 @@ describe('EnvironmentFallbackManager', () => {
       expect(EnvironmentFallbackManager.getCacheStats().size).toBe(0)
     })
     
-    it('should provide cache statistics', () => {
+    it('should provide cache statistics', async () => {
       // Setup cache with test data
       const now = Date.now()
       EnvironmentFallbackManager['cache'].set('key1', {
@@ -555,7 +555,7 @@ describe('EnvironmentFallbackManager', () => {
   })
 
   describe('createTestConfig', () => {
-    it('should create minimal test configuration', () => {
+    it('should create minimal test configuration', async () => {
       const variables = {
         'NODE_ENV': 'test',
         'TEST_VAR': 'test-value'
@@ -575,7 +575,7 @@ describe('EnvironmentFallbackManager', () => {
   })
 
   describe('validateConfig', () => {
-    it('should validate configuration correctly', () => {
+    it('should validate configuration correctly', async () => {
       const config = EnvironmentFallbackManager.createTestConfig({
         'DATABASE_URL': 'postgres://test',
         'API_KEY': 'test-key'
@@ -590,7 +590,7 @@ describe('EnvironmentFallbackManager', () => {
       expect(validation.errors).toEqual([])
     })
     
-    it('should detect missing required variables', () => {
+    it('should detect missing required variables', async () => {
       const config = EnvironmentFallbackManager.createTestConfig({
         'API_KEY': 'test-key'
       })
@@ -603,7 +603,7 @@ describe('EnvironmentFallbackManager', () => {
       expect(validation.missingVars).toEqual(['DATABASE_URL'])
     })
     
-    it('should generate warnings for common issues', () => {
+    it('should generate warnings for common issues', async () => {
       const config = EnvironmentFallbackManager.createTestConfig({}, {
         phaseStatus: {
           available: true,
@@ -626,7 +626,7 @@ describe('EnvironmentFallbackManager', () => {
   })
 
   describe('getDiagnosticInfo', () => {
-    it('should provide comprehensive diagnostic information', () => {
+    it('should provide comprehensive diagnostic information', async () => {
       const config = EnvironmentFallbackManager.createTestConfig({
         'DATABASE_URL': 'postgres://test'
       }, {

@@ -186,7 +186,7 @@ describe('UserService', () => {
 
   describe('updateUserPreferences', () => {
     const newPreferences = {
-      theme: 'light',
+      theme: 'light' as const,
       notifications: {
         email: false
       }

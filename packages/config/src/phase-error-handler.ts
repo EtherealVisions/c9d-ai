@@ -1,6 +1,6 @@
 // Phase.dev Error Handler with Token Source Awareness
 import { PhaseSDKErrorCode, PhaseSDKError } from './phase-sdk-client'
-import { TokenSource } from './phase-token-loader'
+import { TokenSource } from './types'
 
 /**
  * Error handling result interface

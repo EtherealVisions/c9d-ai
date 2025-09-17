@@ -65,7 +65,7 @@ describe('AuthRouterService', () => {
       email: 'test@example.com',
       firstName: 'Test',
       lastName: 'User',
-      avatarUrl: null,
+      avatarUrl: undefined,
       preferences: {},
       createdAt: new Date(),
       updatedAt: new Date()

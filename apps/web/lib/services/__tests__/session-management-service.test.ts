@@ -8,16 +8,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SessionManagementService } from '../session-management-service'
 
+// Create mock Supabase client
+const mockSupabaseClient = {
+  from: vi.fn().mockReturnThis(),
+  select: vi.fn().mockReturnThis(),
+  insert: vi.fn().mockReturnThis(),
+  update: vi.fn().mockReturnThis(),
+  upsert: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  single: vi.fn()
+}
+
+const mockSupabase = mockSupabaseClient
+
 // Mock the database to focus on business logic
 vi.mock('../../database', () => ({
-  createSupabaseClient: () => ({
-    from: () => ({
-      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
-      insert: () => Promise.resolve({ data: {}, error: null }),
-      update: () => ({ eq: () => Promise.resolve({ data: {}, error: null }) }),
-      upsert: () => Promise.resolve({ data: {}, error: null })
-    })
-  })
+  createSupabaseClient: () => mockSupabaseClient
 }))
 
 // Mock Clerk hooks

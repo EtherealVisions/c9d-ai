@@ -471,19 +471,16 @@ describe('Tenant Isolation Security Tests', () => {
 
       // Mock the security audit service method
       vi.mocked(securityAuditService.getSecuritySummary).mockResolvedValue({
-        events: mockAuditLogs,
-        summary: {
-          totalEvents: 1,
-          criticalEvents: 0,
-          mediumEvents: 1,
-          lowEvents: 0
-        }
+        totalEvents: 1,
+        eventsByType: { 'user.login': 1 },
+        eventsBySeverity: { 'medium': 1 },
+        recentHighSeverityEvents: mockAuditLogs
       })
 
       const result = await securityAuditService.getSecuritySummary(organizationId)
 
-      expect(result.events).toHaveLength(1)
-      expect(result.events[0].organizationId).toBe(organizationId)
+      expect(result.recentHighSeverityEvents).toHaveLength(1)
+      expect(result.recentHighSeverityEvents[0].organizationId).toBe(organizationId)
     })
   })
 
@@ -579,7 +576,6 @@ describe('Security Audit Service', () => {
       // Mock the getSecuritySummary to return expected result
       vi.mocked(securityAuditService.getSecuritySummary).mockResolvedValue({
         totalEvents: 3,
-        recentHighSeverityEvents: mockEvents,
         eventsByType: {
           authentication: 1,
           organization: 2
@@ -590,9 +586,7 @@ describe('Security Audit Service', () => {
           high: 0,
           critical: 1
         },
-        recentHighSeverityEvents: [mockEvents[2]], // The critical event
-        riskScore: 0.6,
-        recommendations: ['Review critical events']
+        recentHighSeverityEvents: [mockEvents[2]] // The critical event
       })
 
       const summary = await securityAuditService.getSecuritySummary(organizationId, 30)

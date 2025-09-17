@@ -65,31 +65,31 @@ describe('Edge Cases and Error Handling', () => {
   })
 
   describe('File System Edge Cases', () => {
-    it('should handle non-existent directory gracefully', () => {
+    it('should handle non-existent directory gracefully', async () => {
       const nonExistentDir = join(testDir, 'non-existent')
       
       expect(() => {
         reloadEnvironmentVars(nonExistentDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(nonExistentDir)
+      const result = await reloadEnvironmentVars(nonExistentDir)
       expect(typeof result).toBe('object')
     })
 
-    it('should handle empty .env files', () => {
+    it('should handle empty .env files', async () => {
       writeFileSync(join(testDir, '.env'), '')
       writeFileSync(join(testDir, '.env.local'), '   \n\n   ')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(typeof result).toBe('object')
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       expect(diagnostics.loadedFiles).toContain('.env')
       expect(diagnostics.loadedFiles).toContain('.env.local')
     })
 
-    it('should handle .env files with only comments', () => {
+    it('should handle .env files with only comments', async () => {
       writeFileSync(join(testDir, '.env'), 
         '# This is a comment\n' +
         '# Another comment\n' +
@@ -97,15 +97,15 @@ describe('Edge Cases and Error Handling', () => {
         '# More comments'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(typeof result).toBe('object')
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       expect(diagnostics.loadedFiles).toContain('.env')
     })
 
-    it('should handle malformed .env file content', () => {
+    it('should handle malformed .env file content', async () => {
       writeFileSync(join(testDir, '.env'), 
         'VALID_VAR=valid-value\n' +
         'INVALID LINE WITHOUT EQUALS\n' +
@@ -115,27 +115,27 @@ describe('Edge Cases and Error Handling', () => {
         'VALID_AFTER_INVALID=still-works'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result.VALID_VAR).toBe('valid-value')
       expect(result.ANOTHER_VALID).toBe('another-value')
       expect(result.VALID_AFTER_INVALID).toBe('still-works')
     })
 
-    it('should handle binary or non-text files as .env', () => {
+    it('should handle binary or non-text files as .env', async () => {
       // Create a binary file with .env extension
       const binaryContent = Buffer.from([0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE])
       writeFileSync(join(testDir, '.env'), binaryContent)
       
-      expect(() => {
-        reloadEnvironmentVars(testDir)
+      await expect(async () => {
+        await reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       expect(diagnostics.errors.length).toBeGreaterThanOrEqual(0)
     })
 
-    it('should handle very large .env files', () => {
+    it('should handle very large .env files', async () => {
       // Create a large .env file
       const largeContent = Array.from({ length: 1000 }, (_, i) => 
         `VAR_${i}=value_${i}_${'x'.repeat(100)}`
@@ -143,24 +143,24 @@ describe('Edge Cases and Error Handling', () => {
       
       writeFileSync(join(testDir, '.env'), largeContent)
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result.VAR_0).toBe('value_0_' + 'x'.repeat(100))
       expect(result.VAR_999).toBe('value_999_' + 'x'.repeat(100))
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       expect(diagnostics.totalVariables).toBeGreaterThan(1000)
     })
 
-    it('should handle file permission errors gracefully', () => {
+    it('should handle file permission errors gracefully', async () => {
       writeFileSync(join(testDir, '.env'), 'TEST_VAR=test-value')
       
       try {
         // Try to make file unreadable (might not work on all systems)
         chmodSync(join(testDir, '.env'), 0o000)
         
-        expect(() => {
-          reloadEnvironmentVars(testDir)
+        await expect(async () => {
+          await reloadEnvironmentVars(testDir)
         }).not.toThrow()
         
         // Restore permissions for cleanup
@@ -168,15 +168,15 @@ describe('Edge Cases and Error Handling', () => {
       } catch (error) {
         // Permission changes might not be supported on all systems
         // Just ensure the function doesn't throw
-        expect(() => {
-          reloadEnvironmentVars(testDir)
+        await expect(async () => {
+          await reloadEnvironmentVars(testDir)
         }).not.toThrow()
       }
     })
   })
 
   describe('Environment Variable Edge Cases', () => {
-    it('should handle variables with special characters', () => {
+    it('should handle variables with special characters', async () => {
       writeFileSync(join(testDir, '.env'), 
         'SPECIAL_CHARS="!@#$%^&*()_+-=[]{}|;:,.<>?"\n' +
         'UNICODE_VAR=こんにちは世界\n' +
@@ -187,7 +187,7 @@ describe('Edge Cases and Error Handling', () => {
         'NEWLINES_VAR="line1\\nline2\\nline3"'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result.SPECIAL_CHARS).toBe('!@#$%^&*()_+-=[]{}|;:,.<>?')
       expect(result.UNICODE_VAR).toBe('こんにちは世界')
@@ -195,18 +195,18 @@ describe('Edge Cases and Error Handling', () => {
       expect(result.QUOTES_VAR).toBe('value with spaces') // dotenv strips outer quotes
     })
 
-    it('should handle very long variable names and values', () => {
+    it('should handle very long variable names and values', async () => {
       const longName = 'VERY_LONG_VARIABLE_NAME_' + 'X'.repeat(200)
       const longValue = 'very_long_value_' + 'Y'.repeat(1000)
       
       writeFileSync(join(testDir, '.env'), `${longName}=${longValue}`)
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result[longName]).toBe(longValue)
     })
 
-    it('should handle variables with no values', () => {
+    it('should handle variables with no values', async () => {
       writeFileSync(join(testDir, '.env'), 
         'EMPTY_VAR=\n' +
         'ANOTHER_EMPTY=\n' +
@@ -215,7 +215,7 @@ describe('Edge Cases and Error Handling', () => {
         'TABS_ONLY="\t\t\t"'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result.EMPTY_VAR).toBe('')
       expect(result.ANOTHER_EMPTY).toBe('')
@@ -224,7 +224,7 @@ describe('Edge Cases and Error Handling', () => {
       expect(result.TABS_ONLY).toBe('\t\t\t') // dotenv preserves tab-only values
     })
 
-    it('should handle duplicate variable definitions', () => {
+    it('should handle duplicate variable definitions', async () => {
       writeFileSync(join(testDir, '.env'), 
         'DUPLICATE_VAR=first-value\n' +
         'OTHER_VAR=other-value\n' +
@@ -232,14 +232,14 @@ describe('Edge Cases and Error Handling', () => {
         'DUPLICATE_VAR=final-value'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       // Last definition should win
       expect(result.DUPLICATE_VAR).toBe('final-value')
       expect(result.OTHER_VAR).toBe('other-value')
     })
 
-    it('should handle circular variable references', () => {
+    it('should handle circular variable references', async () => {
       writeFileSync(join(testDir, '.env'), 
         'VAR_A=${VAR_B}\n' +
         'VAR_B=${VAR_C}\n' +
@@ -247,15 +247,15 @@ describe('Edge Cases and Error Handling', () => {
         'NORMAL_VAR=normal-value'
       )
       
-      expect(() => {
-        reloadEnvironmentVars(testDir)
+      await expect(async () => {
+        await reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(result.NORMAL_VAR).toBe('normal-value')
     })
 
-    it('should handle undefined variable references', () => {
+    it('should handle undefined variable references', async () => {
       writeFileSync(join(testDir, '.env'), 
         'VALID_VAR=valid-value\n' +
         'REFERENCE_VAR=${UNDEFINED_VAR}\n' +
@@ -263,7 +263,7 @@ describe('Edge Cases and Error Handling', () => {
         'ANOTHER_VALID=another-value'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       
       expect(result.VALID_VAR).toBe('valid-value')
       expect(result.ANOTHER_VALID).toBe('another-value')
@@ -274,7 +274,7 @@ describe('Edge Cases and Error Handling', () => {
   })
 
   describe('Type Conversion Edge Cases', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       writeFileSync(join(testDir, '.env'), 
         'ZERO=0\n' +
         'NEGATIVE=-42\n' +
@@ -297,28 +297,28 @@ describe('Edge Cases and Error Handling', () => {
         'ARRAY_EMPTY=\n' +
         'ARRAY_WHITESPACE=   ,  ,   '
       )
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
     })
 
     describe('Number conversion edge cases', () => {
-      it('should handle various number formats', () => {
+      it('should handle various number formats', async () => {
         expect(getEnvVarAsNumber('ZERO')).toBe(0)
         expect(getEnvVarAsNumber('NEGATIVE')).toBe(-42)
         expect(getEnvVarAsNumber('FLOAT')).toBe(3.14159)
         expect(getEnvVarAsNumber('SCIENTIFIC')).toBe(1.23e-4)
       })
 
-      it('should handle special number values', () => {
+      it('should handle special number values', async () => {
         expect(getEnvVarAsNumber('INFINITY')).toBe(Infinity)
         expect(() => getEnvVarAsNumber('NAN')).toThrow('Environment variable NAN is not a valid number')
       })
 
-      it('should handle invalid numbers with defaults', () => {
+      it('should handle invalid numbers with defaults', async () => {
         expect(getEnvVarAsNumber('EMPTY_STRING', 100)).toBe(100)
         expect(getEnvVarAsNumber('WHITESPACE', 200)).toBe(200)
       })
 
-      it('should throw for invalid numbers without defaults', () => {
+      it('should throw for invalid numbers without defaults', async () => {
         expect(() => getEnvVarAsNumber('EMPTY_STRING')).toThrow()
         expect(() => getEnvVarAsNumber('WHITESPACE')).toThrow()
         expect(() => getEnvVarAsNumber('TRUE_UPPER')).toThrow()
@@ -326,7 +326,7 @@ describe('Edge Cases and Error Handling', () => {
     })
 
     describe('Boolean conversion edge cases', () => {
-      it('should handle case-insensitive boolean values', () => {
+      it('should handle case-insensitive boolean values', async () => {
         expect(getEnvVarAsBoolean('TRUE_UPPER')).toBe(true)
         expect(getEnvVarAsBoolean('FALSE_UPPER')).toBe(false)
         expect(getEnvVarAsBoolean('YES_UPPER')).toBe(true)
@@ -336,7 +336,7 @@ describe('Edge Cases and Error Handling', () => {
         expect(getEnvVarAsBoolean('MIXED_CASE')).toBe(true)
       })
 
-      it('should handle edge case boolean values', () => {
+      it('should handle edge case boolean values', async () => {
         expect(getEnvVarAsBoolean('ZERO')).toBe(false) // '0' is falsy
         expect(getEnvVarAsBoolean('NEGATIVE')).toBe(false) // Not a recognized truthy value
         expect(getEnvVarAsBoolean('EMPTY_STRING', true)).toBe(true) // Uses default
@@ -345,19 +345,19 @@ describe('Edge Cases and Error Handling', () => {
     })
 
     describe('Array conversion edge cases', () => {
-      it('should handle arrays with various spacing', () => {
+      it('should handle arrays with various spacing', async () => {
         expect(getEnvVarAsArray('ARRAY_WITH_SPACES')).toEqual(['item1', 'item2', 'item3', 'item4'])
       })
 
-      it('should filter out empty items', () => {
+      it('should filter out empty items', async () => {
         expect(getEnvVarAsArray('ARRAY_EMPTY_ITEMS')).toEqual(['item1', 'item2', 'item3'])
       })
 
-      it('should handle single item arrays', () => {
+      it('should handle single item arrays', async () => {
         expect(getEnvVarAsArray('ARRAY_SINGLE')).toEqual(['single-item'])
       })
 
-      it('should handle empty arrays', () => {
+      it('should handle empty arrays', async () => {
         expect(getEnvVarAsArray('ARRAY_EMPTY', ['default'])).toEqual(['default'])
         expect(getEnvVarAsArray('ARRAY_WHITESPACE')).toEqual([])
       })
@@ -365,7 +365,7 @@ describe('Edge Cases and Error Handling', () => {
   })
 
   describe('Validation Edge Cases', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       writeFileSync(join(testDir, '.env'), 
         'VALID_URL=https://api.example.com\n' +
         'INVALID_URL=not-a-url\n' +
@@ -374,10 +374,10 @@ describe('Edge Cases and Error Handling', () => {
         'EMPTY_VAR=\n' +
         'WHITESPACE_VAR=   '
       )
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
     })
 
-    it('should handle custom validation functions', () => {
+    it('should handle custom validation functions', async () => {
       const urlValidator = (value: string) => {
         if (!value.startsWith('https://')) {
           throw new Error('Must be HTTPS URL')
@@ -394,7 +394,7 @@ describe('Edge Cases and Error Handling', () => {
       expect(invalidResult.error).toContain('Must be HTTPS URL')
     })
 
-    it('should handle validation with undefined values', () => {
+    it('should handle validation with undefined values', async () => {
       const validator = (value: string) => value.toUpperCase()
 
       const result = validateEnvVar('UNDEFINED_VAR', undefined, validator)
@@ -402,7 +402,7 @@ describe('Edge Cases and Error Handling', () => {
       expect(result.error).toContain('is not defined')
     })
 
-    it('should handle validation with empty values', () => {
+    it('should handle validation with empty values', async () => {
       const validator = (value: string) => {
         if (value.trim().length === 0) {
           throw new Error('Cannot be empty')
@@ -419,7 +419,7 @@ describe('Edge Cases and Error Handling', () => {
       expect(whitespaceResult.error).toContain('Cannot be empty')
     })
 
-    it('should handle validation exceptions', () => {
+    it('should handle validation exceptions', async () => {
       const throwingValidator = (value: string) => {
         throw new Error('Validation always fails')
       }
@@ -429,7 +429,7 @@ describe('Edge Cases and Error Handling', () => {
       expect(result.error).toContain('Validation always fails')
     })
 
-    it('should handle complex validation scenarios', () => {
+    it('should handle complex validation scenarios', async () => {
       const complexValidator = (value: string) => {
         // Multiple validation rules
         if (!value) throw new Error('Required')
@@ -450,18 +450,18 @@ describe('Edge Cases and Error Handling', () => {
   })
 
   describe('Phase.dev Edge Cases', () => {
-    it('should handle malformed package.json files', () => {
+    it('should handle malformed package.json files', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token'
       
       // Create invalid JSON
       writeFileSync(join(testDir, 'package.json'), '{ invalid json }')
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should handle package.json without name field', () => {
+    it('should handle package.json without name field', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token'
       
       writeFileSync(join(testDir, 'package.json'), JSON.stringify({
@@ -469,22 +469,22 @@ describe('Edge Cases and Error Handling', () => {
         description: 'Test package'
       }))
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should handle empty package.json', () => {
+    it('should handle empty package.json', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token'
       
       writeFileSync(join(testDir, 'package.json'), '{}')
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should handle package names with unusual characters', () => {
+    it('should handle package names with unusual characters', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token'
       
       const testCases = [
@@ -494,16 +494,16 @@ describe('Edge Cases and Error Handling', () => {
         { input: 'single', expected: 'Single' }
       ]
 
-      testCases.forEach(({ input, expected }) => {
+      for (const { input, expected } of testCases) {
         writeFileSync(join(testDir, 'package.json'), JSON.stringify({ name: input }))
         
-        const config = getPhaseConfig({}, testDir)
+        const config = await getPhaseConfig({}, testDir)
         
         expect(config?.appName).toBe(expected)
-      })
+      }
     })
 
-    it('should handle Phase.dev token with unusual characters', () => {
+    it('should handle Phase.dev token with unusual characters', async () => {
       const specialTokens = [
         'token-with-dashes',
         'token_with_underscores',
@@ -524,7 +524,7 @@ describe('Edge Cases and Error Handling', () => {
       })
     })
 
-    it('should handle Phase.dev configuration overrides edge cases', () => {
+    it('should handle Phase.dev configuration overrides edge cases', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token'
       
       const edgeCaseOverrides = [
@@ -534,8 +534,8 @@ describe('Edge Cases and Error Handling', () => {
         { appName: 'App-With-Dashes', environment: 'env_with_underscores' }
       ]
 
-      edgeCaseOverrides.forEach(overrides => {
-        const config = getPhaseConfig(overrides)
+      for (const overrides of edgeCaseOverrides) {
+        const config = await getPhaseConfig(overrides)
         
         expect(config?.serviceToken).toBe('test-token')
         // Empty appName falls back to default
@@ -544,21 +544,21 @@ describe('Edge Cases and Error Handling', () => {
         // Empty environment falls back to NODE_ENV (which is 'test' in test environment)
         const expectedEnvironment = overrides.environment || process.env.NODE_ENV || 'development'
         expect(config?.environment).toBe(expectedEnvironment)
-      })
+      }
     })
   })
 
   describe('Cache Edge Cases', () => {
-    it('should handle rapid cache operations', () => {
+    it('should handle rapid cache operations', async () => {
       writeFileSync(join(testDir, '.env'), 'RAPID_VAR=rapid-value')
       
       // Load initial value
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
       
       // Rapid successive operations
       for (let i = 0; i < 10; i++) {
         if (i % 2 === 0) {
-          reloadEnvironmentVars(testDir)
+          await reloadEnvironmentVars(testDir)
         } else {
           getAllEnvVars()
         }
@@ -568,7 +568,7 @@ describe('Edge Cases and Error Handling', () => {
       }
       
       // Final load to ensure we have the value
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       expect(result.RAPID_VAR).toBe('rapid-value')
     })
 
@@ -576,8 +576,8 @@ describe('Edge Cases and Error Handling', () => {
       writeFileSync(join(testDir, '.env'), 'CONCURRENT_VAR=concurrent-value')
       
       // Simulate concurrent access
-      const promises = Array.from({ length: 10 }, () => 
-        Promise.resolve(reloadEnvironmentVars(testDir))
+      const promises = Array.from({ length: 10 }, async () => 
+        await reloadEnvironmentVars(testDir)
       )
       
       const results = await Promise.all(promises)
@@ -587,11 +587,11 @@ describe('Edge Cases and Error Handling', () => {
       })
     })
 
-    it('should handle cache during file system changes', () => {
+    it('should handle cache during file system changes', async () => {
       writeFileSync(join(testDir, '.env'), 'CHANGING_VAR=initial-value')
       
       // Load initial value
-      let result = reloadEnvironmentVars(testDir)
+      let result = await reloadEnvironmentVars(testDir)
       expect(result.CHANGING_VAR).toBe('initial-value')
       
       // Change file multiple times
@@ -599,18 +599,18 @@ describe('Edge Cases and Error Handling', () => {
         writeFileSync(join(testDir, '.env'), `CHANGING_VAR=value-${i}`)
         
         // Force reload should get new value
-        result = reloadEnvironmentVars(testDir)
+        result = await reloadEnvironmentVars(testDir)
         expect(result.CHANGING_VAR).toBe(`value-${i}`)
         
         // Cached value should now be the new value
-        result = getAllEnvVars()
+        result = await getAllEnvVars()
         expect(result.CHANGING_VAR).toBe(`value-${i}`)
       }
     })
   })
 
   describe('Memory and Performance Edge Cases', () => {
-    it('should handle large numbers of environment variables', () => {
+    it('should handle large numbers of environment variables', async () => {
       // Create many environment variables
       const largeEnvContent = Array.from({ length: 5000 }, (_, i) => 
         `VAR_${i.toString().padStart(4, '0')}=value_${i}`
@@ -619,24 +619,24 @@ describe('Edge Cases and Error Handling', () => {
       writeFileSync(join(testDir, '.env'), largeEnvContent)
       
       const startTime = Date.now()
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       const endTime = Date.now()
       
       expect(result.VAR_0000).toBe('value_0')
       expect(result.VAR_4999).toBe('value_4999')
       expect(endTime - startTime).toBeLessThan(5000) // Should complete within 5 seconds
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       expect(diagnostics.totalVariables).toBeGreaterThan(5000)
     })
 
-    it('should handle repeated operations without memory leaks', () => {
+    it('should handle repeated operations without memory leaks', async () => {
       writeFileSync(join(testDir, '.env'), 'MEMORY_TEST=memory-value')
       
       // Perform many operations
       for (let i = 0; i < 1000; i++) {
         if (i % 2 === 0) {
-          reloadEnvironmentVars(testDir)
+          await reloadEnvironmentVars(testDir)
         }
         if (i % 10 === 0) {
           clearEnvCache()
@@ -644,20 +644,20 @@ describe('Edge Cases and Error Handling', () => {
         
         if (i % 100 === 0) {
           // Periodic verification - reload to ensure we have the value
-          const result = reloadEnvironmentVars(testDir)
+          const result = await await reloadEnvironmentVars(testDir)
           expect(result.MEMORY_TEST).toBe('memory-value')
         }
       }
       
       // Final verification
-      reloadEnvironmentVars(testDir)
-      const result = getAllEnvVars()
+      await reloadEnvironmentVars(testDir)
+      const result = await getAllEnvVars()
       expect(result.MEMORY_TEST).toBe('memory-value')
     })
   })
 
   describe('Integration Edge Cases', () => {
-    it('should handle mixed environment sources with conflicts', () => {
+    it('should handle mixed environment sources with conflicts', async () => {
       process.env.NODE_ENV = 'development'
       process.env.CONFLICT_VAR = 'process-value'
       process.env.PHASE_SERVICE_TOKEN = 'integration-token'
@@ -675,7 +675,7 @@ describe('Edge Cases and Error Handling', () => {
         'LOCAL_ONLY=local-only-value'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await await reloadEnvironmentVars(testDir)
       const config = getEnvironmentConfig()
       
       // Process.env should win
@@ -690,24 +690,24 @@ describe('Edge Cases and Error Handling', () => {
       expect(config.diagnostics.loadedFiles.length).toBeGreaterThan(0)
     })
 
-    it('should handle environment switching scenarios', () => {
+    it('should handle environment switching scenarios', async () => {
       const environments = ['development', 'test', 'staging', 'production']
       
-      environments.forEach(env => {
+      for (const env of environments) {
         process.env.NODE_ENV = env
         
         writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
         writeFileSync(join(testDir, `.env.${env}`), `${env.toUpperCase()}_VAR=${env}-value`)
         
         clearEnvCache()
-        const result = reloadEnvironmentVars(testDir)
+        const result = await reloadEnvironmentVars(testDir)
         const config = getEnvironmentConfig()
         
         expect(result.BASE_VAR).toBe('base-value')
         expect(result[`${env.toUpperCase()}_VAR`]).toBe(`${env}-value`)
         expect(config.nodeEnv).toBe(env)
         expect((config as any)[`is${env.charAt(0).toUpperCase() + env.slice(1)}`]).toBe(true)
-      })
+      }
     })
   })
 })

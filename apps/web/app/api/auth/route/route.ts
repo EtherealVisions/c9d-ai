@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       destination,
       onboarding: onboardingStatus,
-      organizations: organizations.map(org => ({
+      organizations: organizations.map((org: any) => ({
         id: org.id,
         name: org.name,
         slug: org.slug

@@ -76,8 +76,8 @@
     - Add seamless transition from auth to onboarding
     - _Requirements: 4.1, 4.2_
 
-- [ ] 6. Implement password management and security features
-  - [ ] 6.1 Create password reset functionality
+- [-] 6. Implement password management and security features
+  - [x] 6.1 Create password reset functionality
     - Implement forgot password flow with Clerk integration
     - Create password reset pages and form components
     - Add secure reset link handling and validation

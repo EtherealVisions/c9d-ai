@@ -44,15 +44,15 @@ describe('PhaseMonitoring Integration Tests', () => {
   })
 
   describe('Token Loading Integration', () => {
-    it('should monitor token loading process with real PhaseTokenLoader', () => {
+    it('should monitor token loading process with real PhaseTokenLoader', async () => {
       // Mock environment to simulate token loading
       const originalEnv = process.env.PHASE_SERVICE_TOKEN
       process.env.PHASE_SERVICE_TOKEN = 'test-integration-token-12345'
 
       try {
         // Get token source diagnostics
-        const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics()
-        const activeToken = PhaseTokenLoader.getValidatedToken()
+        const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics()
+        const activeToken = await PhaseTokenLoader.getValidatedToken()
 
         // Log the token loading process
         PhaseMonitoring.logTokenLoadingProcess(diagnostics, activeToken || undefined, 25)
@@ -89,14 +89,14 @@ describe('PhaseMonitoring Integration Tests', () => {
       }
     })
 
-    it('should monitor when no token is found', () => {
+    it('should monitor when no token is found', async () => {
       // Ensure no token is available
       const originalEnv = process.env.PHASE_SERVICE_TOKEN
       delete process.env.PHASE_SERVICE_TOKEN
 
       try {
-        const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics()
-        const activeToken = PhaseTokenLoader.getValidatedToken()
+        const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics()
+        const activeToken = await PhaseTokenLoader.getValidatedToken()
 
         PhaseMonitoring.logTokenLoadingProcess(diagnostics, activeToken || undefined, 15)
 
@@ -145,7 +145,7 @@ describe('PhaseMonitoring Integration Tests', () => {
         const client = new PhaseSDKClient()
         
         // Check if token is still available from other sources
-        const tokenSource = PhaseTokenLoader.getValidatedToken()
+        const tokenSource = await PhaseTokenLoader.getValidatedToken()
         
         if (tokenSource) {
           // Token found from other sources, test successful initialization

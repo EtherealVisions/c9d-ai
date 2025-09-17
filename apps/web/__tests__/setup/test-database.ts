@@ -7,7 +7,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../../lib/models/database'
 
 // Test database configuration
 const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -22,7 +21,7 @@ if (!TEST_SUPABASE_URL || !TEST_SUPABASE_ANON_KEY) {
  * Create a test database client with service role permissions
  */
 export function createTestDatabaseClient() {
-  return createClient<Database>(
+  return createClient(
     TEST_SUPABASE_URL || 'http://localhost:54321',
     TEST_SUPABASE_SERVICE_KEY || TEST_SUPABASE_ANON_KEY || 'test-key',
     {
@@ -38,7 +37,7 @@ export function createTestDatabaseClient() {
  * Create a test database client with regular user permissions
  */
 export function createTestUserClient() {
-  return createClient<Database>(
+  return createClient(
     TEST_SUPABASE_URL || 'http://localhost:54321',
     TEST_SUPABASE_ANON_KEY || 'test-key',
     {

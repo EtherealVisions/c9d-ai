@@ -52,12 +52,12 @@ describe('PhaseTokenLoader', () => {
   })
   
   describe('loadServiceToken', () => {
-    it('should return token from process.env with highest priority', () => {
+    it('should return token from process.env with highest priority', async () => {
       // Setup
       process.env.PHASE_SERVICE_TOKEN = 'process-env-token'
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -66,7 +66,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should return token from local .env.local when process.env is not available', () => {
+    it('should return token from local .env.local when process.env is not available', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env.local')
       mockReadFileSync.mockImplementation((path) => {
@@ -77,7 +77,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -87,7 +87,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should return token from local .env when higher priority sources are not available', () => {
+    it('should return token from local .env when higher priority sources are not available', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -98,7 +98,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -108,7 +108,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should return token from root .env.local when local sources are not available', () => {
+    it('should return token from root .env.local when local sources are not available', async () => {
       // Setup - mock workspace root detection
       mockExistsSync.mockImplementation((path) => {
         return path === '/workspace/root/pnpm-workspace.yaml' || 
@@ -125,7 +125,7 @@ describe('PhaseTokenLoader', () => {
       process.cwd = vi.fn(() => '/workspace/root/apps/web')
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -135,7 +135,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should return token from root .env as last resort', () => {
+    it('should return token from root .env as last resort', async () => {
       // Setup - mock workspace root detection
       mockExistsSync.mockImplementation((path) => {
         return path === '/workspace/root/pnpm-workspace.yaml' || 
@@ -152,7 +152,7 @@ describe('PhaseTokenLoader', () => {
       process.cwd = vi.fn(() => '/workspace/root/apps/web')
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -162,18 +162,18 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should return null when no token is found in any source', () => {
+    it('should return null when no token is found in any source', async () => {
       // Setup - no files exist and no process.env
       mockExistsSync.mockReturnValue(false)
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toBeNull()
     })
     
-    it('should respect precedence order when multiple sources have tokens', () => {
+    it('should respect precedence order when multiple sources have tokens', async () => {
       // Setup - multiple sources have tokens
       process.env.PHASE_SERVICE_TOKEN = 'process-env-token'
       
@@ -190,7 +190,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify - should return process.env token (highest priority)
       expect(result).toEqual({
@@ -199,7 +199,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should handle quoted tokens correctly', () => {
+    it('should handle quoted tokens correctly', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -210,7 +210,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -220,7 +220,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should handle single-quoted tokens correctly', () => {
+    it('should handle single-quoted tokens correctly', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -231,7 +231,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -241,7 +241,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should skip empty tokens', () => {
+    it('should skip empty tokens', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => 
         path === '/current/dir/.env.local' || path === '/current/dir/.env'
@@ -257,7 +257,7 @@ describe('PhaseTokenLoader', () => {
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify - should skip empty token and use next source
       expect(result).toEqual({
@@ -267,7 +267,7 @@ describe('PhaseTokenLoader', () => {
       })
     })
     
-    it('should skip commented lines and empty lines', () => {
+    it('should skip commented lines and empty lines', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -282,7 +282,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -292,7 +292,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should handle file read errors gracefully', () => {
+    it('should handle file read errors gracefully', async () => {
       // Setup
       mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockImplementation(() => {
@@ -300,13 +300,13 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify - should return null when all files fail to read
       expect(result).toBeNull()
     })
     
-    it('should use provided rootPath instead of auto-detection', () => {
+    it('should use provided rootPath instead of auto-detection', async () => {
       // Setup
       const customRootPath = '/custom/root'
       mockExistsSync.mockImplementation((path) => path === '/custom/root/.env')
@@ -330,7 +330,7 @@ PHASE_SERVICE_TOKEN=actual-token
   })
   
   describe('findWorkspaceRoot', () => {
-    it('should find workspace root with pnpm-workspace.yaml', () => {
+    it('should find workspace root with pnpm-workspace.yaml', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => 
         path === '/workspace/root/pnpm-workspace.yaml'
@@ -340,13 +340,13 @@ PHASE_SERVICE_TOKEN=actual-token
       process.cwd = vi.fn(() => '/workspace/root/apps/web')
       
       // Execute - use a method that calls findWorkspaceRoot internally
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify by checking the calls made to existsSync
       expect(mockExistsSync).toHaveBeenCalledWith('/workspace/root/pnpm-workspace.yaml')
     })
     
-    it('should find workspace root with turbo.json', () => {
+    it('should find workspace root with turbo.json', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => 
         path === '/workspace/root/turbo.json'
@@ -362,7 +362,7 @@ PHASE_SERVICE_TOKEN=actual-token
       expect(mockExistsSync).toHaveBeenCalledWith('/workspace/root/turbo.json')
     })
     
-    it('should find workspace root with .git directory', () => {
+    it('should find workspace root with .git directory', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => 
         path === '/workspace/root/.git'
@@ -378,7 +378,7 @@ PHASE_SERVICE_TOKEN=actual-token
       expect(mockExistsSync).toHaveBeenCalledWith('/workspace/root/.git')
     })
     
-    it('should return starting path when no workspace root indicators found', () => {
+    it('should return starting path when no workspace root indicators found', async () => {
       // Setup - no workspace indicators exist
       mockExistsSync.mockReturnValue(false)
       
@@ -386,7 +386,7 @@ PHASE_SERVICE_TOKEN=actual-token
       process.cwd = vi.fn(() => '/some/random/path')
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify - should still try to load from current directory
       expect(mockExistsSync).toHaveBeenCalledWith('/some/random/path/.env.local')
@@ -395,7 +395,7 @@ PHASE_SERVICE_TOKEN=actual-token
   })
   
   describe('getTokenSourceDiagnostics', () => {
-    it('should return diagnostics for all potential sources', () => {
+    it('should return diagnostics for all potential sources', async () => {
       // Setup
       process.env.PHASE_SERVICE_TOKEN = 'process-env-token'
       mockExistsSync.mockImplementation((path) => 
@@ -412,7 +412,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics()
+      const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics()
       
       // Verify
       expect(diagnostics).toHaveLength(3) // process.env, local.env.local, local.env
@@ -441,7 +441,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should include root sources when workspace root is different', () => {
+    it('should include root sources when workspace root is different', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => 
         path === '/workspace/root/pnpm-workspace.yaml' ||
@@ -459,7 +459,7 @@ PHASE_SERVICE_TOKEN=actual-token
       process.cwd = vi.fn(() => '/workspace/root/apps/web')
       
       // Execute
-      const diagnostics = PhaseTokenLoader.getTokenSourceDiagnostics()
+      const diagnostics = await PhaseTokenLoader.getTokenSourceDiagnostics()
       
       // Verify - should include root sources
       expect(diagnostics).toHaveLength(5) // process.env, local.env.local, local.env, root.env.local, root.env
@@ -476,7 +476,7 @@ PHASE_SERVICE_TOKEN=actual-token
   })
   
   describe('validateTokenFormat', () => {
-    it('should return true for valid token format', () => {
+    it('should return true for valid token format', async () => {
       const validTokens = [
         'ph_test_1234567890abcdef',
         'valid-token-123',
@@ -489,7 +489,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should return false for invalid token format', () => {
+    it('should return false for invalid token format', async () => {
       const invalidTokens = [
         '',
         '   ',
@@ -507,12 +507,12 @@ PHASE_SERVICE_TOKEN=actual-token
   })
   
   describe('getValidatedToken', () => {
-    it('should return token source when token is valid', () => {
+    it('should return token source when token is valid', async () => {
       // Setup
       process.env.PHASE_SERVICE_TOKEN = 'valid-token-123456'
       
       // Execute
-      const result = PhaseTokenLoader.getValidatedToken()
+      const result = await PhaseTokenLoader.getValidatedToken()
       
       // Verify
       expect(result).toEqual({
@@ -521,23 +521,23 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should return null when token format is invalid', () => {
+    it('should return null when token format is invalid', async () => {
       // Setup
       process.env.PHASE_SERVICE_TOKEN = 'short'
       
       // Execute
-      const result = PhaseTokenLoader.getValidatedToken()
+      const result = await PhaseTokenLoader.getValidatedToken()
       
       // Verify
       expect(result).toBeNull()
     })
     
-    it('should return null when no token is found', () => {
+    it('should return null when no token is found', async () => {
       // Setup - no token in any source
       mockExistsSync.mockReturnValue(false)
       
       // Execute
-      const result = PhaseTokenLoader.getValidatedToken()
+      const result = await PhaseTokenLoader.getValidatedToken()
       
       // Verify
       expect(result).toBeNull()
@@ -545,7 +545,7 @@ PHASE_SERVICE_TOKEN=actual-token
   })
   
   describe('edge cases', () => {
-    it('should handle malformed .env files gracefully', () => {
+    it('should handle malformed .env files gracefully', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -556,7 +556,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify - should still find the valid token
       expect(result).toEqual({
@@ -566,7 +566,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should handle tokens with special characters', () => {
+    it('should handle tokens with special characters', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -577,7 +577,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({
@@ -587,7 +587,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
     })
     
-    it('should handle whitespace around token values', () => {
+    it('should handle whitespace around token values', async () => {
       // Setup
       mockExistsSync.mockImplementation((path) => path === '/current/dir/.env')
       mockReadFileSync.mockImplementation((path) => {
@@ -598,7 +598,7 @@ PHASE_SERVICE_TOKEN=actual-token
       })
       
       // Execute
-      const result = PhaseTokenLoader.loadServiceToken()
+      const result = await PhaseTokenLoader.loadServiceToken()
       
       // Verify
       expect(result).toEqual({

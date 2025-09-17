@@ -58,7 +58,7 @@ describe('PhaseSDKClient', () => {
   describe('initialization', () => {
     it('should initialize successfully with valid token from process.env', async () => {
       // Mock token loading
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const result = await client.initialize('TestApp', 'development')
@@ -76,7 +76,7 @@ describe('PhaseSDKClient', () => {
         path: '/path/to/.env.local'
       }
       
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(localTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(localTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const result = await client.initialize('TestApp', 'development')
@@ -93,7 +93,7 @@ describe('PhaseSDKClient', () => {
         path: '/workspace/.env'
       }
       
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(rootTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(rootTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const result = await client.initialize('TestApp', 'production', '/workspace')
@@ -104,7 +104,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should fail initialization when no token found', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(null)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(null)
 
       await expect(client.initialize('TestApp', 'development')).rejects.toMatchObject({
         code: PhaseSDKErrorCode.TOKEN_NOT_FOUND,
@@ -117,7 +117,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should fail initialization with empty app name', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
 
       await expect(client.initialize('', 'development')).rejects.toMatchObject({
         code: PhaseSDKErrorCode.SDK_ERROR,
@@ -130,7 +130,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should fail initialization with empty environment', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
 
       await expect(client.initialize('TestApp', '')).rejects.toMatchObject({
         code: PhaseSDKErrorCode.SDK_ERROR,
@@ -143,7 +143,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should handle SDK initialization failure', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockRejectedValue(new Error('SDK initialization failed'))
 
       await expect(client.initialize('TestApp', 'development')).rejects.toMatchObject({
@@ -157,7 +157,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should handle authentication errors during initialization', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockRejectedValue(new Error('401 Unauthorized'))
 
       await expect(client.initialize('TestApp', 'development')).rejects.toMatchObject({
@@ -171,7 +171,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should trim whitespace from app name and environment', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const result = await client.initialize('  TestApp  ', '  development  ')
@@ -187,7 +187,7 @@ describe('PhaseSDKClient', () => {
   describe('getSecrets', () => {
     beforeEach(async () => {
       // Initialize client for secret tests
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
       await client.initialize('TestApp', 'development')
     })
@@ -382,7 +382,7 @@ describe('PhaseSDKClient', () => {
 
   describe('testConnection', () => {
     it('should return true for successful connection', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
       mockPhaseSDK.get.mockResolvedValue({ TEST: 'value' })
 
@@ -393,7 +393,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should return false for failed connection', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
       mockPhaseSDK.get.mockRejectedValue(new Error('Connection failed'))
 
@@ -440,7 +440,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should return diagnostic information when initialized', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       await client.initialize('TestApp', 'development')
@@ -462,7 +462,7 @@ describe('PhaseSDKClient', () => {
 
   describe('error handling', () => {
     beforeEach(async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
       await client.initialize('TestApp', 'development')
     })
@@ -541,7 +541,7 @@ describe('PhaseSDKClient', () => {
 
       for (const tokenSource of tokenSources) {
         const testClient = new PhaseSDKClient()
-        vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(tokenSource)
+        vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(tokenSource)
         mockPhaseSDK.init.mockResolvedValue(undefined)
 
         const result = await testClient.initialize('TestApp', 'development')
@@ -555,7 +555,7 @@ describe('PhaseSDKClient', () => {
 
   describe('edge cases', () => {
     it('should handle SDK returning undefined', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
       mockPhaseSDK.get.mockResolvedValue(undefined)
 
@@ -571,7 +571,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should handle very long app names and environments', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const longAppName = 'A'.repeat(100)
@@ -587,7 +587,7 @@ describe('PhaseSDKClient', () => {
     })
 
     it('should handle special characters in app names and environments', async () => {
-      vi.mocked(PhaseTokenLoader.getValidatedToken).mockReturnValue(mockTokenSource)
+      vi.mocked(PhaseTokenLoader.getValidatedToken).mockResolvedValue(mockTokenSource)
       mockPhaseSDK.init.mockResolvedValue(undefined)
 
       const specialAppName = 'Test-App_123.v2'

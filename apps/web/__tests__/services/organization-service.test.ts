@@ -43,7 +43,17 @@ describe('OrganizationService', () => {
       }
 
       vi.spyOn(organizationService['db'], 'createOrganization').mockResolvedValue(createdOrg)
-      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue({
+        id: 'audit-1',
+        userId,
+        organizationId: createdOrg.id,
+        action: 'organization.created',
+        resourceType: 'organization',
+        resourceId: createdOrg.id,
+        metadata: {},
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
       vi.spyOn(organizationService as any, 'generateUniqueSlug').mockResolvedValue('test-organization')
 
       const result = await organizationService.createOrganization(userId, orgData)
@@ -256,7 +266,17 @@ describe('OrganizationService', () => {
 
       vi.spyOn(organizationService['db'], 'getOrganization').mockResolvedValue(existingOrg)
       vi.spyOn(organizationService['db'], 'updateOrganization').mockResolvedValue(updatedOrg)
-      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue({
+        id: 'audit-2',
+        userId,
+        organizationId: orgId,
+        action: 'organization.metadata_updated',
+        resourceType: 'organization',
+        resourceId: orgId,
+        metadata: {},
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
 
       const result = await organizationService.updateOrganizationMetadata(orgId, userId, metadata)
 
@@ -299,7 +319,17 @@ describe('OrganizationService', () => {
 
       vi.spyOn(organizationService['db'], 'getOrganization').mockResolvedValue(existingOrg)
       vi.spyOn(organizationService['db'], 'updateOrganization').mockResolvedValue(updatedOrg)
-      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue(undefined)
+      vi.spyOn(organizationService['db'], 'createAuditLog').mockResolvedValue({
+        id: 'audit-3',
+        userId,
+        organizationId: orgId,
+        action: 'organization.settings_updated',
+        resourceType: 'organization',
+        resourceId: orgId,
+        metadata: {},
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
 
       const result = await organizationService.updateOrganizationSettings(orgId, userId, settings)
 

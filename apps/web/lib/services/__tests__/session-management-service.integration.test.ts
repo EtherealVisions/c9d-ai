@@ -59,10 +59,10 @@ describe('SessionManagementService - Integration Tests', () => {
       // 2. Verify session was created in database
       const sessions = await service.getUserActiveSessions(testUser.id)
       expect(sessions).toHaveLength(1)
-      expect(sessions[0].session_id).toBe(sessionId)
-      expect(sessions[0].user_id).toBe(testUser.id)
-      expect(sessions[0].organization_id).toBe(testOrganization.id)
-      expect(sessions[0].status).toBe('active')
+      expect(sessions[0].sessionId).toBe(sessionId)
+      expect(sessions[0].userId).toBe(testUser.id)
+      expect(sessions[0].organizationId).toBe(testOrganization.id)
+      expect(sessions[0].isActive).toBe(true)
       
       // 3. Update session activity
       await service.updateSessionActivity(sessionId)
@@ -110,7 +110,7 @@ describe('SessionManagementService - Integration Tests', () => {
       // Verify only the current session remains
       const finalSessions = await service.getUserActiveSessions(testUser.id)
       expect(finalSessions).toHaveLength(1)
-      expect(finalSessions[0].session_id).toBe(sessionIds[0])
+      expect(finalSessions[0].sessionId).toBe(sessionIds[0])
     })
   })
 

@@ -79,52 +79,52 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
   })
 
   describe('Environment-specific .env file loading', () => {
-    it('should load development environment variables correctly', () => {
+    it('should load development environment variables correctly', async () => {
       process.env.NODE_ENV = 'development'
       
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.development'), 'DEV_VAR=dev-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.DEV_VAR).toBe('dev-value')
       expect(result.NODE_ENV).toBe('development')
     })
 
-    it('should load production environment variables correctly', () => {
+    it('should load production environment variables correctly', async () => {
       process.env.NODE_ENV = 'production'
       
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.production'), 'PROD_VAR=prod-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.PROD_VAR).toBe('prod-value')
       expect(result.NODE_ENV).toBe('production')
     })
 
-    it('should load test environment variables correctly', () => {
+    it('should load test environment variables correctly', async () => {
       process.env.NODE_ENV = 'test'
       
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.test'), 'TEST_VAR=test-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.TEST_VAR).toBe('test-value')
       expect(result.NODE_ENV).toBe('test')
     })
 
-    it('should load staging environment variables correctly', () => {
+    it('should load staging environment variables correctly', async () => {
       process.env.NODE_ENV = 'staging'
       
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.staging'), 'STAGING_VAR=staging-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.STAGING_VAR).toBe('staging-value')
@@ -138,7 +138,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         process.env.PHASE_SERVICE_TOKEN = 'test-phase-token-123'
       })
 
-      it('should detect Phase.dev availability', () => {
+      it('should detect Phase.dev availability', async () => {
         expect(isPhaseDevAvailable()).toBe(true)
         // Test token from process.env takes precedence over .env.local
         expect(getPhaseServiceToken()).toBe('test-phase-token-123')
@@ -162,7 +162,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         expect(result.error).toContain('Phase.dev API error')
       })
 
-      it('should include Phase.dev status in environment config', () => {
+      it('should include Phase.dev status in environment config', async () => {
         const config = getEnvironmentConfig()
         
         expect(config.isPhaseDevAvailable).toBe(true)
@@ -177,7 +177,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         delete process.env.PHASE_SERVICE_TOKEN
       })
 
-      it('should still detect Phase.dev availability from .env.local', () => {
+      it('should still detect Phase.dev availability from .env.local', async () => {
         // Even without process.env token, .env.local token is available
         expect(isPhaseDevAvailable()).toBe(true)
         const token = getPhaseServiceToken()
@@ -202,7 +202,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         expect(result.responseTime).toBeGreaterThanOrEqual(0)
       })
 
-      it('should show Phase.dev availability in environment config', () => {
+      it('should show Phase.dev availability in environment config', async () => {
         const config = getEnvironmentConfig()
         
         expect(config.isPhaseDevAvailable).toBe(true)
@@ -212,8 +212,8 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
       })
     })
 
-    it('should load real Phase.dev token', () => {
-      const result = reloadEnvironmentVars()
+    it('should load real Phase.dev token', async () => {
+      const result = await reloadEnvironmentVars()
       const token = getPhaseServiceToken()
       
       expect(result.PHASE_SERVICE_TOKEN).toBeTruthy()
@@ -224,17 +224,17 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
   })
 
   describe('Environment variable precedence', () => {
-    it('should prioritize process.env over all file sources', () => {
+    it('should prioritize process.env over all file sources', async () => {
       process.env.PRECEDENCE_TEST = 'process-env-value'
       
       writeFileSync(join(testDir, '.env'), 'PRECEDENCE_TEST=base-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.PRECEDENCE_TEST).toBe('process-env-value')
     })
 
-    it('should handle complex precedence scenarios', () => {
+    it('should handle complex precedence scenarios', async () => {
       process.env.NODE_ENV = 'production'
       process.env.PROCESS_ONLY = 'process-value'
       
@@ -248,7 +248,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         'SHARED_VAR=prod-shared'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.PROD_VAR).toBe('prod-value')
@@ -258,27 +258,27 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
   })
 
   describe('Caching behavior', () => {
-    it('should cache environment variables and return cached values', () => {
+    it('should cache environment variables and return cached values', async () => {
       writeFileSync(join(testDir, '.env'), 'CACHE_VAR=initial-value')
       
       // First load
-      const result1 = reloadEnvironmentVars(testDir)
+      const result1 = await reloadEnvironmentVars(testDir)
       expect(result1.CACHE_VAR).toBe('initial-value')
       
       // Modify file
       writeFileSync(join(testDir, '.env'), 'CACHE_VAR=modified-value')
       
       // Second load without force reload should return cached value
-      const result2 = getAllEnvVars()
+      const result2 = await getAllEnvVars()
       expect(result2.CACHE_VAR).toBe('initial-value')
     })
 
-    it('should provide accurate cache diagnostics', () => {
+    it('should provide accurate cache diagnostics', async () => {
       writeFileSync(join(testDir, '.env'), 'DIAG_VAR=diag-value')
       
       reloadEnvironmentVars(testDir)
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       
       expect(diagnostics.loadedFiles).toContain('.env')
       expect(diagnostics.cacheAge).toBeGreaterThanOrEqual(0)
@@ -300,42 +300,42 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
       reloadEnvironmentVars(testDir)
     })
 
-    it('should validate required environment variables', () => {
+    it('should validate required environment variables', async () => {
       expect(() => {
         validateRequiredEnvVars(['PORT', 'DEBUG'])
       }).not.toThrow()
     })
 
-    it('should convert environment variables to numbers', () => {
+    it('should convert environment variables to numbers', async () => {
       expect(getEnvVarAsNumber('PORT')).toBe(3000)
       expect(getEnvVarAsNumber('TIMEOUT')).toBe(5000)
       expect(getEnvVarAsNumber('MISSING_NUMBER', 8080)).toBe(8080)
     })
 
-    it('should convert environment variables to booleans', () => {
+    it('should convert environment variables to booleans', async () => {
       expect(getEnvVarAsBoolean('DEBUG')).toBe(true)
       expect(getEnvVarAsBoolean('ENABLED')).toBe(true)
       expect(getEnvVarAsBoolean('DISABLED')).toBe(false)
       expect(getEnvVarAsBoolean('MISSING_BOOL', false)).toBe(false)
     })
 
-    it('should convert environment variables to arrays', () => {
+    it('should convert environment variables to arrays', async () => {
       expect(getEnvVarAsArray('FEATURES')).toEqual(['feature1', 'feature2', 'feature3'])
       expect(getEnvVarAsArray('MISSING_ARRAY', ['default'])).toEqual(['default'])
     })
   })
 
   describe('Error handling', () => {
-    it('should handle missing .env files gracefully', () => {
+    it('should handle missing .env files gracefully', async () => {
       expect(() => {
         reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(typeof result).toBe('object')
     })
 
-    it('should handle malformed .env files', () => {
+    it('should handle malformed .env files', async () => {
       writeFileSync(join(testDir, '.env'), 
         'VALID_VAR=valid-value\n' +
         'INVALID LINE WITHOUT EQUALS\n' +
@@ -346,17 +346,17 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(result.VALID_VAR).toBe('valid-value')
       expect(result.ANOTHER_VALID).toBe('another-value')
     })
 
-    it('should report errors in diagnostics', () => {
+    it('should report errors in diagnostics', async () => {
       writeFileSync(join(testDir, '.env'), 'VALID_VAR=valid-value')
       
       reloadEnvironmentVars(testDir)
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       
       expect(diagnostics.loadedFiles.length).toBeGreaterThan(0)
       expect(Array.isArray(diagnostics.errors)).toBe(true)
@@ -364,7 +364,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
   })
 
   describe('Real-world integration scenarios', () => {
-    it('should handle complete application startup scenario', () => {
+    it('should handle complete application startup scenario', async () => {
       process.env.NODE_ENV = 'development'
       process.env.PHASE_SERVICE_TOKEN = 'dev-token-123'
       
@@ -380,7 +380,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         'HOT_RELOAD=true'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       const config = getEnvironmentConfig()
       
       // Verify all variables are loaded correctly
@@ -397,7 +397,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
       expect(config.diagnostics.totalVariables).toBeGreaterThan(0)
     })
 
-    it('should handle production deployment scenario', () => {
+    it('should handle production deployment scenario', async () => {
       process.env.NODE_ENV = 'production'
       process.env.DATABASE_URL = 'postgresql://prod-host:5432/prod-db' // Override from process.env
       
@@ -412,7 +412,7 @@ describe('Task 13.3: Comprehensive Environment Variable Loading', () => {
         'ENABLE_METRICS=true'
       )
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       const config = getEnvironmentConfig()
       
       // Process.env should override file values

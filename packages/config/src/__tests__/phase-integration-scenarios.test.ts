@@ -60,7 +60,7 @@ describe('Phase.dev Integration Scenarios', () => {
   })
 
   describe('Phase.dev Service Token Detection', () => {
-    it('should detect real Phase.dev token when available', () => {
+    it('should detect real Phase.dev token when available', async () => {
       const token = getPhaseServiceToken()
       const isAvailable = isPhaseDevAvailable()
       
@@ -71,7 +71,7 @@ describe('Phase.dev Integration Scenarios', () => {
       expect(isAvailable).toBe(true)
     })
 
-    it('should handle empty token values', () => {
+    it('should handle empty token values', async () => {
       const originalToken = process.env.PHASE_SERVICE_TOKEN
       process.env.PHASE_SERVICE_TOKEN = ''
       
@@ -93,10 +93,10 @@ describe('Phase.dev Integration Scenarios', () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token-123'
     })
 
-    it('should generate default configuration', () => {
+    it('should generate default configuration', async () => {
       process.env.NODE_ENV = 'development'
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config).toEqual({
         serviceToken: 'test-token-123',
@@ -105,7 +105,7 @@ describe('Phase.dev Integration Scenarios', () => {
       })
     })
 
-    it('should read app name from package.json phase config', () => {
+    it('should read app name from package.json phase config', async () => {
       writeFileSync(join(testDir, 'package.json'), JSON.stringify({
         name: '@c9d/web',
         phase: {
@@ -113,12 +113,12 @@ describe('Phase.dev Integration Scenarios', () => {
         }
       }))
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('CustomApp.Name')
     })
 
-    it('should read app name from package.json phasedev config', () => {
+    it('should read app name from package.json phasedev config', async () => {
       writeFileSync(join(testDir, 'package.json'), JSON.stringify({
         name: '@c9d/web',
         phasedev: {
@@ -126,12 +126,12 @@ describe('Phase.dev Integration Scenarios', () => {
         }
       }))
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('AlternativeApp.Name')
     })
 
-    it('should derive app name from package name', () => {
+    it('should derive app name from package name', async () => {
       const testCases = [
         { input: '@c9d/web', expected: 'C9d.Web' },
         { input: '@company/my-app', expected: 'Company.My.App' },
@@ -140,27 +140,27 @@ describe('Phase.dev Integration Scenarios', () => {
         { input: '@scope/multi-word-app-name', expected: 'Scope.Multi.Word.App.Name' }
       ]
 
-      testCases.forEach(({ input, expected }) => {
+      for (const { input, expected } of testCases) {
         writeFileSync(join(testDir, 'package.json'), JSON.stringify({
           name: input
         }))
         
-        const config = getPhaseConfig({}, testDir)
+        const config = await getPhaseConfig({}, testDir)
         
         expect(config?.appName).toBe(expected)
-      })
+      }
     })
 
-    it('should handle package.json read errors gracefully', () => {
+    it('should handle package.json read errors gracefully', async () => {
       writeFileSync(join(testDir, 'package.json'), 'invalid json')
       
-      const config = getPhaseConfig({}, testDir)
+      const config = await getPhaseConfig({}, testDir)
       
       expect(config?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should use configuration overrides', () => {
-      const config = getPhaseConfig({
+    it('should use configuration overrides', async () => {
+      const config = await getPhaseConfig({
         appName: 'Override.App',
         environment: 'staging'
       })
@@ -172,24 +172,24 @@ describe('Phase.dev Integration Scenarios', () => {
       })
     })
 
-    it('should return null when no service token', () => {
+    it('should return null when no service token', async () => {
       delete process.env.PHASE_SERVICE_TOKEN
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config).toBeNull()
     })
 
-    it('should handle different NODE_ENV values', () => {
+    it('should handle different NODE_ENV values', async () => {
       const environments = ['development', 'production', 'test', 'staging']
       
-      environments.forEach(env => {
+      for (const env of environments) {
         process.env.NODE_ENV = env
         
-        const config = getPhaseConfig()
+        const config = await getPhaseConfig()
         
         expect(config?.environment).toBe(env)
-      })
+      }
     })
   })
 
@@ -288,9 +288,9 @@ describe('Phase.dev Integration Scenarios', () => {
       expect(result.responseTime).toBeGreaterThanOrEqual(0)
     })
 
-    it('should show Phase.dev status in environment config', () => {
+    it('should show Phase.dev status in environment config', async () => {
       // With real token from .env.local, Phase.dev should be available
-      const config = getEnvironmentConfig()
+      const config = await getEnvironmentConfig()
       
       expect(config.isPhaseDevAvailable).toBe(true)
       expect(config.phaseServiceToken).toBeTruthy()
@@ -304,7 +304,7 @@ describe('Phase.dev Integration Scenarios', () => {
       process.env.PHASE_SERVICE_TOKEN = 'test-token-123'
     })
 
-    it('should provide empty cache status initially', () => {
+    it('should provide empty cache status initially', async () => {
       const status = getPhaseCacheStatus()
       
       expect(status).toEqual({
@@ -348,13 +348,13 @@ describe('Phase.dev Integration Scenarios', () => {
   })
 
   describe('Phase.dev Integration with Environment Loading', () => {
-    it('should integrate Phase.dev status with environment diagnostics', () => {
+    it('should integrate Phase.dev status with environment diagnostics', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'integration-token'
       
       writeFileSync(join(testDir, '.env'), 'TEST_VAR=test-value')
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
       
-      const config = getEnvironmentConfig()
+      const config = await getEnvironmentConfig()
       
       expect(config.isPhaseDevAvailable).toBe(true)
       expect(config.phaseServiceToken).toBe('integration-token')
@@ -362,11 +362,11 @@ describe('Phase.dev Integration Scenarios', () => {
       expect(config.diagnostics.loadedFiles).toContain('.env')
     })
 
-    it('should handle Phase.dev available in environment diagnostics', () => {
+    it('should handle Phase.dev available in environment diagnostics', async () => {
       writeFileSync(join(testDir, '.env'), 'TEST_VAR=test-value')
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
       
-      const config = getEnvironmentConfig()
+      const config = await getEnvironmentConfig()
       
       expect(config.isPhaseDevAvailable).toBe(true)
       expect(config.phaseServiceToken).toBeTruthy()
@@ -381,9 +381,9 @@ describe('Phase.dev Integration Scenarios', () => {
       await loadFromPhase()
       
       writeFileSync(join(testDir, '.env'), 'DIAG_VAR=diag-value')
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
       
-      const config = getEnvironmentConfig()
+      const config = await getEnvironmentConfig()
       
       expect(config.diagnostics.phaseDevStatus).toEqual({
         available: true,
@@ -431,28 +431,28 @@ describe('Phase.dev Integration Scenarios', () => {
       process.env.PHASE_SERVICE_TOKEN = 'env-specific-token'
     })
 
-    it('should handle development environment Phase.dev config', () => {
+    it('should handle development environment Phase.dev config', async () => {
       process.env.NODE_ENV = 'development'
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config?.environment).toBe('development')
       expect(config?.serviceToken).toBe('env-specific-token')
     })
 
-    it('should handle production environment Phase.dev config', () => {
+    it('should handle production environment Phase.dev config', async () => {
       process.env.NODE_ENV = 'production'
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config?.environment).toBe('production')
       expect(config?.serviceToken).toBe('env-specific-token')
     })
 
-    it('should handle test environment Phase.dev config', () => {
+    it('should handle test environment Phase.dev config', async () => {
       process.env.NODE_ENV = 'test'
       
-      const config = getPhaseConfig()
+      const config = await getPhaseConfig()
       
       expect(config?.environment).toBe('test')
       expect(config?.serviceToken).toBe('env-specific-token')
@@ -477,7 +477,7 @@ describe('Phase.dev Integration Scenarios', () => {
   })
 
   describe('Phase.dev Token Source Priority', () => {
-    it('should use real Phase.dev token from environment', () => {
+    it('should use real Phase.dev token from environment', async () => {
       // Test that we can access the real token
       const token = getPhaseServiceToken()
       const isAvailable = isPhaseDevAvailable()

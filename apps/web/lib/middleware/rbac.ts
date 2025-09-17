@@ -129,7 +129,9 @@ export function withRBAC(options: RBACOptions = {}) {
   return function rbacMiddleware(
     handler: (req: AuthenticatedRequest) => Promise<NextResponse>
   ) {
-    return withAuth(async (request: AuthenticatedRequest, res: NextResponse): Promise<NextResponse> => {
+    const authMiddleware = withAuth()
+    return async (request: NextRequest): Promise<NextResponse> => {
+      return authMiddleware(request, async (request: AuthenticatedRequest): Promise<NextResponse> => {
       try {
         if (!request.user) {
           return NextResponse.json(
@@ -228,7 +230,8 @@ export function withRBAC(options: RBACOptions = {}) {
           { status: 500 }
         )
       }
-    }, { requireAuth: true, syncUser: true })
+      })
+    }
   }
 }
 

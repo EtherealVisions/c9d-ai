@@ -76,40 +76,40 @@ describe('Basic Environment Variable Functionality', () => {
   })
 
   describe('Environment File Loading', () => {
-    it('should load variables from .env file', () => {
+    it('should load variables from .env file', async () => {
       writeFileSync(join(testDir, '.env'), 'FILE_VAR=file-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.FILE_VAR).toBe('file-value')
     })
 
-    it('should prioritize process.env over .env files', () => {
+    it('should prioritize process.env over .env files', async () => {
       process.env.PRIORITY_VAR = 'process-value'
       writeFileSync(join(testDir, '.env'), 'PRIORITY_VAR=file-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.PRIORITY_VAR).toBe('process-value')
     })
 
-    it('should load environment-specific files', () => {
+    it('should load environment-specific files', async () => {
       process.env.NODE_ENV = 'development'
       
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.development'), 'DEV_VAR=dev-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.DEV_VAR).toBe('dev-value')
     })
 
-    it('should handle .env.local with highest priority among files', () => {
+    it('should handle .env.local with highest priority among files', async () => {
       writeFileSync(join(testDir, '.env'), 'PRECEDENCE_VAR=base-value')
       writeFileSync(join(testDir, '.env.local'), 'PRECEDENCE_VAR=local-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       // Debug: log the actual result
       console.log('Debug - result.PRECEDENCE_VAR:', result.PRECEDENCE_VAR)
@@ -148,30 +148,30 @@ describe('Basic Environment Variable Functionality', () => {
   })
 
   describe('Caching Behavior', () => {
-    it('should cache environment variables', () => {
+    it('should cache environment variables', async () => {
       writeFileSync(join(testDir, '.env'), 'CACHE_VAR=initial-value')
       
       // First load
-      const result1 = reloadEnvironmentVars(testDir)
+      const result1 = await reloadEnvironmentVars(testDir)
       expect(result1.CACHE_VAR).toBe('initial-value')
       
       // Modify file
       writeFileSync(join(testDir, '.env'), 'CACHE_VAR=modified-value')
       
       // Should return cached value
-      const result2 = getAllEnvVars()
+      const result2 = await getAllEnvVars()
       expect(result2.CACHE_VAR).toBe('initial-value')
       
       // Force reload should get new value
-      const result3 = reloadEnvironmentVars(testDir)
+      const result3 = await reloadEnvironmentVars(testDir)
       expect(result3.CACHE_VAR).toBe('modified-value')
     })
 
-    it('should clear cache when requested', () => {
+    it('should clear cache when requested', async () => {
       writeFileSync(join(testDir, '.env'), 'CLEAR_VAR=value')
       
       // Load and cache
-      reloadEnvironmentVars(testDir)
+      await reloadEnvironmentVars(testDir)
       
       // Modify file
       writeFileSync(join(testDir, '.env'), 'CLEAR_VAR=new-value')
@@ -180,22 +180,22 @@ describe('Basic Environment Variable Functionality', () => {
       clearEnvCache()
       
       // Should get new value
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(result.CLEAR_VAR).toBe('new-value')
     })
   })
 
   describe('Error Handling', () => {
-    it('should handle missing .env files gracefully', () => {
+    it('should handle missing .env files gracefully', async () => {
       expect(() => {
         reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(typeof result).toBe('object')
     })
 
-    it('should handle malformed .env files', () => {
+    it('should handle malformed .env files', async () => {
       writeFileSync(join(testDir, '.env'), 
         'VALID_VAR=valid-value\n' +
         'INVALID LINE\n' +
@@ -206,7 +206,7 @@ describe('Basic Environment Variable Functionality', () => {
         reloadEnvironmentVars(testDir)
       }).not.toThrow()
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       expect(result.VALID_VAR).toBe('valid-value')
       expect(result.ANOTHER_VALID).toBe('another-value')
     })

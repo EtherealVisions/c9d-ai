@@ -70,7 +70,7 @@ describe('Phase.dev Integration', () => {
   })
 
   describe('getPhaseServiceToken', () => {
-    it('should return token from process.env when available', () => {
+    it('should return token from process.env when available', async () => {
       mockGetPhaseServiceToken.mockReturnValue('process-token-123')
       
       const result = getPhaseServiceToken()
@@ -78,7 +78,7 @@ describe('Phase.dev Integration', () => {
       expect(result).toBe('process-token-123')
     })
 
-    it('should fallback to getOptionalEnvVar when not in process.env', () => {
+    it('should fallback to getOptionalEnvVar when not in process.env', async () => {
       mockGetPhaseServiceToken.mockReturnValue('fallback-token-456')
       
       const result = getPhaseServiceToken()
@@ -86,7 +86,7 @@ describe('Phase.dev Integration', () => {
       expect(result).toBe('fallback-token-456')
     })
 
-    it('should return null when token is not available anywhere', () => {
+    it('should return null when token is not available anywhere', async () => {
       mockGetPhaseServiceToken.mockReturnValue(null)
       
       const result = getPhaseServiceToken()
@@ -96,7 +96,7 @@ describe('Phase.dev Integration', () => {
   })
 
   describe('isPhaseDevAvailable', () => {
-    it('should return true when service token is available', () => {
+    it('should return true when service token is available', async () => {
       mockIsPhaseDevAvailable.mockReturnValue(true)
       
       const result = isPhaseDevAvailable()
@@ -104,7 +104,7 @@ describe('Phase.dev Integration', () => {
       expect(result).toBe(true)
     })
 
-    it('should return false when service token is not available', () => {
+    it('should return false when service token is not available', async () => {
       mockIsPhaseDevAvailable.mockReturnValue(false)
       
       const result = isPhaseDevAvailable()
@@ -114,21 +114,21 @@ describe('Phase.dev Integration', () => {
   })
 
   describe('getPhaseConfig', () => {
-    it('should return null when service token is not available', () => {
+    it('should return null when service token is not available', async () => {
       delete process.env.PHASE_SERVICE_TOKEN
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result).toBeNull()
     })
 
-    it('should return config with default app name when token is available', () => {
+    it('should return config with default app name when token is available', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       process.env.NODE_ENV = 'development'
       
       mockExistsSync.mockReturnValue(false) // No package.json
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result).toEqual({
         serviceToken: 'token-123',
@@ -137,7 +137,7 @@ describe('Phase.dev Integration', () => {
       })
     })
 
-    it('should read app name from package.json phase config', () => {
+    it('should read app name from package.json phase config', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
       mockExistsSync.mockReturnValue(true)
@@ -148,12 +148,12 @@ describe('Phase.dev Integration', () => {
         }
       }))
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result?.appName).toBe('CustomApp.Name')
     })
 
-    it('should read app name from package.json phasedev config', () => {
+    it('should read app name from package.json phasedev config', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
       mockExistsSync.mockReturnValue(true)
@@ -164,12 +164,12 @@ describe('Phase.dev Integration', () => {
         }
       }))
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result?.appName).toBe('AlternativeApp.Name')
     })
 
-    it('should derive app name from package name when no phase config', () => {
+    it('should derive app name from package name when no phase config', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
       mockExistsSync.mockReturnValue(true)
@@ -177,12 +177,12 @@ describe('Phase.dev Integration', () => {
         name: '@c9d/web-app'
       }))
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result?.appName).toBe('C9d.Web.App')
     })
 
-    it('should handle package.json read errors gracefully', () => {
+    it('should handle package.json read errors gracefully', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
       mockExistsSync.mockReturnValue(true)
@@ -190,26 +190,26 @@ describe('Phase.dev Integration', () => {
         throw new Error('File read error')
       })
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should handle invalid JSON gracefully', () => {
+    it('should handle invalid JSON gracefully', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
       mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue('invalid json')
       
-      const result = getPhaseConfig()
+      const result = await getPhaseConfig()
       
       expect(result?.appName).toBe('AI.C9d.Web') // Should fallback to default
     })
 
-    it('should use overrides when provided', () => {
+    it('should use overrides when provided', async () => {
       process.env.PHASE_SERVICE_TOKEN = 'token-123'
       
-      const result = getPhaseConfig({
+      const result = await getPhaseConfig({
         appName: 'Override.App',
         environment: 'staging'
       })
@@ -294,7 +294,7 @@ describe('Phase.dev Integration', () => {
     })
 
     describe('getPhaseCacheStatus', () => {
-      it('should return empty status when no cache', () => {
+      it('should return empty status when no cache', async () => {
         const status = getPhaseCacheStatus()
         
         expect(status).toEqual({
@@ -352,7 +352,7 @@ describe('Phase.dev Integration', () => {
     ]
 
     testCases.forEach(({ input, expected }) => {
-      it(`should convert "${input}" to "${expected}"`, () => {
+      it(`should convert "${input}" to "${expected}"`, async () => {
         process.env.PHASE_SERVICE_TOKEN = 'token-123'
         
         mockExistsSync.mockReturnValue(true)
@@ -360,7 +360,7 @@ describe('Phase.dev Integration', () => {
           name: input
         }))
         
-        const result = getPhaseConfig()
+        const result = await getPhaseConfig()
         
         expect(result?.appName).toBe(expected)
       })

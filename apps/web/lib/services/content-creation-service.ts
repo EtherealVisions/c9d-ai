@@ -141,7 +141,7 @@ export class ContentCreationService {
         throw new DatabaseError('Failed to fetch content templates', error)
       }
 
-      return (templates || []).map(template => this.transformTemplateRow(template))
+      return (templates || []).map((template: any) => this.transformTemplateRow(template))
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error

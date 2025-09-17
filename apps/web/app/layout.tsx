@@ -456,14 +456,16 @@ export default async function RootLayout({
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
-        <ClerkProvider publishableKey={clerkPublishableKey}>
-          <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-          {/* <AuthProvider>
-            <OrganizationProvider> */}
-            {children}
-          {/* </OrganizationProvider>
-          </AuthProvider> */}
-        </ClerkProvider>
+        {await ClerkProvider({ publishableKey: clerkPublishableKey, children: (
+          <>
+            <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
+            {/* <AuthProvider>
+              <OrganizationProvider> */}
+              {children}
+            {/* </OrganizationProvider>
+            </AuthProvider> */}
+          </>
+        ) })}
       </body>
     </html>
   );

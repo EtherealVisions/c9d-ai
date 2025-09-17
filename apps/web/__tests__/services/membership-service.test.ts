@@ -333,7 +333,7 @@ describe('MembershipService', () => {
     it('should return empty array for organization with no members', async () => {
       const organizationId = 'org-empty'
 
-      vi.spyOn(membershipService['db'], 'getOrganizationMembers').mockResolvedValue([])
+      vi.spyOn(membershipService['db'], 'getOrganizationWithMembers').mockResolvedValue({ members: [] })
 
       const result = await membershipService.getOrganizationMembers(organizationId)
 

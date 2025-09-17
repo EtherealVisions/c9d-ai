@@ -2,6 +2,7 @@ import { createSupabaseClient } from '../database'
 import type { User, UserRow } from '../models/types'
 import { transformUserRow } from '../models/transformers'
 import type { User as ClerkUser } from '@clerk/nextjs/server'
+import type { UserResource } from '@clerk/types'
 
 export interface UserSyncResult {
   user: User
@@ -42,7 +43,7 @@ export class UserSyncService {
    * Synchronizes a Clerk user with the local database
    * Creates a new user if they don't exist, updates if they do
    */
-  async syncUser(clerkUser: ClerkUser, metadata?: Record<string, any>): Promise<UserSyncResult> {
+  async syncUser(clerkUser: ClerkUser | UserResource, metadata?: Record<string, any>): Promise<UserSyncResult> {
     try {
       // Check if user already exists
       const { data: existingUser, error: fetchError } = await this.supabase
@@ -56,9 +57,15 @@ export class UserSyncService {
         throw new Error(`Failed to fetch user: ${fetchError.message}`)
       }
 
+      // Normalize user data from either ClerkUser or UserResource
+      const isUserResource = 'primaryEmailAddress' in clerkUser
+      const email = isUserResource 
+        ? (clerkUser as UserResource).primaryEmailAddress?.emailAddress || ''
+        : (clerkUser as ClerkUser).emailAddresses[0]?.emailAddress || ''
+      
       const userData = {
         clerk_user_id: clerkUser.id,
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
+        email,
         first_name: clerkUser.firstName || null,
         last_name: clerkUser.lastName || null,
         avatar_url: clerkUser.imageUrl || null,
@@ -118,7 +125,9 @@ export class UserSyncService {
           ...metadata,
           clerkUserId: clerkUser.id,
           email: userData.email,
-          signUpMethod: clerkUser.externalAccounts?.length > 0 ? 'social' : 'email'
+          signUpMethod: (isUserResource 
+            ? (clerkUser as UserResource).externalAccounts?.length > 0 
+            : (clerkUser as ClerkUser).externalAccounts?.length > 0) ? 'social' : 'email'
         })
 
         return {

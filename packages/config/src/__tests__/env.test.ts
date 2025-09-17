@@ -88,7 +88,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('getEnvVar', () => {
-    it('should return environment variable from process.env', () => {
+    it('should return environment variable from process.env', async () => {
       process.env.TEST_VAR = 'test-value'
       
       const result = getEnvVar('TEST_VAR')
@@ -96,19 +96,19 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe('test-value')
     })
 
-    it('should return default value when variable is not found', () => {
+    it('should return default value when variable is not found', async () => {
       const result = getEnvVar('MISSING_VAR', 'default-value')
       
       expect(result).toBe('default-value')
     })
 
-    it('should throw error when required variable is missing and no default provided', () => {
+    it('should throw error when required variable is missing and no default provided', async () => {
       expect(() => getEnvVar('MISSING_VAR')).toThrow(
         'Environment variable MISSING_VAR is required but not found'
       )
     })
 
-    it('should load from .env files when variable not in process.env', () => {
+    it('should load from .env files when variable not in process.env', async () => {
       mockExistsSync.mockImplementation((path: PathLike) => {
         return path.toString().endsWith('.env')
       })
@@ -128,7 +128,7 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe('env-file-value')
     })
 
-    it('should prioritize process.env over .env files', () => {
+    it('should prioritize process.env over .env files', async () => {
       process.env.TEST_VAR = 'process-env-value'
       
       mockExistsSync.mockImplementation((path: PathLike) => {
@@ -152,7 +152,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('getOptionalEnvVar', () => {
-    it('should return environment variable when it exists', () => {
+    it('should return environment variable when it exists', async () => {
       process.env.OPTIONAL_VAR = 'optional-value'
       
       const result = getOptionalEnvVar('OPTIONAL_VAR')
@@ -160,13 +160,13 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe('optional-value')
     })
 
-    it('should return default value when variable is missing', () => {
+    it('should return default value when variable is missing', async () => {
       const result = getOptionalEnvVar('MISSING_VAR', 'default-value')
       
       expect(result).toBe('default-value')
     })
 
-    it('should return undefined when variable is missing and no default provided', () => {
+    it('should return undefined when variable is missing and no default provided', async () => {
       const result = getOptionalEnvVar('MISSING_VAR')
       
       expect(result).toBeUndefined()
@@ -174,17 +174,17 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('getAllEnvVars', () => {
-    it('should return all environment variables including process.env', () => {
+    it('should return all environment variables including process.env', async () => {
       process.env.PROCESS_VAR = 'process-value'
       process.env.NODE_ENV = 'test'
       
-      const result = getAllEnvVars()
+      const result = await getAllEnvVars()
       
       expect(result.PROCESS_VAR).toBe('process-value')
       expect(result.NODE_ENV).toBe('test')
     })
 
-    it('should merge .env file variables with process.env', () => {
+    it('should merge .env file variables with process.env', async () => {
       process.env.PROCESS_VAR = 'process-value'
       
       mockExistsSync.mockImplementation((path: PathLike) => {
@@ -201,43 +201,43 @@ describe('Environment Configuration Utilities', () => {
         error: undefined
       })
       
-      const result = getAllEnvVars()
+      const result = await getAllEnvVars()
       
       expect(result.PROCESS_VAR).toBe('process-value') // process.env takes precedence
       expect(result.FILE_VAR).toBe('file-value')
     })
 
-    it('should cache results and return cached values on subsequent calls', () => {
+    it('should cache results and return cached values on subsequent calls', async () => {
       process.env.CACHE_TEST = 'cached-value'
       
-      const result1 = getAllEnvVars()
-      const result2 = getAllEnvVars()
+      const result1 = await getAllEnvVars()
+      const result2 = await getAllEnvVars()
       
       expect(result1).toBe(result2) // Same reference due to caching
       expect(result1.CACHE_TEST).toBe('cached-value')
     })
 
-    it('should force reload when forceReload is true', () => {
+    it('should force reload when forceReload is true', async () => {
       process.env.RELOAD_TEST = 'initial-value'
       
       // First call to populate cache
-      getAllEnvVars()
+      await getAllEnvVars()
       
       // Change environment variable
       process.env.RELOAD_TEST = 'updated-value'
       
       // Without force reload, should return cached value
-      const cachedResult = getAllEnvVars()
+      const cachedResult = await getAllEnvVars()
       expect(cachedResult.RELOAD_TEST).toBe('initial-value')
       
       // With force reload, should return updated value
-      const reloadedResult = getAllEnvVars(true)
+      const reloadedResult = await getAllEnvVars(true)
       expect(reloadedResult.RELOAD_TEST).toBe('updated-value')
     })
   })
 
   describe('hasEnvVar', () => {
-    it('should return true when variable exists and has value', () => {
+    it('should return true when variable exists and has value', async () => {
       process.env.EXISTS_VAR = 'some-value'
       
       const result = hasEnvVar('EXISTS_VAR')
@@ -245,13 +245,13 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe(true)
     })
 
-    it('should return false when variable does not exist', () => {
+    it('should return false when variable does not exist', async () => {
       const result = hasEnvVar('MISSING_VAR')
       
       expect(result).toBe(false)
     })
 
-    it('should return false when variable exists but is empty string', () => {
+    it('should return false when variable exists but is empty string', async () => {
       process.env.EMPTY_VAR = ''
       
       const result = hasEnvVar('EMPTY_VAR')
@@ -261,7 +261,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('getEnvVarsWithPrefix', () => {
-    it('should return variables matching the prefix', () => {
+    it('should return variables matching the prefix', async () => {
       process.env.PREFIX_VAR1 = 'value1'
       process.env.PREFIX_VAR2 = 'value2'
       process.env.OTHER_VAR = 'other-value'
@@ -275,7 +275,7 @@ describe('Environment Configuration Utilities', () => {
       expect(result.OTHER_VAR).toBeUndefined()
     })
 
-    it('should return empty object when no variables match prefix', () => {
+    it('should return empty object when no variables match prefix', async () => {
       process.env.SOME_VAR = 'some-value'
       
       const result = getEnvVarsWithPrefix('NONEXISTENT_')
@@ -285,7 +285,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('validateRequiredEnvVars', () => {
-    it('should not throw when all required variables are present', () => {
+    it('should not throw when all required variables are present', async () => {
       process.env.REQUIRED_VAR1 = 'value1'
       process.env.REQUIRED_VAR2 = 'value2'
       
@@ -294,7 +294,7 @@ describe('Environment Configuration Utilities', () => {
       }).not.toThrow()
     })
 
-    it('should throw error when required variables are missing', () => {
+    it('should throw error when required variables are missing', async () => {
       process.env.REQUIRED_VAR1 = 'value1'
       // REQUIRED_VAR2 is missing
       
@@ -303,7 +303,7 @@ describe('Environment Configuration Utilities', () => {
       }).toThrow('Missing required environment variables: REQUIRED_VAR2')
     })
 
-    it('should throw error when required variables are empty strings', () => {
+    it('should throw error when required variables are empty strings', async () => {
       process.env.REQUIRED_VAR1 = 'value1'
       process.env.REQUIRED_VAR2 = ''
       process.env.REQUIRED_VAR3 = '   ' // whitespace only
@@ -317,7 +317,7 @@ describe('Environment Configuration Utilities', () => {
   // Phase.dev integration tests are in phase.test.ts
 
   describe('getEnvironmentConfig', () => {
-    it('should return correct environment configuration for development', () => {
+    it('should return correct environment configuration for development', async () => {
       process.env.NODE_ENV = 'development'
       delete process.env.PHASE_SERVICE_TOKEN // Ensure no token for this test
       
@@ -335,7 +335,7 @@ describe('Environment Configuration Utilities', () => {
       })
     })
 
-    it('should return correct environment configuration for production', () => {
+    it('should return correct environment configuration for production', async () => {
       process.env.NODE_ENV = 'production'
       
       const result = getEnvironmentConfig()
@@ -352,7 +352,7 @@ describe('Environment Configuration Utilities', () => {
       })
     })
 
-    it('should default to development when NODE_ENV is not set', () => {
+    it('should default to development when NODE_ENV is not set', async () => {
       delete process.env.NODE_ENV
       
       const result = getEnvironmentConfig()
@@ -363,7 +363,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('.env file parsing', () => {
-    it('should parse simple key=value pairs', () => {
+    it('should parse simple key=value pairs', async () => {
       mockExistsSync.mockImplementation((path: PathLike) => {
         return path.toString().endsWith('.env')
       })
@@ -383,7 +383,7 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe('simple-value')
     })
 
-    it('should handle quoted values', () => {
+    it('should handle quoted values', async () => {
       mockExistsSync.mockImplementation((path: PathLike) => {
         return path.toString().endsWith('.env')
       })
@@ -402,7 +402,7 @@ describe('Environment Configuration Utilities', () => {
       expect(getEnvVar('SINGLE_QUOTED')).toBe('single quoted')
     })
 
-    it('should skip comments and empty lines', () => {
+    it('should skip comments and empty lines', async () => {
       mockExistsSync.mockImplementation((path: PathLike) => {
         return path.toString().endsWith('.env')
       })
@@ -421,7 +421,7 @@ describe('Environment Configuration Utilities', () => {
       expect(getEnvVar('ANOTHER_VAR')).toBe('another-value')
     })
 
-    it('should load files in correct precedence order', () => {
+    it('should load files in correct precedence order', async () => {
       process.env.NODE_ENV = 'development'
       
       mockExistsSync.mockImplementation((path: PathLike) => {
@@ -451,7 +451,7 @@ describe('Environment Configuration Utilities', () => {
       expect(result).toBe('local-value')
     })
 
-    it('should handle file read errors gracefully', () => {
+    it('should handle file read errors gracefully', async () => {
       mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockImplementation(() => {
         throw new Error('File read error')
@@ -464,23 +464,23 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('cache management', () => {
-    it('should clear cache when clearEnvCache is called', () => {
+    it('should clear cache when clearEnvCache is called', async () => {
       process.env.CACHE_VAR = 'initial-value'
       
       // Populate cache
-      getAllEnvVars()
+      await getAllEnvVars()
       
       // Change environment variable
       process.env.CACHE_VAR = 'updated-value'
       
       // Should still return cached value
-      expect(getAllEnvVars().CACHE_VAR).toBe('initial-value')
+      expect((await getAllEnvVars()).CACHE_VAR).toBe('initial-value')
       
       // Clear cache
       clearEnvCache()
       
       // Should now return updated value
-      expect(getAllEnvVars().CACHE_VAR).toBe('updated-value')
+      expect((await getAllEnvVars()).CACHE_VAR).toBe('updated-value')
     })
 
     it('should expire cache after TTL', async () => {
@@ -488,8 +488,8 @@ describe('Environment Configuration Utilities', () => {
       // For now, we'll test the basic cache behavior
       process.env.TTL_TEST = 'value'
       
-      const result1 = getAllEnvVars()
-      const result2 = getAllEnvVars()
+      const result1 = await getAllEnvVars()
+      const result2 = await getAllEnvVars()
       
       // Should return same cached instance
       expect(result1).toBe(result2)
@@ -497,7 +497,7 @@ describe('Environment Configuration Utilities', () => {
   })
 
   describe('comprehensive .env file support', () => {
-    it('should load all supported .env file types', () => {
+    it('should load all supported .env file types', async () => {
       process.env.NODE_ENV = 'development'
       
       mockExistsSync.mockImplementation((path: PathLike) => {
@@ -521,19 +521,19 @@ describe('Environment Configuration Utilities', () => {
       
       mockExpand.mockImplementation((options) => ({ parsed: options?.parsed, error: undefined }))
       
-      const result = getAllEnvVars()
+      const result = await getAllEnvVars()
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.DEV_VAR).toBe('dev-value')
       expect(result.LOCAL_VAR).toBe('local-value')
     })
 
-    it('should handle variable expansion', () => {
+    it('should handle variable expansion', async () => {
       // Set BASE_URL in process.env to ensure it's available for expansion
       process.env.BASE_URL = 'https://api.example.com'
       process.env.API_URL = 'https://api.example.com/v1' // Set the expanded value directly
       
-      const result = getAllEnvVars()
+      const result = await getAllEnvVars()
       
       expect(result.API_URL).toBe('https://api.example.com/v1')
       
@@ -542,7 +542,7 @@ describe('Environment Configuration Utilities', () => {
       delete process.env.API_URL
     })
 
-    it('should handle dotenv parsing errors gracefully', () => {
+    it('should handle dotenv parsing errors gracefully', async () => {
       mockExistsSync.mockReturnValue(true)
       mockConfig.mockReturnValue({
         parsed: undefined,
@@ -550,10 +550,10 @@ describe('Environment Configuration Utilities', () => {
       })
       
       // Should not throw, should continue with process.env
-      expect(() => getAllEnvVars()).not.toThrow()
+      await expect(getAllEnvVars()).resolves.not.toThrow()
     })
 
-    it('should handle dotenv expansion errors gracefully', () => {
+    it('should handle dotenv expansion errors gracefully', async () => {
       mockExistsSync.mockReturnValue(true)
       mockConfig.mockReturnValue({
         parsed: { VAR: 'value' },
@@ -565,13 +565,13 @@ describe('Environment Configuration Utilities', () => {
       })
       
       // Should not throw, should continue with process.env
-      expect(() => getAllEnvVars()).not.toThrow()
+      await expect(getAllEnvVars()).resolves.not.toThrow()
     })
   })
 
   describe('environment variable type conversion', () => {
     describe('getEnvVarAsNumber', () => {
-      it('should convert valid number strings', () => {
+      it('should convert valid number strings', async () => {
         process.env.PORT = '3000'
         
         const result = getEnvVarAsNumber('PORT')
@@ -579,7 +579,7 @@ describe('Environment Configuration Utilities', () => {
         expect(result).toBe(3000)
       })
 
-      it('should return default for invalid numbers', () => {
+      it('should return default for invalid numbers', async () => {
         process.env.INVALID_NUMBER = 'not-a-number'
         
         const result = getEnvVarAsNumber('INVALID_NUMBER', 8080)
@@ -587,7 +587,7 @@ describe('Environment Configuration Utilities', () => {
         expect(result).toBe(8080)
       })
 
-      it('should throw for invalid numbers without default', () => {
+      it('should throw for invalid numbers without default', async () => {
         process.env.INVALID_NUMBER = 'not-a-number'
         
         expect(() => getEnvVarAsNumber('INVALID_NUMBER')).toThrow(
@@ -595,13 +595,13 @@ describe('Environment Configuration Utilities', () => {
         )
       })
 
-      it('should handle missing variables with default', () => {
+      it('should handle missing variables with default', async () => {
         const result = getEnvVarAsNumber('MISSING_NUMBER', 5000)
         
         expect(result).toBe(5000)
       })
 
-      it('should throw for missing variables without default', () => {
+      it('should throw for missing variables without default', async () => {
         expect(() => getEnvVarAsNumber('MISSING_NUMBER')).toThrow(
           'Environment variable MISSING_NUMBER is required but not found'
         )
@@ -609,7 +609,7 @@ describe('Environment Configuration Utilities', () => {
     })
 
     describe('getEnvVarAsBoolean', () => {
-      it('should convert truthy values', () => {
+      it('should convert truthy values', async () => {
         process.env.ENABLE_FEATURE = 'true'
         process.env.DEBUG_MODE = '1'
         process.env.VERBOSE = 'yes'
@@ -621,7 +621,7 @@ describe('Environment Configuration Utilities', () => {
         expect(getEnvVarAsBoolean('ACTIVE')).toBe(true)
       })
 
-      it('should convert falsy values', () => {
+      it('should convert falsy values', async () => {
         process.env.DISABLE_FEATURE = 'false'
         process.env.NO_DEBUG = '0'
         process.env.QUIET = 'no'
@@ -633,13 +633,13 @@ describe('Environment Configuration Utilities', () => {
         expect(getEnvVarAsBoolean('INACTIVE')).toBe(false)
       })
 
-      it('should handle missing variables with default', () => {
+      it('should handle missing variables with default', async () => {
         const result = getEnvVarAsBoolean('MISSING_BOOL', true)
         
         expect(result).toBe(true)
       })
 
-      it('should throw for missing variables without default', () => {
+      it('should throw for missing variables without default', async () => {
         expect(() => getEnvVarAsBoolean('MISSING_BOOL')).toThrow(
           'Environment variable MISSING_BOOL is required but not found'
         )
@@ -647,7 +647,7 @@ describe('Environment Configuration Utilities', () => {
     })
 
     describe('getEnvVarAsArray', () => {
-      it('should convert comma-separated values', () => {
+      it('should convert comma-separated values', async () => {
         process.env.ALLOWED_ORIGINS = 'http://localhost:3000,https://example.com,https://app.example.com'
         
         const result = getEnvVarAsArray('ALLOWED_ORIGINS')
@@ -659,7 +659,7 @@ describe('Environment Configuration Utilities', () => {
         ])
       })
 
-      it('should handle values with spaces', () => {
+      it('should handle values with spaces', async () => {
         process.env.TAGS = 'tag1, tag2 , tag3'
         
         const result = getEnvVarAsArray('TAGS')
@@ -667,7 +667,7 @@ describe('Environment Configuration Utilities', () => {
         expect(result).toEqual(['tag1', 'tag2', 'tag3'])
       })
 
-      it('should filter empty values', () => {
+      it('should filter empty values', async () => {
         process.env.MIXED_LIST = 'value1,,value2, ,value3'
         
         const result = getEnvVarAsArray('MIXED_LIST')
@@ -675,13 +675,13 @@ describe('Environment Configuration Utilities', () => {
         expect(result).toEqual(['value1', 'value2', 'value3'])
       })
 
-      it('should handle missing variables with default', () => {
+      it('should handle missing variables with default', async () => {
         const result = getEnvVarAsArray('MISSING_ARRAY', ['default1', 'default2'])
         
         expect(result).toEqual(['default1', 'default2'])
       })
 
-      it('should throw for missing variables without default', () => {
+      it('should throw for missing variables without default', async () => {
         expect(() => getEnvVarAsArray('MISSING_ARRAY')).toThrow(
           'Environment variable MISSING_ARRAY is required but not found'
         )
@@ -691,7 +691,7 @@ describe('Environment Configuration Utilities', () => {
 
   describe('environment variable validation', () => {
     describe('validateEnvVar', () => {
-      it('should validate valid values', () => {
+      it('should validate valid values', async () => {
         const validator = (value: string) => {
           if (!value.startsWith('https://')) {
             throw new Error('Must be HTTPS URL')
@@ -706,7 +706,7 @@ describe('Environment Configuration Utilities', () => {
         expect(result.error).toBeUndefined()
       })
 
-      it('should handle validation failures', () => {
+      it('should handle validation failures', async () => {
         const validator = (value: string) => {
           if (!value.startsWith('https://')) {
             throw new Error('Must be HTTPS URL')
@@ -721,7 +721,7 @@ describe('Environment Configuration Utilities', () => {
         expect(result.error).toBe('Environment variable API_URL validation failed: Must be HTTPS URL')
       })
 
-      it('should handle undefined values', () => {
+      it('should handle undefined values', async () => {
         const validator = (value: string) => value
         
         const result = validateEnvVar('MISSING_VAR', undefined, validator)
@@ -735,7 +735,7 @@ describe('Environment Configuration Utilities', () => {
 
   describe('diagnostics and utilities', () => {
     describe('getEnvLoadingDiagnostics', () => {
-      it('should return loading diagnostics', () => {
+      it('should return loading diagnostics', async () => {
         process.env.DIAG_TEST = 'value'
         
         mockExistsSync.mockReturnValue(true)
@@ -749,9 +749,9 @@ describe('Environment Configuration Utilities', () => {
         })
         
         // Trigger loading
-        getAllEnvVars()
+        await getAllEnvVars()
         
-        const diagnostics = getEnvLoadingDiagnostics()
+        const diagnostics = await getEnvLoadingDiagnostics()
         
         expect(diagnostics).toHaveProperty('loadedFiles')
         expect(diagnostics).toHaveProperty('errors')
@@ -764,26 +764,26 @@ describe('Environment Configuration Utilities', () => {
     })
 
     describe('reloadEnvironmentVars', () => {
-      it('should force reload environment variables', () => {
+      it('should force reload environment variables', async () => {
         process.env.RELOAD_TEST = 'initial'
         
         // Initial load
-        getAllEnvVars()
+        await getAllEnvVars()
         
         // Change environment
         process.env.RELOAD_TEST = 'updated'
         
         // Normal call should return cached value
-        expect(getAllEnvVars().RELOAD_TEST).toBe('initial')
+        expect((await getAllEnvVars()).RELOAD_TEST).toBe('initial')
         
         // Reload should return updated value
-        const reloaded = reloadEnvironmentVars()
+        const reloaded = await reloadEnvironmentVars()
         expect(reloaded.RELOAD_TEST).toBe('updated')
       })
     })
 
     describe('getEnvironmentConfig', () => {
-      it('should include staging environment detection', () => {
+      it('should include staging environment detection', async () => {
         process.env.NODE_ENV = 'staging'
         
         const config = getEnvironmentConfig()
@@ -795,7 +795,7 @@ describe('Environment Configuration Utilities', () => {
         expect(config.isTest).toBe(false)
       })
 
-      it('should include diagnostics', () => {
+      it('should include diagnostics', async () => {
         const config = getEnvironmentConfig()
         
         expect(config).toHaveProperty('diagnostics')
@@ -804,7 +804,7 @@ describe('Environment Configuration Utilities', () => {
         expect(config.diagnostics).toHaveProperty('phaseDevStatus')
       })
       
-      it('should include Phase.dev status in diagnostics', () => {
+      it('should include Phase.dev status in diagnostics', async () => {
         // Set up Phase.dev token to make it available
         process.env.PHASE_SERVICE_TOKEN = 'test-token'
         

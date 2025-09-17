@@ -59,7 +59,7 @@ describe('Environment Variable Loading Integration Tests', () => {
   })
 
   describe('Environment-specific .env file loading', () => {
-    it('should load development environment variables correctly', () => {
+    it('should load development environment variables correctly', async () => {
       process.env.NODE_ENV = 'development'
       
       // Create test .env files
@@ -67,7 +67,7 @@ describe('Environment Variable Loading Integration Tests', () => {
       writeFileSync(join(testDir, '.env.development'), 'DEV_VAR=dev-value\nSHARED_VAR=dev-shared')
       writeFileSync(join(testDir, '.env.local'), 'LOCAL_VAR=local-value\nSHARED_VAR=local-shared')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.DEV_VAR).toBe('dev-value')
@@ -75,7 +75,7 @@ describe('Environment Variable Loading Integration Tests', () => {
       expect(result.SHARED_VAR).toBe('local-shared') // .env.local should win
     })
 
-    it('should load production environment variables correctly', () => {
+    it('should load production environment variables correctly', async () => {
       process.env.NODE_ENV = 'production'
       
       // Create test .env files
@@ -83,7 +83,7 @@ describe('Environment Variable Loading Integration Tests', () => {
       writeFileSync(join(testDir, '.env.production'), 'PROD_VAR=prod-value\nSHARED_VAR=prod-shared')
       writeFileSync(join(testDir, '.env.local'), 'LOCAL_VAR=local-value\nSHARED_VAR=local-shared')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.PROD_VAR).toBe('prod-value')
@@ -91,28 +91,28 @@ describe('Environment Variable Loading Integration Tests', () => {
       expect(result.SHARED_VAR).toBe('local-shared') // .env.local should win
     })
 
-    it('should load test environment variables correctly', () => {
+    it('should load test environment variables correctly', async () => {
       process.env.NODE_ENV = 'test'
       
       // Create test .env files
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.test'), 'TEST_VAR=test-value\nDB_URL=test-db-url')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.TEST_VAR).toBe('test-value')
       expect(result.DB_URL).toBe('test-db-url')
     })
 
-    it('should load staging environment variables correctly', () => {
+    it('should load staging environment variables correctly', async () => {
       process.env.NODE_ENV = 'staging'
       
       // Create test .env files
       writeFileSync(join(testDir, '.env'), 'BASE_VAR=base-value')
       writeFileSync(join(testDir, '.env.staging'), 'STAGING_VAR=staging-value\nAPI_URL=staging-api-url')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.BASE_VAR).toBe('base-value')
       expect(result.STAGING_VAR).toBe('staging-value')
@@ -121,7 +121,7 @@ describe('Environment Variable Loading Integration Tests', () => {
   })
 
   describe('Environment variable precedence', () => {
-    it('should prioritize process.env over all file sources', () => {
+    it('should prioritize process.env over all file sources', async () => {
       process.env.NODE_ENV = 'development'
       process.env.PRECEDENCE_TEST = 'process-env-value'
       
@@ -130,12 +130,12 @@ describe('Environment Variable Loading Integration Tests', () => {
       writeFileSync(join(testDir, '.env.development'), 'PRECEDENCE_TEST=dev-value')
       writeFileSync(join(testDir, '.env.local'), 'PRECEDENCE_TEST=local-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.PRECEDENCE_TEST).toBe('process-env-value')
     })
 
-    it('should prioritize .env.local over environment-specific files', () => {
+    it('should prioritize .env.local over environment-specific files', async () => {
       process.env.NODE_ENV = 'development'
       
       // Create test .env files with conflicting values
@@ -143,19 +143,19 @@ describe('Environment Variable Loading Integration Tests', () => {
       writeFileSync(join(testDir, '.env.development'), 'PRECEDENCE_TEST=dev-value')
       writeFileSync(join(testDir, '.env.local'), 'PRECEDENCE_TEST=local-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.PRECEDENCE_TEST).toBe('local-value')
     })
 
-    it('should prioritize environment-specific files over .env', () => {
+    it('should prioritize environment-specific files over .env', async () => {
       process.env.NODE_ENV = 'production'
       
       // Create test .env files with conflicting values
       writeFileSync(join(testDir, '.env'), 'PRECEDENCE_TEST=base-value')
       writeFileSync(join(testDir, '.env.production'), 'PRECEDENCE_TEST=prod-value')
       
-      const result = reloadEnvironmentVars(testDir)
+      const result = await reloadEnvironmentVars(testDir)
       
       expect(result.PRECEDENCE_TEST).toBe('prod-value')
     })
@@ -204,32 +204,32 @@ describe('Environment Variable Loading Integration Tests', () => {
   })
 
   describe('Caching behavior', () => {
-    it('should cache environment variables and return cached values', () => {
+    it('should cache environment variables and return cached values', async () => {
       writeFileSync(join(testDir, '.env'), 'CACHE_TEST=initial-value')
       
       // First load
-      const result1 = reloadEnvironmentVars(testDir)
+      const result1 = await reloadEnvironmentVars(testDir)
       expect(result1.CACHE_TEST).toBe('initial-value')
       
       // Modify file
       writeFileSync(join(testDir, '.env'), 'CACHE_TEST=modified-value')
       
       // Second load without force reload should return cached value
-      const result2 = getAllEnvVars()
+      const result2 = await getAllEnvVars()
       expect(result2.CACHE_TEST).toBe('initial-value')
       
       // Force reload should return new value
-      const result3 = reloadEnvironmentVars(testDir)
+      const result3 = await reloadEnvironmentVars(testDir)
       expect(result3.CACHE_TEST).toBe('modified-value')
     })
 
-    it('should provide accurate cache diagnostics', () => {
+    it('should provide accurate cache diagnostics', async () => {
       writeFileSync(join(testDir, '.env'), 'DIAG_TEST=value')
       
       // Load environment variables
       reloadEnvironmentVars(testDir)
       
-      const diagnostics = getEnvLoadingDiagnostics()
+      const diagnostics = await getEnvLoadingDiagnostics()
       
       expect(diagnostics.loadedFiles).toContain('.env')
       expect(diagnostics.cacheAge).toBeGreaterThanOrEqual(0)
@@ -239,7 +239,7 @@ describe('Environment Variable Loading Integration Tests', () => {
   })
 
   describe('Environment configuration integration', () => {
-    it('should provide complete environment configuration', () => {
+    it('should provide complete environment configuration', async () => {
       process.env.NODE_ENV = 'development'
       process.env.PHASE_SERVICE_TOKEN = 'dev-token'
       
@@ -263,7 +263,7 @@ describe('Environment Variable Loading Integration Tests', () => {
   })
 
   describe('Validation and type conversion integration', () => {
-    it('should validate and convert environment variables correctly', () => {
+    it('should validate and convert environment variables correctly', async () => {
       writeFileSync(join(testDir, '.env'), 'PORT=3000\nDEBUG=true')
       
       // Load environment variables

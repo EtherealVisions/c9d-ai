@@ -148,13 +148,13 @@ export class OrganizationalCustomizationService {
       const configData: OrganizationOnboardingConfigInsert | OrganizationOnboardingConfigUpdate = {
         organization_id: organizationId,
         welcome_message: customization.welcomeMessage || null,
-        branding_assets: customization.brandingAssets || {},
-        custom_content: customization.customContent || {},
+        branding_assets: (customization.brandingAssets || {}) as Record<string, unknown>,
+        custom_content: (customization.customContent || {}) as Record<string, unknown>,
         role_configurations: customization.roleSpecificContent || {},
         mandatory_modules: [],
-        completion_requirements: customization.completionRequirements || {},
-        notification_settings: customization.notificationSettings || {},
-        integration_settings: customization.integrationSettings || [],
+        completion_requirements: (customization.completionRequirements || {}) as Record<string, unknown>,
+        notification_settings: (customization.notificationSettings || {}) as Record<string, unknown>,
+        integration_settings: (customization.integrationSettings || []) as unknown as Record<string, unknown>,
         is_active: true
       }
 
@@ -305,7 +305,7 @@ export class OrganizationalCustomizationService {
         throw new DatabaseError('Failed to fetch custom content', error)
       }
 
-      return (content || []).map(item => this.transformContentRow(item))
+      return (content || []).map((item: any) => this.transformContentRow(item))
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error
@@ -632,11 +632,11 @@ export class OrganizationalCustomizationService {
     return {
       organizationId: row.organization_id,
       welcomeMessage: row.welcome_message || '',
-      brandingAssets: row.branding_assets as BrandingAssets,
+      brandingAssets: (row.branding_assets as unknown) as BrandingAssets,
       customContent: Array.isArray(row.custom_content) ? row.custom_content as CustomContent[] : [],
       roleSpecificContent: row.role_configurations as Record<string, CustomContent[]>,
       integrationSettings: Array.isArray(row.integration_settings) ? row.integration_settings as IntegrationSetting[] : [],
-      notificationSettings: row.notification_settings as NotificationSettings,
+      notificationSettings: (row.notification_settings as unknown) as NotificationSettings,
       completionRequirements: (row.completion_requirements as unknown) as CompletionRequirements
     }
   }

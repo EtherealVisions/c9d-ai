@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createServiceTestSetup } from '../../__tests__/setup/mocks/supabase-client-fixed-v2'
+import { createServiceTestSetup } from '../../../__tests__/setup/mocks/supabase-client-fixed-v2'
 
 // Mock the database module with proper path
 vi.mock('@/lib/database', () => ({

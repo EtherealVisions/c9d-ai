@@ -50,7 +50,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       expect(existsSync('.env')).toBe(false)
 
       // Check if there's a token in the workspace root and handle accordingly
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       
       if (tokenSource) {
         // If a token exists (e.g., from workspace root), test with that scenario
@@ -99,7 +99,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Set invalid token in process.env
       process.env.PHASE_SERVICE_TOKEN = 'invalid-token-from-env'
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('process.env')
 
       const client = new PhaseSDKClient()
@@ -123,7 +123,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Create .env.local with invalid token
       writeFileSync('.env.local', 'PHASE_SERVICE_TOKEN=invalid-token-from-local-env-local\n')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('local.env.local')
       expect(tokenSource?.path).toBe(join(testDir, '.env.local'))
 
@@ -148,7 +148,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Create .env with invalid token
       writeFileSync('.env', 'PHASE_SERVICE_TOKEN=invalid-token-from-local-env\n')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('local.env')
       expect(tokenSource?.path).toBe(join(testDir, '.env'))
 
@@ -181,7 +181,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Change to app directory
       process.chdir(appDir)
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('root.env.local')
       expect(tokenSource?.path).toBe(join(workspaceDir, '.env.local'))
 
@@ -208,7 +208,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       writeFileSync('.env', 'PHASE_SERVICE_TOKEN=token-from-local-env\n')
       
       // Should use process.env (highest precedence)
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('process.env')
       expect(tokenSource?.token).toBe('token-from-process-env')
 
@@ -249,7 +249,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
     it('should handle app not found errors with specific guidance', async () => {
       writeFileSync('.env.local', 'PHASE_SERVICE_TOKEN=valid-token-format\n')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       const client = new PhaseSDKClient()
       
       try {
@@ -387,7 +387,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Create malformed .env file
       writeFileSync('.env.local', 'MALFORMED_LINE_WITHOUT_EQUALS\nPHASE_SERVICE_TOKEN=valid-token\nANOTHER_MALFORMED')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.source).toBe('local.env.local')
       expect(tokenSource?.token).toBe('valid-token')
 
@@ -408,7 +408,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Create .env with empty token
       writeFileSync('.env.local', 'PHASE_SERVICE_TOKEN=\n')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       
       // If there's a token from workspace root, it will be picked up instead of the empty one
       if (tokenSource && tokenSource.source !== 'local.env.local') {
@@ -445,7 +445,7 @@ describe('PhaseErrorHandler Integration Tests', () => {
       // Create .env with quoted token
       writeFileSync('.env.local', 'PHASE_SERVICE_TOKEN="quoted-token-value"\n')
       
-      const tokenSource = PhaseTokenLoader.loadServiceToken()
+      const tokenSource = await PhaseTokenLoader.loadServiceToken()
       expect(tokenSource?.token).toBe('quoted-token-value') // Quotes should be removed
 
       const client = new PhaseSDKClient()

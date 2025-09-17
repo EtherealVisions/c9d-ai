@@ -205,34 +205,19 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   /**
    * Handle forgot password
    */
-  const handleForgotPassword = async () => {
-    if (!formData.email) {
-      setErrors({ email: 'Please enter your email address first' })
-      return
-    }
-
-    if (!signIn) return
-
-    try {
-      await signIn.create({
-        identifier: formData.email
-      })
-
-      // Note: For password reset, we redirect to a dedicated reset page
-      // The prepareFirstFactor call would require an emailAddressId which we don't have here
-
-      // Redirect to reset password page
-      router.push(`/reset-password?email=${encodeURIComponent(formData.email)}`)
-    } catch (error: any) {
-      console.error('Password reset error:', error)
-      setErrors({ general: 'Failed to send password reset email. Please try again.' })
-    }
+  const handleForgotPassword = () => {
+    // Navigate to password reset page with email if provided
+    const resetUrl = formData.email 
+      ? `/reset-password?email=${encodeURIComponent(formData.email)}`
+      : '/reset-password'
+    
+    router.push(resetUrl)
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div data-testid="sign-in-form" className={cn('space-y-6', className)}>
       {/* Social Authentication */}
-      <div className="space-y-3">
+      <div data-testid="social-auth-section" className="space-y-3">
         {socialProviders.filter(p => p.enabled).map(provider => (
           <Button
             key={provider.id}
@@ -241,6 +226,7 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
             className="w-full"
             onClick={() => handleSocialAuth(provider.strategy)}
             disabled={isLoading}
+            data-testid={`social-auth-${provider.id}-button`}
           >
             <span className="mr-2">
               {provider.icon === 'google' && '🔍'}
@@ -266,21 +252,22 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
 
       {/* General Error */}
       {(errors.general || error) && (
-        <Alert variant="destructive">
+        <Alert data-testid="sign-in-error-alert" variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+          <AlertDescription data-testid="sign-in-error-message">
             {errors.general || error}
           </AlertDescription>
         </Alert>
       )}
 
       {/* Sign-in Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form data-testid="sign-in-form-fields" onSubmit={handleSubmit} className="space-y-4">
         {/* Email Field */}
-        <div className="space-y-2">
+        <div data-testid="email-field" className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            data-testid="email-input"
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
@@ -294,14 +281,14 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
             aria-describedby={errors.email ? 'email-error' : undefined}
           />
           {errors.email && (
-            <p id="email-error" className="text-sm text-destructive">
+            <p id="email-error" data-testid="email-error" className="text-sm text-destructive">
               {errors.email}
             </p>
           )}
         </div>
 
         {/* Password Field */}
-        <div className="space-y-2">
+        <div data-testid="password-field" className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <Button
@@ -310,6 +297,7 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
               className="p-0 h-auto text-sm"
               onClick={handleForgotPassword}
               disabled={isLoading}
+              data-testid="forgot-password-link"
             >
               Forgot password?
             </Button>
@@ -317,6 +305,7 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
           <div className="relative">
             <Input
               id="password"
+              data-testid="password-input"
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
@@ -340,6 +329,7 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
               onClick={() => setShowPassword(!showPassword)}
               disabled={isLoading}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
+              data-testid="toggle-password-visibility"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -349,16 +339,17 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
             </Button>
           </div>
           {errors.password && (
-            <p id="password-error" className="text-sm text-destructive">
+            <p id="password-error" data-testid="password-error" className="text-sm text-destructive">
               {errors.password}
             </p>
           )}
         </div>
 
         {/* Remember Me */}
-        <div className="flex items-center space-x-2">
+        <div data-testid="remember-me-field" className="flex items-center space-x-2">
           <input
             id="remember-me"
+            data-testid="remember-me-checkbox"
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
@@ -375,19 +366,21 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
           type="submit"
           className="w-full"
           disabled={isLoading || !isLoaded}
+          data-testid="sign-in-submit-button"
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
         </Button>
       </form>
 
       {/* Sign Up Link */}
-      <div className="text-center">
+      <div data-testid="sign-up-link-section" className="text-center">
         <p className="text-sm text-muted-foreground">
           Don't have an account?{' '}
           <Button
             variant="link"
             className="p-0 h-auto font-normal"
             onClick={() => router.push('/sign-up')}
+            data-testid="sign-up-link"
           >
             Sign up
           </Button>

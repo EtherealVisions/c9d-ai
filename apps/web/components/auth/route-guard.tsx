@@ -38,7 +38,7 @@ export function RouteGuard({
   requiredPermissions = [],
   fallback,
   redirectTo
-}: RouteGuardProps) {
+}: RouteGuardProps): React.ReactElement {
   const { isLoaded: authLoaded, userId, orgId } = useAuth()
   const { user } = useUser()
   const router = useRouter()
@@ -159,7 +159,7 @@ export function RouteGuard({
 
   // Show loading state
   if (guardState.isLoading) {
-    return fallback || <RouteGuardLoading />
+    return (fallback as React.ReactElement) || <RouteGuardLoading />
   }
 
   // Show error state
