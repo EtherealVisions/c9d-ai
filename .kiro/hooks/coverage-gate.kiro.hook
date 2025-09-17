@@ -4,7 +4,7 @@
   "description": "Ensure that code coverage never drops below the defined threshold when files are saved or new features are completed.",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "apps/**/*.js",
       "apps/**/*.ts",

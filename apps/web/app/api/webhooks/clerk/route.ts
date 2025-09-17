@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { Webhook } from 'svix'
 import { userSyncService, AuthEventType } from '@/lib/services/user-sync'
+import { securityEventTracker } from '@/lib/services/security-event-tracker'
 import { getAppConfigSync } from '@/lib/config/init'
 
 export async function POST(req: NextRequest) {
@@ -69,6 +70,9 @@ export async function POST(req: NextRequest) {
     })
 
     try {
+      // Track security event for all webhook events
+      await securityEventTracker.trackClerkWebhookEvent(evt)
+
       switch (eventType) {
         case 'user.created':
           // Sync user data when user is created
@@ -107,6 +111,24 @@ export async function POST(req: NextRequest) {
               { error: 'Failed to sync user' },
               { status: 500 }
             )
+          }
+          
+          // Handle 2FA enablement/disablement
+          if (evt.data.two_factor_enabled !== undefined) {
+            await userSyncService.logAuthEvent(
+              updateResult.user.id,
+              AuthEventType.TWO_FACTOR_ENABLED,
+              {
+                ...metadata,
+                twoFactorEnabled: evt.data.two_factor_enabled,
+                action: evt.data.two_factor_enabled ? 'enabled' : 'disabled'
+              }
+            )
+            
+            console.log(`2FA ${evt.data.two_factor_enabled ? 'enabled' : 'disabled'} for user:`, {
+              userId: updateResult.user.id,
+              email: updateResult.user.email
+            })
           }
           
           console.log(`User updated and synced:`, {

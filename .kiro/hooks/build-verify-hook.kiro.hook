@@ -4,7 +4,7 @@
   "description": "Verify that the project builds successfully whenever a feature task is marked complete.",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "package.json",
       "turbo.json",

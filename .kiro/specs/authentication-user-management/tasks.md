@@ -76,20 +76,20 @@
     - Add seamless transition from auth to onboarding
     - _Requirements: 4.1, 4.2_
 
-- [-] 6. Implement password management and security features
+- [ ] 6. Implement password management and security features
   - [x] 6.1 Create password reset functionality
     - Implement forgot password flow with Clerk integration
     - Create password reset pages and form components
     - Add secure reset link handling and validation
     - _Requirements: 5.1, 5.3, 10.4_
 
-  - [ ] 6.2 Add two-factor authentication support
+  - [x] 6.2 Add two-factor authentication support
     - Implement 2FA setup and management interfaces
     - Create TOTP and SMS-based authentication flows
     - Add backup code generation and recovery options
     - _Requirements: 5.4, 8.4_
 
-  - [ ] 6.3 Implement security monitoring and alerts
+  - [x] 6.3 Implement security monitoring and alerts
     - Add suspicious activity detection and logging
     - Implement account security notifications
     - Create security event tracking and audit trails

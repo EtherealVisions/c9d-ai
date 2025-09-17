@@ -4,7 +4,7 @@
   "description": "Automatically generate scaffolding for new or uncovered code paths",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "apps/**/*.js",
       "apps/**/*.ts",

@@ -4,7 +4,7 @@
   "description": "Automatically run unit tests when application source files are saved to ensure functionality remains intact.",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "apps/**/*.js",
       "apps/**/*.ts",

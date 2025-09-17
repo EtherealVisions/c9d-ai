@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, User, Settings, Bell, Shield, Palette } from 'lucide-react'
+import { TwoFactorManagement } from '@/components/auth/two-factor-management'
 
 // Form validation schemas
 const profileFormSchema = z.object({
@@ -538,68 +539,62 @@ export function UserProfile({ className }: UserProfileProps) {
       {/* Security Tab */}
       {activeTab === 'security' && (
         <div role="tabpanel" id="security-panel" aria-labelledby="security-tab">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="mr-2 h-5 w-5" />
-              Security Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your account security and authentication settings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Password & Authentication</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Your password and authentication settings are managed by Clerk. Use the button below to access your security settings.
-                </p>
-                <div className="mt-4">
-                  <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
-                    Manage Security Settings
-                  </Button>
-                </div>
-              </div>
+          <div className="space-y-6">
+            {/* Two-Factor Authentication Management */}
+            <TwoFactorManagement />
 
-              <div className="rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Two-Factor Authentication</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Add an extra layer of security to your account with two-factor authentication.
-                </p>
-                <div className="mt-4">
-                  <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
-                    Configure 2FA
-                  </Button>
-                </div>
-              </div>
+            {/* Other Security Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="mr-2 h-5 w-5" />
+                  Additional Security Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage other security aspects of your account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="rounded-lg border p-4">
+                    <h3 className="text-lg font-medium">Password Management</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Your password is managed by Clerk. Use the button below to change your password or update security settings.
+                    </p>
+                    <div className="mt-4">
+                      <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
+                        Manage Password
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Active Sessions</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  View and manage your active sessions across different devices.
-                </p>
-                <div className="mt-4">
-                  <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
-                    Manage Sessions
-                  </Button>
-                </div>
-              </div>
+                  <div className="rounded-lg border p-4">
+                    <h3 className="text-lg font-medium">Active Sessions</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      View and manage your active sessions across different devices.
+                    </p>
+                    <div className="mt-4">
+                      <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
+                        Manage Sessions
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="rounded-lg border border-destructive/50 p-4">
-                <h3 className="text-lg font-medium text-destructive">Danger Zone</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Permanently delete your account and all associated data. This action cannot be undone.
-                </p>
-                <div className="mt-4">
-                  <Button variant="destructive" onClick={() => alert('Account deletion would be implemented here')}>
-                    Delete Account
-                  </Button>
+                  <div className="rounded-lg border border-destructive/50 p-4">
+                    <h3 className="text-lg font-medium text-destructive">Danger Zone</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    <div className="mt-4">
+                      <Button variant="destructive" onClick={() => alert('Account deletion would be implemented here')}>
+                        Delete Account
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>
