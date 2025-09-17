@@ -1,67 +1,88 @@
 // Browser/Edge-safe configuration exports
 // This file contains only exports that work in browser and edge environments
 
+// Export types and constants first
 export * from './types';
 export * from './constants';
 
-// Edge-safe environment variable access
-export function getEnvVar(key: string): string | undefined {
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key];
-  }
-  return undefined;
-}
+// Export edge-safe modules with explicit imports to avoid conflicts
+export {
+  // From env.edge
+  getEnvVar,
+  getConfig,
+  getAllEnvVars,
+  loadEnvironmentConfig,
+  getPhaseServiceToken,
+  isPhaseDevAvailable,
+  validateRequiredEnvVars,
+  expandEnvVars,
+  loadEnvFromFiles,
+  loadEnvironment,
+  getEnv,
+  config
+} from './env.edge';
 
-// Edge-safe config getter with fallback
-export function getConfig(key: string, fallback?: string): string {
-  const value = getEnvVar(key);
-  if (value === undefined && fallback === undefined) {
-    console.warn(`[Config] Missing environment variable: ${key}`);
-  }
-  return value ?? fallback ?? '';
-}
+export {
+  // From environment-fallback-manager.edge
+  EnvironmentFallbackManager,
+  environmentManager
+} from './environment-fallback-manager.edge';
 
-// Check if we're in a browser environment
+export {
+  // From phase-token-loader.edge (renamed to avoid conflicts)
+  loadPhaseServiceToken,
+  getTokenSourceDiagnostics,
+  hasPhaseServiceToken,
+  getMaskedToken,
+  type TokenSource,
+  type TokenLoadResult
+} from './phase-token-loader.edge';
+
+export {
+  // From phase.edge (renamed to avoid conflicts)
+  initializePhase,
+  loadPhaseConfig,
+  isPhaseConfigured,
+  getPhaseStatus,
+  type PhaseConfig,
+  type PhaseInitResult
+} from './phase.edge';
+
+export {
+  // From phase-sdk-client.edge
+  PhaseSDKClient,
+  createPhaseClient,
+  Phase,
+  type PhaseSDKConfig,
+  type PhaseSecret,
+  type PhaseSDKResult
+} from './phase-sdk-client.edge';
+
+export {
+  // From phase-sdk-cache.edge
+  PhaseSDKCache,
+  phaseSDKCache,
+  type CacheEntry,
+  type CacheStats
+} from './phase-sdk-cache.edge';
+
+// Re-export monitoring and error handling if they're edge-safe
+// These modules should already be edge-safe as they don't appear in the error logs
+export * from './phase-error-handler';
+export * from './phase-monitoring';
+
+// For backward compatibility
+export { validateRequiredEnvVars as validateEnvVars } from './env.edge';
+export { config as edgeConfig } from './env.edge';
+
+// Re-export utility functions
 export function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
-// Check if we're in production
 export function isProduction(): boolean {
-  return getEnvVar('NODE_ENV') === 'production';
-}
-
-// Get all environment variables (edge-safe)
-export function getAllEnvVars(): Record<string, string> {
   if (typeof process !== 'undefined' && process.env) {
-    const env: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        env[key] = value;
-      }
-    }
-    return env;
+    return process.env.NODE_ENV === 'production';
   }
-  return {};
+  return false;
 }
-
-// Simple validation for required environment variables
-export function validateEnvVars(required: string[]): {
-  isValid: boolean;
-  missing: string[];
-} {
-  const missing = required.filter(key => !getEnvVar(key));
-  return {
-    isValid: missing.length === 0,
-    missing
-  };
-}
-
-// Export a simplified environment config that doesn't use file system
-export const edgeConfig = {
-  get: getConfig,
-  getAll: getAllEnvVars,
-  validate: validateEnvVars,
-  isProduction,
-  isBrowser
-};
