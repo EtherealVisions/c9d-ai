@@ -65,6 +65,7 @@
     "deploy:rollback": "node scripts/deployment-validation.js rollback"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
     "turbo": "^2.5.6",
     "typescript": "^5"
   }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { UserSyncService, AuthEventType } from '../user-sync'
 import type { User as ClerkUser } from '@clerk/nextjs/server'
+import { createSupabaseClient } from '../../database'
 
 // Mock dependencies
 vi.mock('../../database', () => ({
@@ -8,23 +9,23 @@ vi.mock('../../database', () => ({
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn()
+          single: vi.fn().mockResolvedValue({ data: null, error: null })
         }))
       })),
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn()
+          single: vi.fn().mockResolvedValue({ data: null, error: null })
         }))
       })),
       update: vi.fn(() => ({
         eq: vi.fn(() => ({
           select: vi.fn(() => ({
-            single: vi.fn()
+            single: vi.fn().mockResolvedValue({ data: null, error: null })
           }))
         }))
       })),
       delete: vi.fn(() => ({
-        eq: vi.fn()
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
       }))
     })),
     raw: vi.fn()
@@ -63,7 +64,20 @@ describe('UserSyncService', () => {
       externalAccounts: []
     } as any
 
-    mockSupabase = require('../../database').createSupabaseClient()
+    // Set up the mock Supabase client
+    mockSupabase = {
+      from: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      raw: vi.fn().mockResolvedValue({ data: null, error: null })
+    }
+
+    // Mock the createSupabaseClient to return our mock
+    ;(createSupabaseClient as any).mockReturnValue(mockSupabase)
   })
 
   describe('syncUser', () => {

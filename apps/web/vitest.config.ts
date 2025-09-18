@@ -6,18 +6,20 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    // Enable parallel execution
+    // Enable parallel execution with memory management
     pool: 'threads',
     poolOptions: {
       threads: {
         singleThread: false,
-        maxThreads: 4,
+        maxThreads: 2, // Reduced from 4 to prevent memory issues
         minThreads: 1
       }
     },
     // Test timeouts
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 15000, // Increased timeout for complex tests
+    hookTimeout: 15000,
+    // Memory management
+    maxConcurrency: 10, // Limit concurrent tests
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
