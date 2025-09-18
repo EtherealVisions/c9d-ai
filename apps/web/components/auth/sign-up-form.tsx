@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useSignUp } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react'
@@ -10,6 +10,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getPasswordRequirements, getSocialProviders } from '@/lib/config/clerk'
+import { 
+  AccessibleInput, 
+  AccessibleButton, 
+  AccessibleFormGroup,
+  SkipLink,
+  LiveRegion
+} from '@/components/ui/accessible-form'
+import { useAccessibility, useAnnouncement, useKeyboardNavigation } from '@/contexts/accessibility-context'
+import { FocusManager, generateId, ScreenReaderSupport } from '@/lib/utils/accessibility'
 
 interface SignUpFormProps {
   redirectUrl?: string
@@ -41,14 +50,18 @@ interface PasswordStrength {
 }
 
 /**
- * SignUpForm component with comprehensive validation and real-time feedback
+ * SignUpForm component with comprehensive validation and accessibility
  * 
  * Features:
- * - Real-time password strength validation
- * - Form state management with error handling
- * - Social authentication integration
- * - Email verification flow
- * - Accessibility compliance
+ * - Real-time password strength validation with screen reader support
+ * - Form state management with accessible error handling
+ * - Social authentication integration with proper ARIA labels
+ * - Email verification flow with clear instructions
+ * - WCAG 2.1 AA compliance
+ * - Keyboard navigation support
+ * - High contrast mode compatibility
+ * - Touch device optimizations
+ * - Screen reader announcements for all state changes
  */
 export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFormProps) {
   const { signUp, isLoaded, setActive } = useSignUp()
@@ -72,10 +85,102 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
     feedback: [],
     isValid: false
   })
+  const [currentAnnouncement, setCurrentAnnouncement] = useState('')
+
+  // Accessibility hooks
+  const { isTouchDevice, announce } = useAccessibility()
+  const { announceError, announceSuccess, announceLoading } = useAnnouncement()
+  
+  // Refs for focus management
+  const formRef = useRef<HTMLFormElement>(null)
+  const firstNameRef = useRef<HTMLInputElement>(null)
+  const submitButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Generate unique IDs for ARIA relationships
+  const formId = generateId('sign-up-form')
+  const firstNameId = generateId('first-name')
+  const lastNameId = generateId('last-name')
+  const emailId = generateId('email')
+  const passwordId = generateId('password')
+  const confirmPasswordId = generateId('confirm-password')
+  const passwordStrengthId = generateId('password-strength')
+  const errorRegionId = generateId('error-region')
+  const statusRegionId = generateId('status-region')
 
   // Get configuration
   const passwordRequirements = getPasswordRequirements()
   const socialProviders = getSocialProviders()
+
+  // Keyboard navigation
+  const { handleKeyDown } = useKeyboardNavigation(
+    () => {
+      // Enter key - submit form if valid
+      if (formRef.current && !isLoading) {
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true })
+        formRef.current.dispatchEvent(submitEvent)
+      }
+    },
+    () => {
+      // Escape key - clear form
+      if (Object.values(formData).some(value => value)) {
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          firstName: '',
+          lastName: ''
+        })
+        setErrors({})
+        setPasswordStrength({ score: 0, feedback: [], isValid: false })
+        announce('Form cleared', 'polite')
+      }
+    }
+  )
+
+  // Set up accessibility on mount
+  useEffect(() => {
+    // Set up focus trap when form loads
+    if (formRef.current) {
+      const cleanup = FocusManager.trapFocus(formRef.current)
+      
+      // Focus first input on mount
+      setTimeout(() => {
+        firstNameRef.current?.focus()
+      }, 100)
+
+      return cleanup
+    }
+  }, [])
+
+  // Announce loading states
+  useEffect(() => {
+    if (isLoading) {
+      announceLoading('Creating account, please wait')
+      setCurrentAnnouncement('Creating account, please wait')
+    }
+  }, [isLoading, announceLoading])
+
+  // Announce errors
+  useEffect(() => {
+    if (errors.general) {
+      announceError(errors.general)
+      setCurrentAnnouncement(`Error: ${errors.general}`)
+    }
+  }, [errors.general, announceError])
+
+  // Announce password strength changes
+  useEffect(() => {
+    if (formData.password && passwordStrength.feedback.length > 0) {
+      const strengthLabel = getPasswordStrengthLabel(passwordStrength.score)
+      const requirements = passwordStrength.feedback.join(', ')
+      const message = `Password strength: ${strengthLabel}. Missing requirements: ${requirements}`
+      setCurrentAnnouncement(message)
+    } else if (formData.password && passwordStrength.isValid) {
+      const message = 'Password meets all requirements'
+      announceSuccess(message)
+      setCurrentAnnouncement(message)
+    }
+  }, [passwordStrength, formData.password, announceSuccess])
 
   /**
    * Validate password strength in real-time
@@ -554,6 +659,20 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
               {errors.confirmPassword}
             </p>
           )}
+        </div>
+
+        {/* CAPTCHA Container - Required by Clerk for bot protection */}
+        <div 
+          id="clerk-captcha"
+          className="flex justify-center"
+          role="region"
+          aria-label="Security verification"
+          aria-describedby="captcha-description"
+        >
+          {/* Clerk will inject the CAPTCHA widget here */}
+        </div>
+        <div id="captcha-description" className="sr-only">
+          Complete the security verification to create your account
         </div>
 
         {/* Submit Button */}

@@ -1,0 +1,474 @@
+/**
+ * Accessibility-specific CSS classes
+ * Provides WCAG 2.1 AA compliant styles and screen reader support
+ */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Screen reader only content that becomes visible on focus */
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* High contrast mode support */
+.high-contrast {
+  /* Ensure sufficient contrast ratios */
+  --contrast-bg: Canvas;
+  --contrast-text: CanvasText;
+  --contrast-border: ButtonText;
+  --contrast-focus: Highlight;
+  --contrast-button-bg: ButtonFace;
+  --contrast-button-text: ButtonText;
+}
+
+.high-contrast input,
+.high-contrast button,
+.high-contrast select,
+.high-contrast textarea {
+  background-color: var(--contrast-bg);
+  color: var(--contrast-text);
+  border: 2px solid var(--contrast-border);
+}
+
+.high-contrast button:focus,
+.high-contrast input:focus,
+.high-contrast select:focus,
+.high-contrast textarea:focus {
+  outline: 3px solid var(--contrast-focus);
+  outline-offset: 2px;
+}
+
+.high-contrast .btn-primary {
+  background-color: var(--contrast-button-bg);
+  color: var(--contrast-button-text);
+  border: 2px solid var(--contrast-border);
+}
+
+/* Reduced motion support */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Focus indicators */
+.focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.focus-visible:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Enhanced focus for high contrast */
+.high-contrast .focus-visible:focus {
+  outline: 3px solid var(--contrast-focus);
+  outline-offset: 2px;
+}
+
+/* Touch target sizing */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px;
+}
+
+/* Touch-friendly spacing */
+.touch-spacing > * + * {
+  margin-top: 16px;
+}
+
+.touch-spacing button + button,
+.touch-spacing input + input {
+  margin-top: 12px;
+}
+
+/* Skip links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  font-weight: bold;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Error states with sufficient contrast */
+.error-state {
+  border-color: #d32f2f;
+  background-color: #ffeaea;
+}
+
+.high-contrast .error-state {
+  border-color: var(--contrast-border);
+  background-color: var(--contrast-bg);
+  border-width: 3px;
+}
+
+.error-text {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.high-contrast .error-text {
+  color: var(--contrast-text);
+  font-weight: bold;
+}
+
+/* Success states */
+.success-state {
+  border-color: #2e7d32;
+  background-color: #e8f5e8;
+}
+
+.high-contrast .success-state {
+  border-color: var(--contrast-border);
+  background-color: var(--contrast-bg);
+  border-width: 3px;
+}
+
+.success-text {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.high-contrast .success-text {
+  color: var(--contrast-text);
+  font-weight: bold;
+}
+
+/* Loading states */
+.loading-state {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.high-contrast .loading-state {
+  opacity: 1;
+  background-color: var(--contrast-bg);
+  color: var(--contrast-text);
+}
+
+/* Form field grouping */
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  border-color: #0066cc;
+}
+
+/* Required field indicators */
+.required::after {
+  content: " *";
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+.high-contrast .required::after {
+  color: var(--contrast-text);
+}
+
+/* Password strength indicator */
+.password-strength {
+  margin-top: 8px;
+}
+
+.password-strength-bar {
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.reduce-motion .password-strength-fill {
+  transition: none;
+}
+
+.password-strength-weak {
+  background-color: #d32f2f;
+}
+
+.password-strength-fair {
+  background-color: #f57c00;
+}
+
+.password-strength-good {
+  background-color: #1976d2;
+}
+
+.password-strength-strong {
+  background-color: #2e7d32;
+}
+
+.high-contrast .password-strength-bar {
+  background-color: var(--contrast-bg);
+  border: 1px solid var(--contrast-border);
+}
+
+.high-contrast .password-strength-fill {
+  background-color: var(--contrast-text);
+}
+
+/* Social auth buttons */
+.social-auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.reduce-motion .social-auth-button {
+  transition: none;
+}
+
+.social-auth-button:hover {
+  border-color: #999;
+  background-color: #f5f5f5;
+}
+
+.social-auth-button:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  border-color: #0066cc;
+}
+
+.high-contrast .social-auth-button {
+  background-color: var(--contrast-button-bg);
+  color: var(--contrast-button-text);
+  border-color: var(--contrast-border);
+}
+
+.high-contrast .social-auth-button:focus {
+  outline: 3px solid var(--contrast-focus);
+}
+
+/* Checkbox and radio styling */
+.custom-checkbox,
+.custom-radio {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  min-height: 44px; /* Touch target */
+}
+
+.custom-checkbox input,
+.custom-radio input {
+  position: absolute;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.custom-checkbox .checkmark,
+.custom-radio .checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #666;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+}
+
+.custom-checkbox .checkmark {
+  border-radius: 4px;
+}
+
+.custom-radio .checkmark {
+  border-radius: 50%;
+}
+
+.custom-checkbox input:checked + .checkmark,
+.custom-radio input:checked + .checkmark {
+  background-color: #0066cc;
+  border-color: #0066cc;
+}
+
+.custom-checkbox input:checked + .checkmark::after {
+  content: "✓";
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.custom-radio input:checked + .checkmark::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+.custom-checkbox input:focus + .checkmark,
+.custom-radio input:focus + .checkmark {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.high-contrast .custom-checkbox .checkmark,
+.high-contrast .custom-radio .checkmark {
+  background-color: var(--contrast-bg);
+  border-color: var(--contrast-border);
+  border-width: 2px;
+}
+
+.high-contrast .custom-checkbox input:checked + .checkmark,
+.high-contrast .custom-radio input:checked + .checkmark {
+  background-color: var(--contrast-button-bg);
+  border-color: var(--contrast-border);
+}
+
+.high-contrast .custom-checkbox input:focus + .checkmark,
+.high-contrast .custom-radio input:focus + .checkmark {
+  outline: 3px solid var(--contrast-focus);
+}
+
+/* Live region for announcements */
+.live-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Animation preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast media query support */
+@media (prefers-contrast: high) {
+  :root {
+    --primary-color: ButtonText;
+    --background-color: Canvas;
+    --text-color: CanvasText;
+    --border-color: ButtonText;
+  }
+}
+
+@media (forced-colors: active) {
+  :root {
+    --primary-color: ButtonText;
+    --background-color: Canvas;
+    --text-color: CanvasText;
+    --border-color: ButtonText;
+  }
+  
+  .btn-primary {
+    forced-color-adjust: none;
+    background-color: ButtonFace;
+    color: ButtonText;
+    border: 1px solid ButtonText;
+  }
+}
+
+/* Mobile accessibility enhancements */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 48px; /* Larger touch targets on mobile */
+    min-width: 48px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 16px; /* Larger touch area */
+  }
+  
+  .social-auth-button {
+    padding: 16px;
+    font-size: 16px;
+  }
+}
+
+/* Voice control support */
+@media (speech) {
+  button,
+  input,
+  select,
+  textarea {
+    speak: normal;
+  }
+  
+  .sr-only {
+    speak: always;
+  }
+}

@@ -27,7 +27,7 @@ vi.mock('@/lib/errors', () => ({
     }
   },
   NotFoundError: class NotFoundError extends Error {
-    constructor(message: string) {
+    constructor(code: string, message: string) {
       super(message)
       this.name = 'NotFoundError'
     }
@@ -37,6 +37,11 @@ vi.mock('@/lib/errors', () => ({
       super(message)
       this.name = 'ValidationError'
     }
+  },
+  ErrorCode: {
+    NOT_FOUND: 'NOT_FOUND',
+    VALIDATION_ERROR: 'VALIDATION_ERROR',
+    DATABASE_ERROR: 'DATABASE_ERROR'
   }
 }))
 
@@ -337,14 +342,15 @@ describe('PathEngine', () => {
     })
 
     it('should throw error when session not found', async () => {
-      mockSupabase._mocks.single.mockResolvedValue({
-        data: null,
-        error: { code: 'PGRST116' }
-      })
+      // Mock the getSessionWithPath method to return null
+      const getSessionWithPathSpy = vi.spyOn(PathEngine as any, 'getSessionWithPath')
+      getSessionWithPathSpy.mockResolvedValue(null)
 
       await expect(
         PathEngine.adaptPath('session-123', mockUserBehavior)
       ).rejects.toThrow('Session or path not found')
+      
+      getSessionWithPathSpy.mockRestore()
     })
   })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useSignIn } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
@@ -10,6 +10,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getSocialProviders } from '@/lib/config/clerk'
+import { 
+  AccessibleInput, 
+  AccessibleButton, 
+  AccessibleCheckbox, 
+  AccessibleFormGroup,
+  SkipLink,
+  LiveRegion
+} from '@/components/ui/accessible-form'
+import { useAccessibility, useAnnouncement, useKeyboardNavigation } from '@/contexts/accessibility-context'
+import { FocusManager, generateId } from '@/lib/utils/accessibility'
 
 interface SignInFormProps {
   redirectUrl?: string
@@ -29,14 +39,18 @@ interface FormErrors {
 }
 
 /**
- * SignInForm component with social authentication and comprehensive error handling
+ * SignInForm component with social authentication and comprehensive accessibility
  * 
  * Features:
- * - Email/password authentication
+ * - Email/password authentication with full accessibility support
  * - Social authentication integration (Google, GitHub, Microsoft)
- * - "Remember Me" functionality
- * - Comprehensive error handling
- * - Accessibility compliance
+ * - "Remember Me" functionality with proper ARIA labels
+ * - Comprehensive error handling with screen reader announcements
+ * - WCAG 2.1 AA compliance
+ * - Keyboard navigation support
+ * - High contrast mode compatibility
+ * - Touch device optimizations
+ * - Screen reader support with live regions
  */
 export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   const { signIn, isLoaded, setActive } = useSignIn()
@@ -52,17 +66,83 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [currentAnnouncement, setCurrentAnnouncement] = useState('')
+
+  // Accessibility hooks
+  const { isTouchDevice, announce } = useAccessibility()
+  const { announceError, announceSuccess, announceLoading } = useAnnouncement()
+  
+  // Refs for focus management
+  const formRef = useRef<HTMLFormElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const submitButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Generate unique IDs for ARIA relationships
+  const formId = generateId('sign-in-form')
+  const emailFieldId = generateId('email-field')
+  const passwordFieldId = generateId('password-field')
+  const rememberMeId = generateId('remember-me')
+  const errorRegionId = generateId('error-region')
+  const statusRegionId = generateId('status-region')
 
   // Get configuration
   const socialProviders = getSocialProviders()
 
-  // Load remember me preference on mount
-  React.useEffect(() => {
+  // Keyboard navigation
+  const { handleKeyDown } = useKeyboardNavigation(
+    () => {
+      // Enter key - submit form if valid
+      if (formRef.current && !isLoading) {
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true })
+        formRef.current.dispatchEvent(submitEvent)
+      }
+    },
+    () => {
+      // Escape key - clear form or navigate away
+      if (formData.email || formData.password) {
+        setFormData({ email: '', password: '' })
+        setErrors({})
+        announce('Form cleared', 'polite')
+      }
+    }
+  )
+
+  // Load remember me preference and set up accessibility on mount
+  useEffect(() => {
     const savedRememberMe = localStorage.getItem('c9d-remember-me')
     if (savedRememberMe === 'true') {
       setRememberMe(true)
     }
+
+    // Set up focus trap when form loads
+    if (formRef.current) {
+      const cleanup = FocusManager.trapFocus(formRef.current)
+      
+      // Focus first input on mount
+      setTimeout(() => {
+        emailRef.current?.focus()
+      }, 100)
+
+      return cleanup
+    }
   }, [])
+
+  // Announce loading states
+  useEffect(() => {
+    if (isLoading) {
+      announceLoading('Signing in, please wait')
+      setCurrentAnnouncement('Signing in, please wait')
+    }
+  }, [isLoading, announceLoading])
+
+  // Announce errors
+  useEffect(() => {
+    if (error || errors.general) {
+      const errorMessage = error || errors.general || ''
+      announceError(errorMessage)
+      setCurrentAnnouncement(`Error: ${errorMessage}`)
+    }
+  }, [error, errors.general, announceError])
 
   /**
    * Validate form field
@@ -215,31 +295,67 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   }
 
   return (
-    <div data-testid="sign-in-form" className={cn('space-y-6', className)}>
-      {/* Social Authentication */}
-      <div data-testid="social-auth-section" className="space-y-3">
-        {socialProviders.filter(p => p.enabled).map(provider => (
-          <Button
-            key={provider.id}
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => handleSocialAuth(provider.strategy)}
-            disabled={isLoading}
-            data-testid={`social-auth-${provider.id}-button`}
-          >
-            <span className="mr-2">
-              {provider.icon === 'google' && '🔍'}
-              {provider.icon === 'github' && '🐙'}
-              {provider.icon === 'microsoft' && '🪟'}
-            </span>
-            Continue with {provider.name}
-          </Button>
-        ))}
+    <div 
+      data-testid="sign-in-form" 
+      className={cn('space-y-6', className)}
+      role="main"
+      aria-labelledby="sign-in-heading"
+    >
+      {/* Skip Link */}
+      <SkipLink href="#sign-in-form-fields">
+        Skip to sign-in form
+      </SkipLink>
+
+      {/* Live Regions for Screen Reader Announcements */}
+      <LiveRegion priority="assertive">
+        {currentAnnouncement}
+      </LiveRegion>
+
+      {/* Form Heading */}
+      <div className="sr-only">
+        <h1 id="sign-in-heading">Sign in to your account</h1>
       </div>
 
+      {/* Social Authentication */}
+      <AccessibleFormGroup>
+        <div 
+          data-testid="social-auth-section" 
+          className="space-y-3"
+          role="group"
+          aria-labelledby="social-auth-heading"
+        >
+          <h2 id="social-auth-heading" className="sr-only">
+            Social authentication options
+          </h2>
+          
+          {socialProviders.filter(p => p.enabled).map((provider, index) => (
+            <AccessibleButton
+              key={provider.id}
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleSocialAuth(provider.strategy)}
+              disabled={isLoading}
+              data-testid={`social-auth-${provider.id}-button`}
+              aria-describedby={`${provider.id}-description`}
+              onKeyDown={handleKeyDown}
+            >
+              <span className="mr-2" aria-hidden="true">
+                {provider.icon === 'google' && '🔍'}
+                {provider.icon === 'github' && '🐙'}
+                {provider.icon === 'microsoft' && '🪟'}
+              </span>
+              Continue with {provider.name}
+              <span id={`${provider.id}-description`} className="sr-only">
+                Sign in using your {provider.name} account
+              </span>
+            </AccessibleButton>
+          ))}
+        </div>
+      </AccessibleFormGroup>
+
       {/* Divider */}
-      <div className="relative">
+      <div className="relative" role="separator" aria-label="Or continue with email">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
@@ -252,140 +368,175 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
 
       {/* General Error */}
       {(errors.general || error) && (
-        <Alert data-testid="sign-in-error-alert" variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription data-testid="sign-in-error-message">
-            {errors.general || error}
-          </AlertDescription>
-        </Alert>
+        <div
+          id={errorRegionId}
+          role="alert"
+          aria-live="assertive"
+          data-testid="sign-in-error-alert"
+        >
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" aria-hidden="true" />
+            <AlertDescription data-testid="sign-in-error-message">
+              {errors.general || error}
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
 
       {/* Sign-in Form */}
-      <form data-testid="sign-in-form-fields" onSubmit={handleSubmit} className="space-y-4">
+      <form 
+        ref={formRef}
+        id={formId}
+        data-testid="sign-in-form-fields" 
+        onSubmit={handleSubmit} 
+        className="space-y-4"
+        noValidate
+        aria-labelledby="form-heading"
+        onKeyDown={handleKeyDown}
+      >
+        <h2 id="form-heading" className="sr-only">
+          Email and password sign-in form
+        </h2>
         {/* Email Field */}
-        <div data-testid="email-field" className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            data-testid="email-input"
-            type="email"
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            onBlur={() => {
-              const error = validateField('email', formData.email)
-              if (error) setErrors(prev => ({ ...prev, email: error }))
-            }}
-            className={cn(errors.email && 'border-destructive')}
-            disabled={isLoading}
-            required
-            aria-describedby={errors.email ? 'email-error' : undefined}
-          />
-          {errors.email && (
-            <p id="email-error" data-testid="email-error" className="text-sm text-destructive">
-              {errors.email}
-            </p>
-          )}
-        </div>
+        <AccessibleInput
+          ref={emailRef}
+          id={emailFieldId}
+          data-testid="email-input"
+          type="email"
+          label="Email address"
+          value={formData.email}
+          onChange={(e) => handleInputChange('email', e.target.value)}
+          onBlur={() => {
+            const error = validateField('email', formData.email)
+            if (error) setErrors(prev => ({ ...prev, email: error }))
+          }}
+          error={errors.email}
+          disabled={isLoading}
+          required
+          autoComplete="email"
+          placeholder="Enter your email address"
+          hint="We'll use this to identify your account"
+        />
 
         {/* Password Field */}
-        <div data-testid="password-field" className="space-y-2">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Button
+            <label htmlFor={passwordFieldId} className="text-sm font-medium">
+              Password
+              <span className="text-destructive ml-1" aria-label="required">*</span>
+            </label>
+            <AccessibleButton
               type="button"
               variant="link"
               className="p-0 h-auto text-sm"
               onClick={handleForgotPassword}
               disabled={isLoading}
               data-testid="forgot-password-link"
+              aria-describedby="forgot-password-description"
             >
               Forgot password?
-            </Button>
+              <span id="forgot-password-description" className="sr-only">
+                Reset your password via email
+              </span>
+            </AccessibleButton>
           </div>
-          <div className="relative">
-            <Input
-              id="password"
-              data-testid="password-input"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              onBlur={() => {
-                const error = validateField('password', formData.password)
-                if (error) setErrors(prev => ({ ...prev, password: error }))
-              }}
-              className={cn(
-                'pr-10',
-                errors.password && 'border-destructive'
-              )}
-              disabled={isLoading}
-              required
-              aria-describedby={errors.password ? 'password-error' : undefined}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              data-testid="toggle-password-visibility"
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          {errors.password && (
-            <p id="password-error" data-testid="password-error" className="text-sm text-destructive">
-              {errors.password}
-            </p>
-          )}
+          
+          <AccessibleInput
+            id={passwordFieldId}
+            data-testid="password-input"
+            type="password"
+            value={formData.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            onBlur={() => {
+              const error = validateField('password', formData.password)
+              if (error) setErrors(prev => ({ ...prev, password: error }))
+            }}
+            error={errors.password}
+            disabled={isLoading}
+            required
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            showPasswordToggle
+          />
         </div>
 
         {/* Remember Me */}
-        <div data-testid="remember-me-field" className="flex items-center space-x-2">
-          <input
-            id="remember-me"
-            data-testid="remember-me-checkbox"
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            disabled={isLoading}
-          />
-          <Label htmlFor="remember-me" className="text-sm">
-            Remember me
-          </Label>
+        <AccessibleCheckbox
+          id={rememberMeId}
+          data-testid="remember-me-checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+          disabled={isLoading}
+          label="Remember me on this device"
+          description="Keep me signed in for faster access (not recommended on shared devices)"
+        />
+
+        {/* CAPTCHA Container - Required by Clerk for bot protection */}
+        <div 
+          id="clerk-captcha"
+          className="flex justify-center"
+          role="region"
+          aria-label="Security verification"
+          aria-describedby="signin-captcha-description"
+        >
+          {/* Clerk will inject the CAPTCHA widget here when needed */}
+        </div>
+        <div id="signin-captcha-description" className="sr-only">
+          Complete the security verification if prompted
         </div>
 
         {/* Submit Button */}
-        <Button
+        <AccessibleButton
+          ref={submitButtonRef}
           type="submit"
           className="w-full"
           disabled={isLoading || !isLoaded}
+          loading={isLoading}
+          loadingText="Signing in..."
           data-testid="sign-in-submit-button"
+          aria-describedby="submit-description"
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
-        </Button>
+          <span id="submit-description" className="sr-only">
+            Submit the sign-in form to access your account
+          </span>
+        </AccessibleButton>
       </form>
 
       {/* Sign Up Link */}
-      <div data-testid="sign-up-link-section" className="text-center">
+      <div 
+        data-testid="sign-up-link-section" 
+        className="text-center"
+        role="complementary"
+        aria-labelledby="sign-up-heading"
+      >
+        <h3 id="sign-up-heading" className="sr-only">
+          Create new account
+        </h3>
         <p className="text-sm text-muted-foreground">
           Don't have an account?{' '}
-          <Button
+          <AccessibleButton
             variant="link"
             className="p-0 h-auto font-normal"
             onClick={() => router.push('/sign-up')}
             data-testid="sign-up-link"
+            aria-describedby="sign-up-description"
           >
             Sign up
-          </Button>
+            <span id="sign-up-description" className="sr-only">
+              Navigate to the account registration page
+            </span>
+          </AccessibleButton>
         </p>
       </div>
+
+      {/* Status Region for Success Messages */}
+      <div
+        id={statusRegionId}
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+      />
     </div>
   )
 }
