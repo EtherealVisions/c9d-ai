@@ -93,9 +93,10 @@ export abstract class BaseError extends Error {
 }
 
 /**
- * Authentication related errors (401)
+ * Basic authentication related errors (401)
+ * @deprecated Use AuthenticationError from authentication-errors.ts instead
  */
-export class AuthenticationError extends BaseError {
+export class BasicAuthenticationError extends BaseError {
   readonly statusCode = 401;
 
   constructor(
@@ -269,7 +270,7 @@ export class RateLimitError extends BaseError {
 }
 
 // Legacy error classes for backward compatibility
-export class UnauthorizedError extends AuthenticationError {
+export class UnauthorizedError extends BasicAuthenticationError {
   constructor(message: string = 'Unauthorized') {
     super(ErrorCode.UNAUTHORIZED_ACCESS, message);
   }

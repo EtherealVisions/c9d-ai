@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getConfigManager } from './lib/config/manager'
+import { getEdgeConfig, getConfigValue } from './lib/config/edge-config'
 import { getClerkConfig, validateClerkConfig } from './lib/config/clerk'
 
 // Route protection levels
@@ -108,19 +108,15 @@ const isHealthRoute = createRouteMatcher([
 ])
 
 /**
- * Get configuration value with fallback
+ * Get configuration value with fallback (edge-safe)
  */
 function getConfigWithFallback(key: string): string | undefined {
   try {
-    const configManager = getConfigManager();
-    if (configManager.isInitialized()) {
-      return configManager.get(key);
-    }
+    return getConfigValue(key);
   } catch (error) {
-    console.warn(`[Middleware] Failed to get config '${key}' from manager, using process.env:`, error);
+    console.warn(`[Middleware] Failed to get config '${key}':`, error);
+    return undefined;
   }
-  
-  return process.env[key];
 }
 
 /**
@@ -256,18 +252,16 @@ function createAuthRedirect(req: NextRequest, reason: string): NextResponse {
 }
 
 /**
- * Add security and configuration headers to responses
+ * Add security and configuration headers to responses (edge-safe)
  */
 function addSecurityHeaders(response: NextResponse, req: NextRequest): NextResponse {
   // Add configuration status headers for debugging
   try {
-    const configManager = getConfigManager();
-    const stats = configManager.getStats();
+    const config = getEdgeConfig();
     
-    response.headers.set('X-Config-Initialized', stats.initialized.toString());
-    response.headers.set('X-Config-Healthy', stats.healthy.toString());
-    response.headers.set('X-Config-Phase-Enabled', stats.phaseConfigured.toString());
-    response.headers.set('X-Config-Last-Refresh', stats.lastRefresh.toISOString());
+    response.headers.set('X-Config-Initialized', 'true');
+    response.headers.set('X-Config-Runtime', 'edge');
+    response.headers.set('X-Config-Vars-Count', Object.keys(config.getAll()).length.toString());
     
   } catch (error) {
     console.warn('[Middleware] Failed to add config headers:', error);
