@@ -2,9 +2,9 @@
 
 ## Overview
 
-The Landing Page design builds upon the existing vibrant visual language of C9d.ai, featuring the established purple-pink gradients, electric blue accents, teal highlights, and bright yellow-lime elements. The design emphasizes the gentle floating animations and sophisticated color palette to create a novel, approachable experience that communicates AI orchestration capabilities. Built with Next.js and optimized for Vercel deployment, the page balances visual impact with performance, accessibility, and conversion optimization.
+The Landing Page design builds upon the existing vibrant visual language of C9d.ai, featuring the established purple-pink gradients, electric blue accents, teal highlights, and bright yellow-lime elements. The design emphasizes the gentle floating animations and sophisticated color palette to create a novel, approachable experience that communicates the coordinated AI capabilities of the C9 Suite. Built with Next.js and optimized for Vercel deployment, the page balances visual impact with performance, accessibility, and conversion optimization while showcasing the five modular capabilities: Insight, Persona, Domain, Orchestrator, and Narrative.
 
-The architecture follows a component-based approach that leverages existing design components while introducing new sections specifically crafted for conversion and engagement.
+The architecture follows a component-based approach that leverages existing design components while introducing new sections specifically crafted for showcasing each C9 capability, conversion optimization, and industry-specific engagement.
 
 ## Architecture
 
@@ -28,6 +28,7 @@ graph TB
     
     subgraph "Component Architecture"
         HeroSection[Enhanced Hero Section]
+        C9Showcase[C9 Suite Capabilities Grid]
         FeatureShowcase[Feature Showcase Grid]
         SocialProof[Social Proof Section]
         CTASections[Multiple CTA Sections]
@@ -48,18 +49,26 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Hero Section] --> B[Value Proposition]
-    B --> C[Feature Showcase]
-    C --> D[Use Cases & Benefits]
+    A[Hero Section] --> B[C9 Suite Overview]
+    B --> C[Capability Showcase]
+    C --> D[Industry Use Cases]
     D --> E[Social Proof]
-    E --> F[Technical Capabilities]
-    F --> G[Pricing Preview]
+    E --> F[Technical Integration]
+    F --> G[Pricing & Plans]
     G --> H[Final CTA]
     H --> I[Footer]
     
+    subgraph "C9 Capabilities"
+        C1[C9 Insight - Patterns & Forecasting]
+        C2[C9 Persona - Branded AI Entities]
+        C3[C9 Domain - Industry-Specific AI]
+        C4[C9 Orchestrator - Multi-Agent Coordination]
+        C5[C9 Narrative - Data to Stories]
+    end
+    
     subgraph "Conversion Points"
         CTA1[Primary CTA - Hero]
-        CTA2[Secondary CTA - Features]
+        CTA2[Capability CTAs - C9 Suite]
         CTA3[Demo CTA - Technical]
         CTA4[Final CTA - Bottom]
     end
@@ -68,6 +77,12 @@ graph TD
     C --> CTA2
     F --> CTA3
     H --> CTA4
+    
+    C --> C1
+    C --> C2
+    C --> C3
+    C --> C4
+    C --> C5
     
     style A fill:#7B2CBF,color:#fff
     style C fill:#00B2FF,color:#fff
@@ -130,6 +145,45 @@ interface AnimationConfig {
   blobCount: number
   animationSpeed: 'slow' | 'medium' | 'fast'
   colorScheme: 'purple-pink' | 'blue-teal' | 'yellow-lime' | 'mixed'
+}
+```
+
+### C9 Suite Capabilities Showcase
+
+```typescript
+interface C9SuiteShowcaseProps {
+  capabilities: C9Capability[]
+  layout: 'grid' | 'carousel' | 'tabs'
+  animationTrigger: 'scroll' | 'hover' | 'auto'
+  industryFilter?: string[]
+}
+
+interface C9Capability {
+  id: 'insight' | 'persona' | 'domain' | 'orchestrator' | 'narrative'
+  name: string
+  tagline: string
+  description: string
+  icon: React.ComponentType
+  gradient: GradientConfig
+  keyFeatures: string[]
+  useCases: IndustryUseCase[]
+  apis: APIEndpoint[]
+  ctaText: string
+  ctaHref: string
+}
+
+interface IndustryUseCase {
+  industry: 'education' | 'telecom' | 'retail' | 'enterprise' | 'healthcare' | 'marketing'
+  scenario: string
+  benefit: string
+  example: string
+}
+
+interface APIEndpoint {
+  name: string
+  description: string
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  endpoint: string
 }
 ```
 
@@ -211,6 +265,81 @@ interface FloatingCTAProps {
   showAfterScroll: number
   hideOnSections?: string[]
   ctaConfig: CTAConfig
+}
+```
+
+## C9 Suite Capability Specifications
+
+### C9 Capability Data Structure
+
+```typescript
+const C9_CAPABILITIES: C9Capability[] = [
+  {
+    id: 'insight',
+    name: 'C9 Insight',
+    tagline: 'Coordinating patterns across time, space, and data',
+    description: 'Turn raw data into foresight with APIs for correlation, forecasting, and anomaly detection',
+    gradient: { from: '#7B2CBF', to: '#E71D73', direction: 'to-br', opacity: 0.9 },
+    keyFeatures: [
+      'Entity & temporal correlation APIs',
+      'Contextual forecasting & predictive models',
+      'Time-series anomaly detection',
+      'Cross-location & multi-factor trend analysis'
+    ],
+    useCases: [
+      {
+        industry: 'education',
+        scenario: 'Forecast class attendance and resource needs',
+        benefit: 'Optimize resource allocation and improve student engagement',
+        example: 'Predict which students need additional support before they fall behind'
+      },
+      {
+        industry: 'telecom',
+        scenario: 'Predict network demand and delivery bottlenecks',
+        benefit: 'Proactive infrastructure scaling and maintenance',
+        example: 'Anticipate network congestion during major events'
+      }
+    ],
+    apis: [
+      { name: 'Correlation API', description: 'Find patterns across datasets', method: 'POST', endpoint: '/api/insight/correlate' },
+      { name: 'Forecast API', description: 'Generate predictive models', method: 'POST', endpoint: '/api/insight/forecast' }
+    ]
+  },
+  {
+    id: 'persona',
+    name: 'C9 Persona',
+    tagline: 'AI that represents your brand, your way',
+    description: 'Create branded AI entities that embody your organization with configurable tone and knowledge',
+    gradient: { from: '#00B2FF', to: '#2CE4B8', direction: 'to-br', opacity: 0.9 },
+    keyFeatures: [
+      'Personified AI models for individuals or organizations',
+      'Brand-configurable tone, style, and knowledge base',
+      'Context-aware avatars that adapt to role and audience',
+      'APIs for integration with chat, voice, and workflow systems'
+    ],
+    useCases: [
+      {
+        industry: 'enterprise',
+        scenario: 'Executive surrogates for stakeholder communication',
+        benefit: 'Consistent messaging and 24/7 availability',
+        example: 'CEO avatar that handles routine investor questions'
+      }
+    ]
+  },
+  // Additional capabilities...
+]
+```
+
+### Industry-Specific Color Mapping
+
+```typescript
+interface IndustryColorScheme {
+  education: { primary: '#7B2CBF', secondary: '#E71D73' }
+  telecom: { primary: '#00B2FF', secondary: '#2CE4B8' }
+  retail: { primary: '#FFD700', secondary: '#AFFF3C' }
+  enterprise: { primary: '#7B2CBF', secondary: '#00B2FF' }
+  healthcare: { primary: '#2CE4B8', secondary: '#00B2FF' }
+  marketing: { primary: '#E71D73', secondary: '#FFD700' }
 }
 ```
 

@@ -223,8 +223,8 @@ Each app/package MUST use its designated phase.dev context:
 - **apps/docs**: `AI.C9d.Docs`
 - **apps/api**: `AI.C9d.API`
 
-#### Package Scripts with Phase.dev
-Every app's `package.json` must include phase.dev in all scripts:
+#### Package Scripts with Phase.dev and Memory Management
+Every app's `package.json` must include phase.dev in all scripts with proper NODE_OPTIONS:
 
 ```json
 {
@@ -233,15 +233,25 @@ Every app's `package.json` must include phase.dev in all scripts:
     "dev": "phase run --context AI.C9d.Web -- next dev",
     "build": "phase run --context AI.C9d.Web -- next build",
     "start": "phase run --context AI.C9d.Web -- next start",
-    "test": "phase run --context AI.C9d.Web -- vitest run",
-    "test:run": "phase run --context AI.C9d.Web -- vitest run",
-    "test:dev": "phase run --context AI.C9d.Web -- vitest --watch",
-    "test:watch": "phase run --context AI.C9d.Web -- vitest --watch",
+    "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" phase run --context AI.C9d.Web -- vitest run",
+    "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" phase run --context AI.C9d.Web -- vitest run",
+    "test:coverage": "NODE_OPTIONS=\"--max-old-space-size=16384\" phase run --context AI.C9d.Web -- vitest run --coverage",
+    "test:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" phase run --context AI.C9d.Web -- vitest --watch",
+    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=8192\" phase run --context AI.C9d.Web -- vitest --watch",
     "lint": "phase run --context AI.C9d.Web -- next lint",
     "typecheck": "phase run --context AI.C9d.Web -- tsc --noEmit"
   }
 }
 ```
+
+#### Memory Management Requirements (MANDATORY)
+All test commands MUST include NODE_OPTIONS for memory allocation:
+
+- **Standard Tests**: `NODE_OPTIONS="--max-old-space-size=8192"` (8GB)
+- **Coverage Tests**: `NODE_OPTIONS="--max-old-space-size=16384"` (16GB)
+- **Watch Mode**: `NODE_OPTIONS="--max-old-space-size=8192"` (8GB)
+
+**Rationale**: Large test suites require increased memory allocation to prevent JS heap crashes and ensure reliable execution.
 
 #### Environment Variable Management
 - **ALL environment variables must be managed through phase.dev**

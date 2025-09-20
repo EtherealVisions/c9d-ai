@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/accessible-form'
 import { useAccessibility, useAnnouncement, useKeyboardNavigation } from '@/contexts/accessibility-context'
 import { FocusManager, generateId, ScreenReaderSupport } from '@/lib/utils/accessibility'
+import { useMobileOptimizations } from '@/hooks/use-mobile-optimizations'
 
 interface SignUpFormProps {
   redirectUrl?: string
@@ -90,6 +91,15 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
   // Accessibility hooks
   const { isTouchDevice, announce } = useAccessibility()
   const { announceError, announceSuccess, announceLoading } = useAnnouncement()
+  
+  // Mobile optimization hooks
+  const { 
+    isMobile, 
+    isVirtualKeyboardOpen, 
+    addTouchFeedback, 
+    optimizeForMobile,
+    handleOrientationChange
+  } = useMobileOptimizations()
   
   // Refs for focus management
   const formRef = useRef<HTMLFormElement>(null)
@@ -402,24 +412,50 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn(
+      // Mobile-first responsive spacing
+      'space-y-4 xs:space-y-5 sm:space-y-6',
+      // Mobile optimizations
+      isMobile && 'mobile-form',
+      // Virtual keyboard adjustments
+      isVirtualKeyboardOpen && 'mobile-keyboard-aware',
+      className
+    )}>
       {/* Social Authentication */}
-      <div className="space-y-3">
+      <div className={cn(
+        // Mobile-first responsive spacing
+        'space-y-2 xs:space-y-3 sm:space-y-3'
+      )}>
         {socialProviders.filter(p => p.enabled).map(provider => (
           <Button
             key={provider.id}
             type="button"
             variant="outline"
-            className="w-full"
+            className={cn(
+              'w-full',
+              // Mobile optimizations
+              isMobile && 'social-auth-mobile touch-target-enhanced',
+              // Loading state
+              isLoading && 'mobile-loading'
+            )}
             onClick={() => handleSocialAuth(provider.strategy)}
             disabled={isLoading}
           >
-            <span className="mr-2">
+            <span className={cn(
+              "flex-shrink-0",
+              // Mobile-first responsive spacing
+              "mr-2 xs:mr-3 sm:mr-2"
+            )}>
               {provider.icon === 'google' && '🔍'}
               {provider.icon === 'github' && '🐙'}
               {provider.icon === 'microsoft' && '🪟'}
             </span>
-            Continue with {provider.name}
+            <span className={cn(
+              // Mobile-first responsive text
+              "text-sm xs:text-base sm:text-sm font-medium"
+            )}>
+              Continue with {provider.name}
+            </span>
           </Button>
         ))}
       </div>
@@ -429,8 +465,16 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
+        <div className={cn(
+          "relative flex justify-center uppercase",
+          // Mobile-first responsive text sizing
+          "text-xs xs:text-xs sm:text-xs"
+        )}>
+          <span className={cn(
+            "bg-background text-muted-foreground",
+            // Mobile-first responsive padding
+            "px-2 xs:px-3 sm:px-2"
+          )}>
             Or continue with email
           </span>
         </div>
@@ -455,9 +499,17 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
       )}
 
       {/* Sign-up Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className={cn(
+        // Mobile-first responsive spacing
+        'space-y-3 xs:space-y-4 sm:space-y-4'
+      )}>
         {/* Name Fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={cn(
+          // Mobile-first responsive grid
+          'grid gap-3 xs:gap-4 sm:gap-4',
+          // Stack on mobile, side-by-side on larger screens
+          'grid-cols-1 xs:grid-cols-2 sm:grid-cols-2'
+        )}>
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>
             <Input
@@ -569,18 +621,39 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
 
           {/* Password Strength Indicator */}
           {formData.password && (
-            <div id="password-strength" className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <div className="flex-1 bg-muted rounded-full h-2">
+            <div id="password-strength" className={cn(
+              // Mobile-first responsive spacing
+              'space-y-2 xs:space-y-2 sm:space-y-2',
+              // Mobile optimizations
+              isMobile && 'password-strength-mobile'
+            )}>
+              <div className={cn(
+                "flex items-center",
+                // Mobile-first responsive spacing
+                "space-x-2 xs:space-x-2 sm:space-x-2"
+              )}>
+                <div className={cn(
+                  "flex-1 bg-muted rounded-full overflow-hidden",
+                  // Mobile-first responsive height
+                  "h-2 xs:h-2 sm:h-2",
+                  // Mobile enhancement
+                  isMobile && 'strength-bar'
+                )}>
                   <div
                     className={cn(
-                      'h-2 rounded-full transition-all duration-300',
+                      'h-full rounded-full',
+                      // Mobile enhancement
+                      isMobile ? 'strength-fill' : 'transition-all duration-300',
                       getPasswordStrengthColor(passwordStrength.score)
                     )}
                     style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
                   />
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className={cn(
+                  "text-muted-foreground",
+                  // Mobile-first responsive text
+                  "text-xs xs:text-xs sm:text-xs"
+                )}>
                   {getPasswordStrengthLabel(passwordStrength.score)}
                 </span>
               </div>
@@ -678,10 +751,21 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full"
+          className={cn(
+            'w-full',
+            // Mobile optimizations
+            isMobile && 'touch-target-enhanced',
+            // Loading state
+            isLoading && 'mobile-loading'
+          )}
           disabled={isLoading || !isLoaded}
         >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
+          <span className={cn(
+            // Mobile-first responsive text
+            "text-sm xs:text-base sm:text-sm font-medium"
+          )}>
+            {isLoading ? 'Creating Account...' : 'Create Account'}
+          </span>
         </Button>
       </form>
 

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/accessible-form'
 import { useAccessibility, useAnnouncement, useKeyboardNavigation } from '@/contexts/accessibility-context'
 import { FocusManager, generateId } from '@/lib/utils/accessibility'
+import { useMobileOptimizations } from '@/hooks/use-mobile-optimizations'
 
 interface SignInFormProps {
   redirectUrl?: string
@@ -72,6 +73,15 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   const { isTouchDevice, announce } = useAccessibility()
   const { announceError, announceSuccess, announceLoading } = useAnnouncement()
   
+  // Mobile optimization hooks
+  const { 
+    isMobile, 
+    isVirtualKeyboardOpen, 
+    addTouchFeedback, 
+    optimizeForMobile,
+    handleOrientationChange
+  } = useMobileOptimizations()
+  
   // Refs for focus management
   const formRef = useRef<HTMLFormElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
@@ -118,14 +128,58 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
     if (formRef.current) {
       const cleanup = FocusManager.trapFocus(formRef.current)
       
-      // Focus first input on mount
+      // Focus first input on mount (delay for mobile)
+      const focusDelay = isMobile ? 300 : 100
       setTimeout(() => {
         emailRef.current?.focus()
-      }, 100)
+      }, focusDelay)
 
       return cleanup
     }
-  }, [])
+  }, [isMobile])
+
+  // Handle orientation changes for mobile
+  useEffect(() => {
+    if (!isMobile) return
+
+    const cleanup = handleOrientationChange((orientation) => {
+      // Adjust form layout for orientation changes
+      if (orientation === 'landscape' && isVirtualKeyboardOpen) {
+        // Scroll to active element when keyboard is open in landscape
+        const activeElement = document.activeElement as HTMLElement
+        if (activeElement && formRef.current?.contains(activeElement)) {
+          setTimeout(() => {
+            activeElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            })
+          }, 100)
+        }
+      }
+    })
+
+    return cleanup
+  }, [isMobile, isVirtualKeyboardOpen, handleOrientationChange])
+
+  // Optimize form elements for mobile
+  useEffect(() => {
+    if (!isMobile || !formRef.current) return
+
+    const cleanupFunctions: (() => void)[] = []
+
+    // Optimize all interactive elements
+    const interactiveElements = formRef.current.querySelectorAll(
+      'button, input, [role="button"]'
+    ) as NodeListOf<HTMLElement>
+
+    interactiveElements.forEach(element => {
+      cleanupFunctions.push(optimizeForMobile(element))
+    })
+
+    return () => {
+      cleanupFunctions.forEach(cleanup => cleanup())
+    }
+  }, [isMobile, optimizeForMobile])
 
   // Announce loading states
   useEffect(() => {
@@ -297,7 +351,15 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
   return (
     <div 
       data-testid="sign-in-form" 
-      className={cn('space-y-6', className)}
+      className={cn(
+        // Mobile-first responsive spacing
+        'space-y-4 xs:space-y-5 sm:space-y-6',
+        // Mobile optimizations
+        isMobile && 'mobile-form',
+        // Virtual keyboard adjustments
+        isVirtualKeyboardOpen && 'mobile-keyboard-aware',
+        className
+      )}
       role="main"
       aria-labelledby="sign-in-heading"
     >
@@ -320,7 +382,10 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
       <AccessibleFormGroup>
         <div 
           data-testid="social-auth-section" 
-          className="space-y-3"
+          className={cn(
+            // Mobile-first responsive spacing
+            'space-y-2 xs:space-y-3 sm:space-y-3'
+          )}
           role="group"
           aria-labelledby="social-auth-heading"
         >
@@ -333,19 +398,34 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
               key={provider.id}
               type="button"
               variant="outline"
-              className="w-full"
+              className={cn(
+                'w-full',
+                // Mobile optimizations
+                isMobile && 'social-auth-mobile touch-target-enhanced',
+                // Loading state
+                isLoading && 'mobile-loading'
+              )}
               onClick={() => handleSocialAuth(provider.strategy)}
               disabled={isLoading}
               data-testid={`social-auth-${provider.id}-button`}
               aria-describedby={`${provider.id}-description`}
               onKeyDown={handleKeyDown}
             >
-              <span className="mr-2" aria-hidden="true">
+              <span className={cn(
+                "flex-shrink-0",
+                // Mobile-first responsive spacing
+                "mr-2 xs:mr-3 sm:mr-2"
+              )} aria-hidden="true">
                 {provider.icon === 'google' && '🔍'}
                 {provider.icon === 'github' && '🐙'}
                 {provider.icon === 'microsoft' && '🪟'}
               </span>
-              Continue with {provider.name}
+              <span className={cn(
+                // Mobile-first responsive text
+                "text-sm xs:text-base sm:text-sm font-medium"
+              )}>
+                Continue with {provider.name}
+              </span>
               <span id={`${provider.id}-description`} className="sr-only">
                 Sign in using your {provider.name} account
               </span>
@@ -359,8 +439,16 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
+        <div className={cn(
+          "relative flex justify-center uppercase",
+          // Mobile-first responsive text sizing
+          "text-xs xs:text-xs sm:text-xs"
+        )}>
+          <span className={cn(
+            "bg-background text-muted-foreground",
+            // Mobile-first responsive padding
+            "px-2 xs:px-3 sm:px-2"
+          )}>
             Or continue with email
           </span>
         </div>
@@ -489,14 +577,25 @@ export function SignInForm({ redirectUrl, error, className }: SignInFormProps) {
         <AccessibleButton
           ref={submitButtonRef}
           type="submit"
-          className="w-full"
+          className={cn(
+            'w-full',
+            // Mobile optimizations
+            isMobile && 'touch-target-enhanced',
+            // Loading state
+            isLoading && 'mobile-loading'
+          )}
           disabled={isLoading || !isLoaded}
           loading={isLoading}
           loadingText="Signing in..."
           data-testid="sign-in-submit-button"
           aria-describedby="submit-description"
         >
-          {isLoading ? 'Signing In...' : 'Sign In'}
+          <span className={cn(
+            // Mobile-first responsive text
+            "text-sm xs:text-base sm:text-sm font-medium"
+          )}>
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </span>
           <span id="submit-description" className="sr-only">
             Submit the sign-in form to access your account
           </span>

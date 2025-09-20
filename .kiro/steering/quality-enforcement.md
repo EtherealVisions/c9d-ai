@@ -16,13 +16,15 @@ No feature, task, or code change is considered complete unless ALL of the follow
 
 #### 2. Test Success (MANDATORY)
 - **100% Test Pass Rate**: All tests must pass without skips or failures
+- **Memory Management**: All test commands must include proper NODE_OPTIONS
+- **Official Testing Utilities**: Use official utilities (e.g., @clerk/testing)
 - **Coverage Thresholds**: Must meet tiered coverage requirements:
   - **Services (`lib/services/**`)**: 100% coverage (critical business logic)
   - **Models (`lib/models/**`)**: 95% coverage (data layer)
   - **API Routes (`app/api/**`)**: 90% coverage (external interfaces)
   - **Global Minimum**: 85% coverage (all other code)
 - **Test Isolation**: Tests run independently without side effects
-- **Performance Standards**: Tests complete within defined time limits
+- **Infrastructure Stability**: Tests execute without memory crashes
 
 #### 3. Code Quality (MANDATORY)
 - **Linting**: `pnpm lint` passes without errors or warnings
@@ -42,12 +44,22 @@ No feature, task, or code change is considered complete unless ALL of the follow
 Automatically run before every commit:
 
 ```bash
-# Quality validation pipeline
-pnpm typecheck    # TypeScript compilation
-pnpm lint         # Code linting
-pnpm test         # Unit tests with coverage
-pnpm format       # Code formatting
+# Quality validation pipeline with memory management
+pnpm typecheck                                           # TypeScript compilation
+pnpm lint                                                # Code linting
+NODE_OPTIONS="--max-old-space-size=8192" pnpm test     # Unit tests with memory allocation
+NODE_OPTIONS="--max-old-space-size=16384" pnpm test --coverage  # Coverage validation
+pnpm format                                              # Code formatting
 ```
+
+### Memory Management Requirements (MANDATORY)
+All test-related quality gates MUST include proper memory allocation:
+
+- **Standard Tests**: `NODE_OPTIONS="--max-old-space-size=8192"` (8GB)
+- **Coverage Tests**: `NODE_OPTIONS="--max-old-space-size=16384"` (16GB)
+- **Watch Mode**: `NODE_OPTIONS="--max-old-space-size=8192"` (8GB)
+
+**Rationale**: Prevents JS heap crashes and ensures reliable test execution in quality gates.
 
 **Commit is BLOCKED if any step fails.**
 

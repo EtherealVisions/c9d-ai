@@ -1,5 +1,53 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { vi, beforeEach, afterEach } from 'vitest'
+import { setupCommonMocks } from './__tests__/setup/common-mocks'
+import { setupClerkTesting } from './__tests__/setup/clerk-testing-setup'
+
+// Apply common mocks
+setupCommonMocks()
+
+// Setup official Clerk testing utilities
+setupClerkTesting()
+
+// Mock accessibility context globally
+vi.mock('@/contexts/accessibility-context', () => ({
+  AccessibilityProvider: ({ children }: { children: React.ReactNode }) => children,
+  useAccessibility: vi.fn(() => ({
+    isTouchDevice: false,
+    isHighContrast: false,
+    isReducedMotion: false,
+    announce: vi.fn(),
+    setFocusVisible: vi.fn(),
+    focusVisible: false
+  })),
+  useAnnouncement: vi.fn(() => ({
+    announceError: vi.fn(),
+    announceSuccess: vi.fn(),
+    announceLoading: vi.fn(),
+    announceInfo: vi.fn()
+  })),
+  useKeyboardNavigation: vi.fn(() => ({
+    handleKeyDown: vi.fn(),
+    focusNext: vi.fn(),
+    focusPrevious: vi.fn(),
+    focusFirst: vi.fn(),
+    focusLast: vi.fn()
+  }))
+}))
+
+// Global cleanup to prevent memory leaks
+beforeEach(() => {
+  // Don't clear mocks that are set up globally
+  // Individual tests can override if needed
+})
+
+afterEach(() => {
+  // Only restore mocks that were changed in individual tests
+  // Keep global mocks intact
+  if (global.gc) {
+    global.gc()
+  }
+})
 
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
@@ -14,6 +62,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }))
+
+// Clerk mocking is now handled by setupClerkTesting() using official @clerk/testing utilities
 
 // Mock NextResponse for API tests
 vi.mock('next/server', () => ({

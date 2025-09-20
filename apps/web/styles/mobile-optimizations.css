@@ -1,0 +1,372 @@
+/**
+ * Mobile-First Responsive Design and Touch Optimizations
+ * Implements comprehensive mobile optimizations for authentication forms
+ */
+
+/* Mobile-first base styles */
+@layer base {
+  /* Prevent zoom on iOS when focusing inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Optimize tap highlighting */
+  * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-touch-callout: none;
+  }
+
+  /* Improve text rendering on mobile */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Touch-friendly interactive elements */
+@layer components {
+  /* Enhanced touch targets */
+  .touch-target-enhanced {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px 16px;
+    position: relative;
+  }
+
+  /* Touch feedback animations */
+  .touch-feedback {
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0); /* Enable hardware acceleration */
+  }
+
+  .touch-feedback::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+    pointer-events: none;
+  }
+
+  .touch-feedback:active::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    .touch-feedback::before {
+      transition: none;
+    }
+    
+    .touch-feedback:active::before {
+      width: 0;
+      height: 0;
+    }
+  }
+
+  /* Mobile form optimizations */
+  .mobile-form {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .mobile-form .form-field {
+    margin-bottom: 20px;
+  }
+
+  .mobile-form input,
+  .mobile-form button {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-form input:focus {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-form input:focus {
+      transform: none;
+    }
+  }
+
+  /* Social auth button optimizations */
+  .social-auth-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    min-height: 56px;
+  }
+
+  .social-auth-mobile:active {
+    transform: scale(0.98);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .social-auth-mobile:active {
+      transform: none;
+    }
+  }
+
+  /* Loading states for mobile */
+  .mobile-loading {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .mobile-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: mobile-spin 1s linear infinite;
+  }
+
+  @keyframes mobile-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-loading::after {
+      animation: none;
+      content: '⏳';
+      border: none;
+      font-size: 16px;
+    }
+  }
+
+  /* Password strength indicator mobile */
+  .password-strength-mobile {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+  }
+
+  .password-strength-mobile .strength-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .password-strength-mobile .strength-fill {
+    height: 100%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .password-strength-mobile .strength-fill {
+      transition: none;
+    }
+  }
+
+  /* Mobile error states */
+  .mobile-error {
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .mobile-error .error-icon {
+    flex-shrink: 0;
+    margin-right: 8px;
+    margin-top: 2px;
+  }
+
+  /* Mobile success states */
+  .mobile-success {
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  /* Swipe gestures support */
+  .swipe-container {
+    touch-action: pan-x;
+    overflow-x: hidden;
+  }
+
+  /* Mobile keyboard optimizations */
+  .mobile-keyboard-aware {
+    transition: transform 0.3s ease;
+  }
+
+  /* When virtual keyboard is open */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .mobile-keyboard-aware {
+      transform: translateY(-20px);
+    }
+  }
+
+  /* Orientation change handling */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .auth-layout-mobile {
+      padding: 8px 16px;
+    }
+    
+    .auth-layout-mobile .brand-section {
+      display: none;
+    }
+    
+    .auth-layout-mobile .form-container {
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+  }
+}
+
+/* Responsive breakpoints */
+@layer utilities {
+  /* Extra small devices (phones, 320px and up) */
+  @media (min-width: 320px) {
+    .xs\:text-sm { font-size: 0.875rem; }
+    .xs\:p-4 { padding: 1rem; }
+    .xs\:space-y-4 > * + * { margin-top: 1rem; }
+  }
+
+  /* Small devices (phones, 480px and up) */
+  @media (min-width: 480px) {
+    .xs\:text-base { font-size: 1rem; }
+    .xs\:p-6 { padding: 1.5rem; }
+    .xs\:space-y-6 > * + * { margin-top: 1.5rem; }
+  }
+
+  /* Medium devices (tablets, 768px and up) */
+  @media (min-width: 768px) {
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .md\:flex-row { flex-direction: row; }
+    .md\:space-x-4 > * + * { margin-left: 1rem; margin-top: 0; }
+  }
+
+  /* Large devices (desktops, 1024px and up) */
+  @media (min-width: 1024px) {
+    .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lg\:p-8 { padding: 2rem; }
+  }
+
+  /* Performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Safe area handling for notched devices */
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-top {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (prefers-color-scheme: dark) {
+  .mobile-form input {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .mobile-form input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .social-auth-mobile {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .social-auth-mobile:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* High contrast mode mobile */
+@media (prefers-contrast: high) {
+  .mobile-form input,
+  .social-auth-mobile {
+    border-width: 2px;
+    border-style: solid;
+  }
+
+  .mobile-form input:focus,
+  .social-auth-mobile:focus {
+    outline: 3px solid;
+    outline-offset: 2px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .mobile-form,
+  .social-auth-mobile,
+  .touch-feedback {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}

@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ClerkProvider } from '@clerk/nextjs'
-// import { AuthProvider } from '@/lib/contexts/auth-context'
+import { AuthProvider } from '@/lib/contexts/auth-context'
 // import { OrganizationProvider } from '@/lib/contexts/organization-context'
 import { 
   getOptionalEnvVar, 
@@ -439,11 +439,11 @@ export default async function RootLayout({
         <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
           <div className="min-h-screen">
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-            {/* <AuthProvider>
-              <OrganizationProvider> */}
+            <AuthProvider>
+              {/* <OrganizationProvider> */}
                 {children}
-              {/* </OrganizationProvider>
-            </AuthProvider> */}
+              {/* </OrganizationProvider> */}
+            </AuthProvider>
           </div>
         </body>
       </html>
@@ -459,11 +459,11 @@ export default async function RootLayout({
         {await ClerkProvider({ publishableKey: clerkPublishableKey, children: (
           <>
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-            {/* <AuthProvider>
-              <OrganizationProvider> */}
+            <AuthProvider>
+              {/* <OrganizationProvider> */}
               {children}
-            {/* </OrganizationProvider>
-            </AuthProvider> */}
+              {/* </OrganizationProvider> */}
+            </AuthProvider>
           </>
         ) })}
       </body>

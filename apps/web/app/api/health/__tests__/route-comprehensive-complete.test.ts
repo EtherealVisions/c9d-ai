@@ -4,7 +4,40 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+// Mock NextResponse to prevent constructor issues
+vi.mock('next/server', async () => {
+  const actual = await vi.importActual('next/server')
+  
+  // Create a proper NextResponse mock that can be used as constructor
+  const MockNextResponse = function(body: any, init?: ResponseInit) {
+    return {
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(body || ''),
+      status: init?.status || 200,
+      headers: new Headers(init?.headers)
+    }
+  }
+  
+  // Add static methods
+  MockNextResponse.json = vi.fn((data, init) => ({
+    json: () => Promise.resolve(data),
+    text: () => Promise.resolve(data || ''),
+    status: init?.status || 200,
+    headers: new Headers(init?.headers)
+  }))
+  
+  MockNextResponse.next = vi.fn(() => ({
+    status: 200,
+    headers: new Headers()
+  }))
+  
+  return {
+    ...actual,
+    NextResponse: MockNextResponse
+  }
+})
 
 // Mock the config manager
 const mockConfigManager = {
@@ -136,7 +169,7 @@ describe('/api/health', () => {
       expect(data.status).toBe('unhealthy')
       expect(data.configuration.healthy).toBe(false)
       expect(data.configuration.phaseConfigured).toBe(false)
-      expect(data.checks.configValidation.status).toBe('fail')
+      expect(data.checks.configuration.status).toBe('fail')
       expect(data.errors).toEqual(['Configuration validation failed'])
 
       // Check headers

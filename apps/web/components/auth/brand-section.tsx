@@ -78,7 +78,7 @@ export function BrandSection() {
           </header>
 
           {/* Main Content */}
-          <main>
+          <div>
             {/* Main Heading */}
             <h1 className="text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight">
               Welcome to the Future of AI-Powered Development
@@ -138,7 +138,7 @@ export function BrandSection() {
                 </footer>
               </blockquote>
             </aside>
-          </main>
+          </div>
         </div>
       </div>
 

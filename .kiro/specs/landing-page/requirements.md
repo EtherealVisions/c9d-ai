@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Landing Page serves as the primary entry point and conversion funnel for C9d.ai, designed to communicate the platform's value proposition, build trust, and guide visitors toward meaningful engagement. The page leverages the existing vibrant color palette (purple-pink gradients, electric blue, teal accents, and bright yellow-lime) with gentle floating animations to create a novel, approachable, yet sophisticated experience. The design emphasizes the platform's AI orchestration capabilities while maintaining accessibility and performance optimization for Vercel deployment.
+The Landing Page serves as the primary entry point and conversion funnel for C9d.ai, designed to communicate the platform's value proposition as a coordinated AI capabilities suite, build trust, and guide visitors toward meaningful engagement. The page showcases the five modular C9 Suite capabilities (Insight, Persona, Domain, Orchestrator, and Narrative) that can be consumed as services, APIs, or integrations. The page leverages the existing vibrant color palette (purple-pink gradients, electric blue, teal accents, and bright yellow-lime) with gentle floating animations to create a novel, approachable, yet sophisticated experience. The design emphasizes the platform's coordinated AI intelligence capabilities while maintaining accessibility and performance optimization for Vercel deployment.
 
 ## Requirements
 
@@ -12,9 +12,9 @@ The Landing Page serves as the primary entry point and conversion funnel for C9d
 
 #### Acceptance Criteria
 
-1. WHEN landing on the homepage THEN the system SHALL display a clear, compelling hero section that explains C9d.ai's core value proposition within 5 seconds
+1. WHEN landing on the homepage THEN the system SHALL display a clear, compelling hero section that explains C9d.ai's core value proposition as "Coordinated AI Capabilities" within 5 seconds
 2. WHEN viewing the hero content THEN the system SHALL present the tagline and description using the existing vibrant color palette with animated background elements
-3. WHEN reading the value proposition THEN the system SHALL emphasize AI orchestration, agent management, and platform intelligence in accessible language
+3. WHEN reading the value proposition THEN the system SHALL emphasize the five modular C9 Suite capabilities (Insight, Persona, Domain, Orchestrator, Narrative) and their coordinated intelligence approach in accessible language
 4. WHEN viewing on different devices THEN the system SHALL provide responsive design that maintains visual impact across desktop, tablet, and mobile
 5. IF users need more detail THEN the system SHALL provide clear navigation to deeper content sections without overwhelming the initial impression
 
@@ -24,11 +24,11 @@ The Landing Page serves as the primary entry point and conversion funnel for C9d
 
 #### Acceptance Criteria
 
-1. WHEN exploring benefits THEN the system SHALL showcase key platform capabilities including agent creation, workflow automation, and intelligent orchestration
-2. WHEN viewing use cases THEN the system SHALL present real-world scenarios across different industries and organizational sizes
-3. WHEN learning about features THEN the system SHALL use the existing feature grid and highlight sections with consistent visual design
-4. WHEN comparing options THEN the system SHALL clearly differentiate C9d.ai from generic AI tools by emphasizing orchestration and customization
-5. IF seeking validation THEN the system SHALL provide social proof, testimonials, and success metrics that build credibility
+1. WHEN exploring benefits THEN the system SHALL showcase the five C9 Suite capabilities with their specific taglines: Insight ("Coordinating patterns across time, space, and data"), Persona ("AI that represents your brand, your way"), Domain ("Smarter AI, built for your industry"), Orchestrator ("Coordinate people, processes, and AI"), and Narrative ("Turn your data into stories and strategy")
+2. WHEN viewing use cases THEN the system SHALL present real-world scenarios across different industries (education, telecom, retail, enterprise, healthcare, marketing) showing how each C9 capability applies
+3. WHEN learning about features THEN the system SHALL use the existing feature grid to highlight each of the five modular capabilities with consistent visual design and industry-specific examples
+4. WHEN comparing options THEN the system SHALL clearly differentiate C9d.ai from generic AI tools by emphasizing coordinated intelligence, industry-specific tuning, and modular consumption (service, API, or integration)
+5. IF seeking validation THEN the system SHALL provide social proof, testimonials, and success metrics that build credibility for each capability area
 
 ### Requirement 3
 
@@ -36,11 +36,11 @@ The Landing Page serves as the primary entry point and conversion funnel for C9d
 
 #### Acceptance Criteria
 
-1. WHEN reviewing technical features THEN the system SHALL highlight API access, SDK availability, and integration capabilities
-2. WHEN exploring architecture THEN the system SHALL communicate scalability, security, and enterprise-grade reliability
-3. WHEN considering implementation THEN the system SHALL provide clear information about onboarding, support, and documentation resources
-4. WHEN evaluating compatibility THEN the system SHALL showcase integration with existing tools and workflows
-5. IF needing technical details THEN the system SHALL provide easy access to developer documentation and technical resources
+1. WHEN reviewing technical features THEN the system SHALL highlight API access for each C9 capability (correlation APIs, personified AI models, domain-tuned models, multi-agent collaboration APIs, scenario simulation APIs), SDK availability, and integration capabilities
+2. WHEN exploring architecture THEN the system SHALL communicate how the five modular capabilities coordinate together, scalability across industries, security, and enterprise-grade reliability
+3. WHEN considering implementation THEN the system SHALL provide clear information about consuming capabilities as services, APIs, or integrations, along with onboarding, support, and documentation resources
+4. WHEN evaluating compatibility THEN the system SHALL showcase integration with existing business workflows, devops tools (GitHub, Vercel, Supabase), CRM systems, and project management platforms
+5. IF needing technical details THEN the system SHALL provide easy access to developer documentation, API specifications, and technical resources for each C9 capability
 
 ### Requirement 4
 
@@ -48,11 +48,11 @@ The Landing Page serves as the primary entry point and conversion funnel for C9d
 
 #### Acceptance Criteria
 
-1. WHEN ready to engage THEN the system SHALL provide prominent, visually appealing CTAs using the existing button styles and hover effects
-2. WHEN choosing next steps THEN the system SHALL offer multiple engagement options including consultation requests, demo access, and trial signup
+1. WHEN ready to engage THEN the system SHALL provide prominent, visually appealing CTAs using the existing button styles and hover effects, with capability-specific engagement options
+2. WHEN choosing next steps THEN the system SHALL offer multiple engagement options including consultation requests for specific C9 capabilities, demo access to see coordinated AI in action, and trial signup for individual or combined capabilities
 3. WHEN clicking CTAs THEN the system SHALL use smooth transitions and visual feedback that align with the gentle floating animation aesthetic
-4. WHEN navigating the funnel THEN the system SHALL maintain consistent design language and user experience flow
-5. IF hesitating to commit THEN the system SHALL provide low-commitment options like newsletter signup or resource downloads
+4. WHEN navigating the funnel THEN the system SHALL maintain consistent design language and user experience flow while allowing users to explore specific capabilities (Insight, Persona, Domain, Orchestrator, Narrative)
+5. IF hesitating to commit THEN the system SHALL provide low-commitment options like newsletter signup, capability-specific resource downloads, or "what-if" scenario explorations
 
 ### Requirement 5
 
@@ -116,12 +116,24 @@ The Landing Page serves as the primary entry point and conversion funnel for C9d
 
 ### Requirement 10
 
+**User Story:** As a visitor exploring C9d.ai capabilities, I want to understand each of the five C9 Suite modules in detail, so that I can identify which capabilities are most relevant to my industry and use case.
+
+#### Acceptance Criteria
+
+1. WHEN exploring C9 Insight THEN the system SHALL showcase correlation APIs, forecasting models, and anomaly detection with industry examples (education attendance forecasting, telecom network demand, retail sales correlation)
+2. WHEN learning about C9 Persona THEN the system SHALL demonstrate branded AI entities, customer-facing avatars, and role-based assistants with use cases across customer service, education, and enterprise communication
+3. WHEN reviewing C9 Domain THEN the system SHALL highlight industry-specific AI models, compliance-aware reasoning, and vertical-tuned intelligence for telecom, education, marketing, and healthcare
+4. WHEN understanding C9 Orchestrator THEN the system SHALL present multi-agent collaboration, workflow automation, and human+AI coordination across devops, marketing, and business processes
+5. WHEN discovering C9 Narrative THEN the system SHALL show scenario simulation, data-to-story conversion, and strategic planning capabilities for enterprise, education, media, and policy applications
+
+### Requirement 11
+
 **User Story:** As a content manager, I want the landing page to integrate with our content management workflow, so that I can update messaging and content without requiring developer intervention.
 
 #### Acceptance Criteria
 
 1. WHEN updating content THEN the system SHALL support content management through a user-friendly interface or CMS integration
-2. WHEN changing messaging THEN the system SHALL allow modification of headlines, descriptions, and CTAs without code changes
-3. WHEN adding testimonials THEN the system SHALL provide easy ways to update social proof and customer success stories
-4. WHEN launching campaigns THEN the system SHALL enable quick updates to promotional content and special offers
+2. WHEN changing messaging THEN the system SHALL allow modification of headlines, descriptions, and CTAs without code changes, including capability-specific taglines and use cases
+3. WHEN adding testimonials THEN the system SHALL provide easy ways to update social proof and customer success stories for each C9 capability
+4. WHEN launching campaigns THEN the system SHALL enable quick updates to promotional content and special offers for individual or combined capabilities
 5. IF content changes are needed THEN the system SHALL provide preview capabilities and approval workflows for content updates

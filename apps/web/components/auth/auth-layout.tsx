@@ -33,7 +33,7 @@ export function AuthLayout({
   subtitle, 
   className 
 }: AuthLayoutProps) {
-  const { isTouchDevice, isHighContrast } = useAccessibility()
+  const { isTouchDevice, isHighContrast, prefersReducedMotion } = useAccessibility()
 
   // Set page title for screen readers
   useEffect(() => {
@@ -42,18 +42,43 @@ export function AuthLayout({
     }
   }, [title])
 
+  // Handle viewport height for mobile browsers
+  useEffect(() => {
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01
+      document.documentElement.style.setProperty('--vh', `${vh}px`)
+    }
+    
+    setVH()
+    window.addEventListener('resize', setVH)
+    window.addEventListener('orientationchange', setVH)
+    
+    return () => {
+      window.removeEventListener('resize', setVH)
+      window.removeEventListener('orientationchange', setVH)
+    }
+  }, [])
+
   return (
     <div 
       className={cn(
+        // Mobile-first responsive layout
         "min-h-screen flex flex-col lg:flex-row",
-        "bg-background",
+        "bg-background safe-area-inset",
+        // Mobile optimizations
+        "auth-layout-mobile mobile-keyboard-aware",
         // Touch device enhancements
         isTouchDevice && "touch-device",
         // High contrast support
         isHighContrast && "high-contrast",
+        // Reduced motion support
+        prefersReducedMotion && "reduce-motion",
         className
       )}
       role="document"
+      style={{
+        minHeight: 'calc(var(--vh, 1vh) * 100)'
+      }}
     >
       {/* Skip Links */}
       <SkipLink href="#main-content">
@@ -75,18 +100,38 @@ export function AuthLayout({
       {/* Authentication Form Section */}
       <main 
         id="main-content"
-        className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8"
+        className={cn(
+          "flex-1 flex items-center justify-center",
+          // Mobile-first responsive padding
+          "p-4 xs:p-6 sm:p-6 lg:p-8",
+          // Mobile form container
+          "form-container"
+        )}
         role="main"
       >
-        <div className="w-full max-w-md space-y-6">
+        <div className={cn(
+          "w-full max-w-md space-y-6",
+          // Mobile optimizations
+          "mobile-form gpu-accelerated"
+        )}>
           {/* Mobile Brand Logo */}
-          <header className="lg:hidden text-center mb-8">
+          <header className="lg:hidden text-center mb-6 sm:mb-8">
             <div 
-              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4"
+              className={cn(
+                "inline-flex items-center justify-center rounded-full bg-primary/10 mb-4",
+                // Responsive logo sizing
+                "w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16",
+                // Touch feedback
+                "touch-feedback"
+              )}
               role="img"
               aria-label="C9d.ai logo"
             >
-              <span className="text-2xl font-bold text-primary" aria-hidden="true">
+              <span className={cn(
+                "font-bold text-primary",
+                // Responsive text sizing
+                "text-lg xs:text-xl sm:text-2xl"
+              )} aria-hidden="true">
                 C9
               </span>
             </div>
@@ -95,10 +140,14 @@ export function AuthLayout({
 
           {/* Page Title and Subtitle */}
           {(title || subtitle) && (
-            <header className="text-center space-y-2">
+            <header className="text-center space-y-2 sm:space-y-3">
               {title && (
                 <h1 
-                  className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground"
+                  className={cn(
+                    "font-bold tracking-tight text-foreground",
+                    // Mobile-first responsive text sizing
+                    "text-xl xs:text-2xl sm:text-3xl"
+                  )}
                   id="page-title"
                 >
                   {title}
@@ -106,7 +155,11 @@ export function AuthLayout({
               )}
               {subtitle && (
                 <p 
-                  className="text-sm sm:text-base text-muted-foreground"
+                  className={cn(
+                    "text-muted-foreground leading-relaxed",
+                    // Mobile-first responsive text sizing
+                    "text-sm xs:text-base sm:text-base"
+                  )}
                   id="page-subtitle"
                   aria-describedby={title ? "page-title" : undefined}
                 >
@@ -120,9 +173,12 @@ export function AuthLayout({
           <section 
             id="auth-form"
             className={cn(
-              "space-y-6",
+              // Mobile-first responsive spacing
+              "space-y-4 xs:space-y-5 sm:space-y-6",
               // Touch spacing for mobile devices
-              isTouchDevice && "touch-spacing"
+              isTouchDevice && "touch-spacing",
+              // Performance optimization
+              "will-change-transform"
             )}
             role="region"
             aria-labelledby={title ? "page-title" : "auth-form-heading"}
@@ -136,14 +192,19 @@ export function AuthLayout({
           </section>
 
           {/* Footer with accessibility info */}
-          <footer className="text-center">
-            <div className="text-xs text-muted-foreground space-y-1">
+          <footer className="text-center safe-area-bottom">
+            <div className={cn(
+              "text-muted-foreground space-y-1",
+              // Mobile-first responsive text sizing
+              "text-xs xs:text-xs sm:text-sm"
+            )}>
               <p>
-                Need help? Press Alt+H for accessibility options
+                Need help? {isTouchDevice ? 'Tap' : 'Press Alt+H'} for accessibility options
               </p>
               <p className="sr-only">
-                This form supports keyboard navigation. Use Tab to move between fields, 
-                Enter to submit, and Escape to clear the form.
+                This form supports {isTouchDevice ? 'touch and ' : ''}keyboard navigation. 
+                {isTouchDevice ? 'Tap to interact with elements, or use ' : 'Use '}
+                Tab to move between fields, Enter to submit, and Escape to clear the form.
               </p>
             </div>
           </footer>

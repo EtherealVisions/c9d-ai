@@ -85,6 +85,9 @@
   }
 }
 
+/* Import mobile optimizations */
+@import '../styles/mobile-optimizations.css';
+
 /* Custom utility for radial gradient */
 .bg-radial-gradient {
   background-image: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
@@ -95,6 +98,14 @@
   background: linear-gradient(-45deg, #0a192f, #300d4f, #0f203a, #7b2cbf);
   background-size: 400% 400%;
   animation: gradient-wave 15s ease infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animated-gradient-bg {
+    animation: none;
+    background: #0a192f;
+  }
 }
 
 /* Styles for the interactive card glow effect */
