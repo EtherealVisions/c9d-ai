@@ -9,13 +9,15 @@ export const metadata: Metadata = {
 }
 
 interface TwoFactorPageProps {
-  searchParams: {
+  searchParams: Promise<{
     strategy?: string
     error?: string
-  }
+  }>
 }
 
-export default function TwoFactorPage({ searchParams }: TwoFactorPageProps) {
+export default async function TwoFactorPage({ searchParams }: TwoFactorPageProps) {
+  const params = await searchParams
+  
   return (
     <AuthLayout
       title="Two-Factor Authentication"
@@ -23,8 +25,8 @@ export default function TwoFactorPage({ searchParams }: TwoFactorPageProps) {
     >
       <Suspense fallback={<div>Loading...</div>}>
         <TwoFactorForm 
-          strategy={searchParams.strategy}
-          error={searchParams.error}
+          strategy={params.strategy}
+          error={params.error}
         />
       </Suspense>
     </AuthLayout>

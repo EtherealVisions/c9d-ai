@@ -11,23 +11,25 @@ export const metadata: Metadata = {
 }
 
 interface VerifyEmailPageProps {
-  searchParams: {
+  searchParams: Promise<{
     redirect_url?: string
     email?: string
     error?: string
-  }
+  }>
 }
 
-export default function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
+export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
+  const params = await searchParams
+  
   return (
     <AuthLayout
       title="Check your email"
       subtitle="We've sent a verification code to your email address"
     >
       <EmailVerificationForm 
-        redirectUrl={searchParams.redirect_url}
-        email={searchParams.email}
-        error={searchParams.error}
+        redirectUrl={params.redirect_url}
+        email={params.email}
+        error={params.error}
       />
     </AuthLayout>
   )

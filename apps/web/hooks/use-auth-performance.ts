@@ -355,7 +355,7 @@ export function useFormPerformance(formName: string) {
       
       return result
     } finally {
-      endInteraction()
+      endInteraction?.()
     }
   }, [trackInteraction, trackNetworkRequest])
 

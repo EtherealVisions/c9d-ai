@@ -15,7 +15,15 @@ export {
 export * from './api-error-handler';
 
 // Authentication error handling system
-export * from './authentication-errors';
+// Export everything except AuthenticationError which conflicts with custom-errors
+export { 
+  AuthErrorCode,
+  AuthErrorFactory,
+  createAuthError,
+  type AuthErrorContext,
+  type RecoveryAction,
+  isAuthenticationError
+} from './authentication-errors';
 export * from './clerk-error-mapper';
 export * from './auth-error-logger';
 

@@ -5,7 +5,7 @@ import { UserManagementDashboard } from '@/components/admin/user-management-dash
 import { rbacService } from '@/lib/services/rbac-service'
 
 export default async function AdminUsersPage() {
-  const { userId, orgId } = auth()
+  const { userId, orgId } = await auth()
   
   if (!userId || !orgId) {
     redirect('/sign-in')

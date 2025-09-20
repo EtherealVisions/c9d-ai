@@ -42,7 +42,7 @@ export function getEnvironmentInfo() {
     nodeEnv: getConfigValue('NODE_ENV', 'development'),
     isProduction: getConfigValue('NODE_ENV') === 'production',
     isDevelopment: getConfigValue('NODE_ENV') === 'development',
-    isEdgeRuntime: typeof globalThis.EdgeRuntime !== 'undefined',
+    isEdgeRuntime: typeof (globalThis as any).EdgeRuntime !== 'undefined',
     hasPhaseToken: isPhaseConfigured(),
     appName: 'AI.C9d.Web'
   };

@@ -171,7 +171,7 @@ export class AuthenticationError extends BaseError {
    * Get default recovery actions for the error
    */
   private getDefaultRecoveryActions(authCode: AuthErrorCode): RecoveryAction[] {
-    const actionMap: Record<AuthErrorCode, RecoveryAction[]> = {
+    const actionMap: Partial<Record<AuthErrorCode, RecoveryAction[]>> = {
       [AuthErrorCode.INVALID_CREDENTIALS]: [
         { type: 'primary', label: 'Try Again', action: 'retry', icon: 'refresh' },
         { type: 'secondary', label: 'Forgot Password?', action: '/forgot-password', icon: 'key' },

@@ -5,7 +5,7 @@ import { AuthenticationMonitoringDashboard } from '@/components/admin/authentica
 import { rbacService } from '@/lib/services/rbac-service'
 
 export default async function AdminMonitoringPage() {
-  const { userId, orgId } = auth()
+  const { userId, orgId } = await auth()
   
   if (!userId || !orgId) {
     redirect('/sign-in')

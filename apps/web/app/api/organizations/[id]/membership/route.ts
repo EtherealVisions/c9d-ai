@@ -5,7 +5,7 @@ import { userSyncService } from '@/lib/services/user-sync'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -17,7 +17,7 @@ export async function GET(
       )
     }
 
-    const organizationId = params.id
+    const { id: organizationId } = await params
 
     // Get user from database
     const user = await userSyncService.getUserByClerkId(userId)

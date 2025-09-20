@@ -16,7 +16,7 @@ const settingsSchema = z.record(z.any())
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -33,8 +33,9 @@ export async function PUT(
     // Validate settings
     const validatedSettings = settingsSchema.parse(body)
     
+    const { id } = await params
     const result = await organizationService.updateOrganizationSettings(
-      params.id,
+      id,
       userId,
       validatedSettings
     )

@@ -41,14 +41,13 @@ export interface ConfigManagerOptions {
  * Centralized configuration manager with Phase.dev integration
  */
 export class CentralizedConfigManager implements ConfigManager {
-  private config: Record<string, string> = {};
+  private config: Record<string, any> = {};
   private initialized: boolean = false;
   private validationRules: ValidationRule[] = [];
   private enableCaching: boolean = true;
   private cacheTTL: number = 5 * 60 * 1000; // 5 minutes
   private fallbackToEnv: boolean = true;
   private lastRefresh: number = 0;
-  private fallbackManager: EnvironmentFallbackManager;
   private lastError: Error | null = null;
   private lastPhaseError: Error | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
@@ -58,7 +57,6 @@ export class CentralizedConfigManager implements ConfigManager {
     this.enableCaching = options.enableCaching ?? true;
     this.cacheTTL = options.cacheTTL ?? this.cacheTTL;
     this.fallbackToEnv = options.fallbackToEnv ?? true;
-    this.fallbackManager = new EnvironmentFallbackManager();
   }
 
   /**
@@ -69,29 +67,33 @@ export class CentralizedConfigManager implements ConfigManager {
       this.logInfo('Initializing configuration manager...');
       
       // Use the new EnvironmentFallbackManager to load configuration
-      const result = await this.fallbackManager.loadEnvironment('AI.C9d.Web', 'development', {
+      const envConfig = await EnvironmentFallbackManager.loadWithFallback({
+        appName: 'AI.C9d.Web',
+        environment: 'development',
         fallbackToLocal: this.fallbackToEnv,
         forceReload: true
       });
       
-      if (result.success) {
-        this.config = result.variables;
-        this.logInfo(`Successfully loaded ${Object.keys(this.config).length} variables from ${result.source}`);
+      // The loadWithFallback method returns an EnvironmentConfig object directly
+      if (envConfig) {
+        // Copy all environment configuration to our config
+        this.config = { ...envConfig };
+        this.logInfo(`Successfully loaded environment configuration with ${Object.keys(this.config).length} variables`);
         
-        if (result.tokenSource) {
-          this.logInfo(`Token source: ${result.tokenSource.source}`);
+        // Log Phase.dev status
+        if (envConfig.phaseAvailable) {
+          this.logInfo(`Phase.dev integration: ${envConfig.phaseConfigLoaded ? 'Connected' : 'Available but not loaded'}`);
         }
       } else {
-        // Track the Phase.dev error for statistics
-        this.lastPhaseError = new Error(result.error || 'Phase.dev configuration failed');
-        
+        // Fallback to environment variables if configured
         if (this.fallbackToEnv) {
-          this.logWarn('Phase.dev configuration failed, falling back to environment variables');
+          this.logWarn('Environment configuration failed, falling back to environment variables');
           this.config = { ...process.env } as Record<string, string>;
         } else {
-          this.logError('Phase.dev configuration failed and fallback is disabled', this.lastPhaseError);
-          this.lastError = this.lastPhaseError;
-          throw this.lastPhaseError;
+          const error = new Error('Environment configuration failed and fallback is disabled');
+          this.logError('Environment configuration failed and fallback is disabled', error);
+          this.lastError = error;
+          throw error;
         }
       }
 
@@ -185,18 +187,20 @@ export class CentralizedConfigManager implements ConfigManager {
     try {
       this.logInfo('Refreshing configuration...');
       
-      const result = await this.fallbackManager.loadEnvironment('AI.C9d.Web', 'development', {
+      const envConfig = await EnvironmentFallbackManager.loadWithFallback({
+        appName: 'AI.C9d.Web',
+        environment: 'development',
         fallbackToLocal: this.fallbackToEnv,
         forceReload: true
       });
       
-      if (result.success) {
-        this.config = result.variables;
+      if (envConfig) {
+        this.config = { ...envConfig };
         this.validateConfiguration();
         this.lastError = null; // Clear error on successful refresh
-        this.logInfo(`Configuration refreshed successfully from ${result.source}`);
+        this.logInfo(`Configuration refreshed successfully with ${Object.keys(this.config).length} variables`);
       } else {
-        throw new Error(result.error || 'Failed to refresh configuration');
+        throw new Error('Failed to refresh configuration');
       }
 
       this.lastRefresh = Date.now();

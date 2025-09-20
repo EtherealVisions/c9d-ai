@@ -79,8 +79,8 @@ export function TwoFactorManagement({ className }: TwoFactorManagementProps) {
       icon: <Mail className="h-5 w-5" />,
       enabled: !!verifiedPhone,
       phoneNumber: verifiedPhone?.phoneNumber,
-      lastUsed: verifiedPhone?.verification?.verifiedAt ? 
-        new Date(verifiedPhone.verification.verifiedAt) : undefined
+      lastUsed: (verifiedPhone?.verification as any)?.verifiedAt ? 
+        new Date((verifiedPhone?.verification as any)?.verifiedAt) : undefined
     })
 
     // Backup Codes

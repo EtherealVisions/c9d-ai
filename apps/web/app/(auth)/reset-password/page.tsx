@@ -9,14 +9,16 @@ export const metadata: Metadata = {
 }
 
 interface ResetPasswordPageProps {
-  searchParams: {
+  searchParams: Promise<{
     email?: string
     token?: string
     error?: string
-  }
+  }>
 }
 
-export default function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+  const params = await searchParams
+  
   return (
     <AuthLayout
       title="Reset Password"
@@ -24,9 +26,9 @@ export default function ResetPasswordPage({ searchParams }: ResetPasswordPagePro
     >
       <Suspense fallback={<div>Loading...</div>}>
         <PasswordResetForm 
-          email={searchParams.email}
-          token={searchParams.token}
-          error={searchParams.error}
+          email={params.email}
+          token={params.token}
+          error={params.error}
         />
       </Suspense>
     </AuthLayout>

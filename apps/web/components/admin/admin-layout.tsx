@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth } from '@/lib/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

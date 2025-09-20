@@ -9,7 +9,7 @@ import { createSupabaseClient } from '@/lib/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -70,19 +70,19 @@ export async function GET(request: NextRequest) {
     const events = authEvents || []
 
     // Calculate metrics
-    const signInEvents = events.filter(e => e.action === 'sign_in')
-    const signUpEvents = events.filter(e => e.action === 'sign_up')
-    const suspiciousEvents = events.filter(e => e.action === 'suspicious_activity')
-    const accountLockedEvents = events.filter(e => e.action === 'account_locked')
-    const twoFactorEvents = events.filter(e => e.action === 'two_factor_enabled')
-    const sessionEvents = events.filter(e => e.action === 'session_created')
+    const signInEvents = events.filter((e: any) => e.action === 'sign_in')
+    const signUpEvents = events.filter((e: any) => e.action === 'sign_up')
+    const suspiciousEvents = events.filter((e: any) => e.action === 'suspicious_activity')
+    const accountLockedEvents = events.filter((e: any) => e.action === 'account_locked')
+    const twoFactorEvents = events.filter((e: any) => e.action === 'two_factor_enabled')
+    const sessionEvents = events.filter((e: any) => e.action === 'session_created')
 
     // Get active users count (users who signed in within the time range)
-    const activeUserIds = new Set(signInEvents.map(e => e.user_id).filter(Boolean))
+    const activeUserIds = new Set(signInEvents.map((e: any) => e.user_id).filter(Boolean))
     const activeUsers = activeUserIds.size
 
     // Calculate social vs email sign-ins
-    const socialSignIns = signInEvents.filter(e => 
+    const socialSignIns = signInEvents.filter((e: any) => 
       e.metadata?.signUpMethod === 'social' || e.metadata?.authMethod === 'social'
     ).length
     const emailSignIns = signInEvents.length - socialSignIns
@@ -99,8 +99,8 @@ export async function GET(request: NextRequest) {
       .lt('created_at', startDate.toISOString())
       .in('action', ['sign_in', 'sign_up'])
 
-    const previousSignIns = (previousEvents || []).filter(e => e.action === 'sign_in').length
-    const previousSignUps = (previousEvents || []).filter(e => e.action === 'sign_up').length
+    const previousSignIns = (previousEvents || []).filter((e: any) => e.action === 'sign_in').length
+    const previousSignUps = (previousEvents || []).filter((e: any) => e.action === 'sign_up').length
 
     const signInTrend = signInEvents.length > previousSignIns ? 'up' : 
                        signInEvents.length < previousSignIns ? 'down' : 'stable'
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     const deviceStats = new Map<string, number>()
     const locationStats = new Map<string, number>()
 
-    events.forEach(event => {
+    events.forEach((event: any) => {
       // Device type from user agent
       const userAgent = event.user_agent || ''
       let deviceType = 'desktop'

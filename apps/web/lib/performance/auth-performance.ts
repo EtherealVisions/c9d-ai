@@ -242,6 +242,17 @@ export class SessionCache {
   clearSessions(): void {
     this.cache.clear()
   }
+
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.cache.max,
+      hitRate: this.cache.calculatedSize / (this.cache.calculatedSize + this.cache.size)
+    }
+  }
 }
 
 /**
@@ -284,6 +295,17 @@ export class FormStateCache {
    */
   clearFormState(formId: string): void {
     this.cache.delete(formId)
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.cache.max,
+      hitRate: this.cache.calculatedSize / (this.cache.calculatedSize + this.cache.size)
+    }
   }
 }
 
