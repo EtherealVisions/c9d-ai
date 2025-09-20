@@ -1,630 +1,792 @@
+/**
+ * Authentication Monitoring Dashboard Component
+ * 
+ * This component provides a comprehensive dashboard for monitoring authentication
+ * metrics, performance, and user engagement analytics.
+ */
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
-  Activity, 
-  Shield, 
-  AlertTriangle, 
-  Users, 
-  UserCheck, 
-  UserX, 
+  LineChart, 
+  Line, 
+  AreaChart, 
+  Area, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  FunnelChart,
+  Funnel,
+  LabelList
+} from 'recharts'
+import { 
   TrendingUp, 
-  TrendingDown,
+  TrendingDown, 
+  Users, 
+  UserPlus, 
+  LogIn, 
+  AlertTriangle,
   Clock,
-  Globe,
   Smartphone,
   Monitor,
-  RefreshCw
+  Tablet,
+  RefreshCw,
+  Download,
+  Calendar,
+  Filter
 } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
-interface AuthEvent {
-  id: string
-  userId: string
-  type: string
-  metadata: Record<string, any>
-  ipAddress?: string
-  userAgent?: string
+// Types for dashboard data
+interface DashboardMetrics {
+  summary: {
+    totalUsers: number
+    newSignUps: number
+    successfulSignIns: number
+    overallConversionRate: number
+    averageSessionDuration: number
+    bounceRate: number
+  }
+  authentication: {
+    signUpRate: MetricData
+    signInRate: MetricData
+    conversionRate: MetricData
+  }
+  performance: {
+    averageLoadTime: PerformanceMetric
+    averageRenderTime: PerformanceMetric
+    cacheHitRate: MetricData
+    apiResponseTime: PerformanceMetric
+  }
+  userBehavior: {
+    deviceBreakdown: DeviceMetrics
+    socialAuthUsage: SocialAuthMetrics
+    funnelAnalysis: FunnelData
+  }
+  insights: Insight[]
+  recommendations: Recommendation[]
+}
+
+interface MetricData {
+  current: number
+  previous: number
+  change: number
+  trend: 'up' | 'down'
+  timeSeries?: TimeSeriesPoint[]
+}
+
+interface PerformanceMetric extends MetricData {
+  p95: number
+  p99: number
+}
+
+interface TimeSeriesPoint {
   timestamp: string
-  user?: {
-    email: string
-    firstName?: string
-    lastName?: string
+  value: number
+}
+
+interface DeviceMetrics {
+  desktop: DeviceData
+  mobile: DeviceData
+  tablet: DeviceData
+}
+
+interface DeviceData {
+  percentage: number
+  count: number
+  conversionRate: number
+}
+
+interface SocialAuthMetrics {
+  google: SocialAuthData
+  github: SocialAuthData
+  microsoft: SocialAuthData
+}
+
+interface SocialAuthData {
+  percentage: number
+  count: number
+  conversionRate: number
+}
+
+interface FunnelData {
+  steps: FunnelStep[]
+  overallConversionRate: number
+  biggestDropOff: {
+    step: string
+    dropOffRate: number
   }
 }
 
-interface AuthMetrics {
-  totalSignIns: number
-  totalSignUps: number
-  activeUsers: number
-  suspiciousActivities: number
-  failedAttempts: number
-  socialSignIns: number
-  emailSignIns: number
-  twoFactorEnabled: number
-  signInTrend: 'up' | 'down' | 'stable'
-  signUpTrend: 'up' | 'down' | 'stable'
+interface FunnelStep {
+  step: string
+  users: number
+  conversionRate: number
+  dropOffRate: number
 }
 
-interface DeviceInfo {
-  type: 'desktop' | 'mobile' | 'tablet'
-  os: string
-  browser: string
-  count: number
+interface Insight {
+  type: 'positive' | 'warning' | 'info'
+  title: string
+  description: string
+  impact: 'high' | 'medium' | 'low'
 }
 
-interface LocationInfo {
-  country: string
-  city?: string
-  count: number
+interface Recommendation {
+  priority: 'high' | 'medium' | 'low'
+  title: string
+  description: string
+  expectedImpact: string
 }
 
-interface AuthenticationMonitoringDashboardProps {
-  className?: string
-}
-
-export function AuthenticationMonitoringDashboard({ className }: AuthenticationMonitoringDashboardProps) {
-  const { userId, orgId } = useAuth()
-  const [metrics, setMetrics] = useState<AuthMetrics | null>(null)
-  const [recentEvents, setRecentEvents] = useState<AuthEvent[]>([])
-  const [deviceStats, setDeviceStats] = useState<DeviceInfo[]>([])
-  const [locationStats, setLocationStats] = useState<LocationInfo[]>([])
+/**
+ * Main Authentication Monitoring Dashboard Component
+ */
+export function AuthenticationMonitoringDashboard() {
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState('7d')
-  const [eventFilter, setEventFilter] = useState('all')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Load dashboard data
+  useEffect(() => {
+    loadDashboardData()
+  }, [timeRange])
+
+  /**
+   * Load dashboard metrics data
+   */
   const loadDashboardData = async () => {
-    setLoading(true)
-    setError(null)
-
     try {
-      const [metricsResponse, eventsResponse] = await Promise.all([
-        fetch(`/api/admin/analytics/auth-metrics?timeRange=${timeRange}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`/api/admin/analytics/auth-events?limit=50&filter=${eventFilter}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+      setLoading(true)
+      setError(null)
+
+      const endDate = new Date()
+      const startDate = new Date()
+      
+      // Calculate start date based on time range
+      switch (timeRange) {
+        case '24h':
+          startDate.setDate(startDate.getDate() - 1)
+          break
+        case '7d':
+          startDate.setDate(startDate.getDate() - 7)
+          break
+        case '30d':
+          startDate.setDate(startDate.getDate() - 30)
+          break
+        case '90d':
+          startDate.setDate(startDate.getDate() - 90)
+          break
+      }
+
+      const response = await fetch('/api/analytics/metrics?' + new URLSearchParams({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        metrics: 'signUpRate,signInRate,conversionRate,performanceMetrics,deviceBreakdown,socialAuthUsage,funnelAnalysis'
+      }))
+
+      if (!response.ok) {
+        throw new Error('Failed to load dashboard data')
+      }
+
+      const data = await response.json()
+      
+      // Generate comprehensive report
+      const reportResponse = await fetch('/api/analytics/metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          granularity: 'day',
+          metrics: ['signUpRate', 'signInRate', 'conversionRate', 'performanceMetrics', 'deviceBreakdown', 'socialAuthUsage', 'funnelAnalysis']
         })
-      ])
-
-      if (!metricsResponse.ok) {
-        const errorData = await metricsResponse.json()
-        throw new Error(errorData.error || 'Failed to load metrics')
-      }
-
-      if (!eventsResponse.ok) {
-        const errorData = await eventsResponse.json()
-        throw new Error(errorData.error || 'Failed to load events')
-      }
-
-      const metricsData = await metricsResponse.json()
-      const eventsData = await eventsResponse.json()
-
-      setMetrics(metricsData.metrics)
-      setRecentEvents(eventsData.events || [])
-      setDeviceStats(metricsData.deviceStats || [])
-      setLocationStats(metricsData.locationStats || [])
-    } catch (error) {
-      console.error('Dashboard load error:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load dashboard data')
-      toast({
-        title: 'Load Failed',
-        description: error instanceof Error ? error.message : 'Failed to load dashboard data',
-        variant: 'destructive'
       })
+
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json()
+        setMetrics(reportData.report)
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [timeRange, eventFilter])
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  /**
+   * Refresh dashboard data
+   */
+  const refreshData = async () => {
+    setRefreshing(true)
+    await loadDashboardData()
+    setRefreshing(false)
   }
 
-  // Get event type badge variant
-  const getEventBadgeVariant = (eventType: string) => {
-    switch (eventType) {
-      case 'sign_in': return 'default'
-      case 'sign_up': return 'secondary'
-      case 'sign_out': return 'outline'
-      case 'password_reset': return 'destructive'
-      case 'suspicious_activity': return 'destructive'
-      case 'account_locked': return 'destructive'
-      case 'two_factor_enabled': return 'default'
-      case 'email_verification': return 'secondary'
-      default: return 'outline'
-    }
+  /**
+   * Export dashboard data
+   */
+  const exportData = () => {
+    if (!metrics) return
+
+    const dataStr = JSON.stringify(metrics, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `auth-metrics-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
-  // Get trend icon
-  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
-    switch (trend) {
-      case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />
-      case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />
-      default: return <Activity className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  // Get device icon
-  const getDeviceIcon = (deviceType: string) => {
-    switch (deviceType) {
-      case 'mobile': return <Smartphone className="h-4 w-4" />
-      case 'tablet': return <Smartphone className="h-4 w-4" />
-      default: return <Monitor className="h-4 w-4" />
-    }
-  }
-
-  if (loading && !metrics) {
+  if (loading) {
     return (
-      <div className={`space-y-6 ${className}`}>
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading authentication monitoring data...</span>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Authentication Monitoring</h1>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
       </div>
     )
   }
 
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          {error}
+          <Button variant="outline" size="sm" onClick={loadDashboardData} className="ml-2">
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (!metrics) {
+    return (
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>No metrics data available</AlertDescription>
+      </Alert>
+    )
+  }
+
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Authentication Monitoring</h1>
+          <h1 className="text-3xl font-bold">Authentication Monitoring</h1>
           <p className="text-muted-foreground">
-            Monitor authentication events, security incidents, and user engagement
+            Monitor authentication performance and user engagement metrics
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1d">Last 24h</SelectItem>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={loadDashboardData} disabled={loading} variant="outline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+        <div className="flex items-center space-x-2">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+          </select>
+          <Button variant="outline" onClick={refreshData} disabled={refreshing}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
             Refresh
+          </Button>
+          <Button variant="outline" onClick={exportData}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
         </div>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {/* Summary Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title="Total Users"
+          value={metrics.summary.totalUsers.toLocaleString()}
+          icon={<Users className="h-4 w-4" />}
+          description="Active users in period"
+        />
+        <MetricCard
+          title="New Sign-ups"
+          value={metrics.summary.newSignUps.toLocaleString()}
+          icon={<UserPlus className="h-4 w-4" />}
+          description="Completed registrations"
+          change={metrics.authentication.signUpRate.change}
+          trend={metrics.authentication.signUpRate.trend}
+        />
+        <MetricCard
+          title="Successful Sign-ins"
+          value={metrics.summary.successfulSignIns.toLocaleString()}
+          icon={<LogIn className="h-4 w-4" />}
+          description="Successful authentications"
+          change={metrics.authentication.signInRate.change}
+          trend={metrics.authentication.signInRate.trend}
+        />
+        <MetricCard
+          title="Conversion Rate"
+          value={`${(metrics.summary.overallConversionRate * 100).toFixed(1)}%`}
+          icon={<TrendingUp className="h-4 w-4" />}
+          description="Overall auth conversion"
+          change={metrics.authentication.conversionRate.change}
+          trend={metrics.authentication.conversionRate.trend}
+        />
+      </div>
 
-      {/* Metrics Overview */}
-      {metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sign-ins</CardTitle>
-              <div className="flex items-center gap-1">
-                {getTrendIcon(metrics.signInTrend)}
-                <UserCheck className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.totalSignIns.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.signInTrend === 'up' ? 'Increasing' : 
-                 metrics.signInTrend === 'down' ? 'Decreasing' : 'Stable'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New Sign-ups</CardTitle>
-              <div className="flex items-center gap-1">
-                {getTrendIcon(metrics.signUpTrend)}
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.totalSignUps.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.signUpTrend === 'up' ? 'Increasing' : 
-                 metrics.signUpTrend === 'down' ? 'Decreasing' : 'Stable'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.activeUsers.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Currently active</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Security Events</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.suspiciousActivities.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Suspicious activities</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Detailed Analytics */}
-      <Tabs defaultValue="events" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="events">Recent Events</TabsTrigger>
-          <TabsTrigger value="methods">Auth Methods</TabsTrigger>
-          <TabsTrigger value="devices">Devices</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+      {/* Main Dashboard Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="funnel">Conversion Funnel</TabsTrigger>
+          <TabsTrigger value="devices">Devices & Social</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="events" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Recent Authentication Events</CardTitle>
-                  <CardDescription>Latest authentication activities across the platform</CardDescription>
-                </div>
-                <Select value={eventFilter} onValueChange={setEventFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Events</SelectItem>
-                    <SelectItem value="sign_in">Sign-ins</SelectItem>
-                    <SelectItem value="sign_up">Sign-ups</SelectItem>
-                    <SelectItem value="security">Security Events</SelectItem>
-                    <SelectItem value="failures">Failed Attempts</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {recentEvents.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Event</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>IP Address</TableHead>
-                      <TableHead>Device</TableHead>
-                      <TableHead>Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentEvents.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell>
-                          <Badge variant={getEventBadgeVariant(event.type)}>
-                            {event.type.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {event.user?.firstName} {event.user?.lastName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {event.user?.email}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Globe className="h-3 w-3" />
-                            {event.ipAddress || 'Unknown'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {getDeviceIcon(event.metadata?.deviceType || 'desktop')}
-                            <span className="text-sm">
-                              {event.metadata?.browser || 'Unknown'} / {event.metadata?.os || 'Unknown'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatDate(event.timestamp)}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No authentication events found for the selected filter
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="methods" className="space-y-4">
-          {metrics && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Authentication Methods</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Email/Password</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
-                          style={{ 
-                            width: `${(metrics.emailSignIns / (metrics.emailSignIns + metrics.socialSignIns)) * 100}%` 
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{metrics.emailSignIns}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Social Login</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full" 
-                          style={{ 
-                            width: `${(metrics.socialSignIns / (metrics.emailSignIns + metrics.socialSignIns)) * 100}%` 
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{metrics.socialSignIns}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Security Features</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>2FA Enabled</span>
-                    <Badge variant="default">{metrics.twoFactorEnabled}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Failed Attempts</span>
-                    <Badge variant="destructive">{metrics.failedAttempts}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">User Engagement</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Active Users</span>
-                    <Badge variant="default">{metrics.activeUsers}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>New Registrations</span>
-                    <Badge variant="secondary">{metrics.totalSignUps}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="devices" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Authentication Rates Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Device Types</CardTitle>
-                <CardDescription>Authentication by device type</CardDescription>
+                <CardTitle>Authentication Rates</CardTitle>
+                <CardDescription>Sign-up and sign-in success rates over time</CardDescription>
               </CardHeader>
               <CardContent>
-                {deviceStats.length > 0 ? (
-                  <div className="space-y-3">
-                    {deviceStats.map((device, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getDeviceIcon(device.type)}
-                          <span className="capitalize">{device.type}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${(device.count / Math.max(...deviceStats.map(d => d.count))) * 100}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{device.count}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No device data available
-                  </div>
-                )}
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={metrics.authentication.signUpRate.timeSeries || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#8884d8" 
+                      name="Sign-up Rate"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
+            {/* Conversion Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle>Top Locations</CardTitle>
-                <CardDescription>Authentication by location</CardDescription>
+                <CardTitle>Conversion Breakdown</CardTitle>
+                <CardDescription>Detailed conversion metrics by flow type</CardDescription>
               </CardHeader>
-              <CardContent>
-                {locationStats.length > 0 ? (
-                  <div className="space-y-3">
-                    {locationStats.slice(0, 5).map((location, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          <span>{location.country}</span>
-                          {location.city && (
-                            <span className="text-sm text-muted-foreground">({location.city})</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ 
-                                width: `${(location.count / Math.max(...locationStats.map(l => l.count))) * 100}%` 
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8">{location.count}</span>
-                        </div>
-                      </div>
-                    ))}
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Sign-up Conversion</span>
+                    <span className="font-medium">
+                      {(metrics.authentication.conversionRate.breakdown?.signUp * 100 || 0).toFixed(1)}%
+                    </span>
                   </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No location data available
+                  <Progress value={metrics.authentication.conversionRate.breakdown?.signUp * 100 || 0} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Sign-in Conversion</span>
+                    <span className="font-medium">
+                      {(metrics.authentication.conversionRate.breakdown?.signIn * 100 || 0).toFixed(1)}%
+                    </span>
                   </div>
-                )}
+                  <Progress value={metrics.authentication.conversionRate.breakdown?.signIn * 100 || 0} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Email Verification</span>
+                    <span className="font-medium">
+                      {(metrics.authentication.conversionRate.breakdown?.emailVerification * 100 || 0).toFixed(1)}%
+                    </span>
+                  </div>
+                  <Progress value={metrics.authentication.conversionRate.breakdown?.emailVerification * 100 || 0} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Social Auth</span>
+                    <span className="font-medium">
+                      {(metrics.authentication.conversionRate.breakdown?.socialAuth * 100 || 0).toFixed(1)}%
+                    </span>
+                  </div>
+                  <Progress value={metrics.authentication.conversionRate.breakdown?.socialAuth * 100 || 0} />
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Performance Tab */}
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  Security Alerts
-                </CardTitle>
-                <CardDescription>Recent security incidents and suspicious activities</CardDescription>
+                <CardTitle>Load Performance</CardTitle>
+                <CardDescription>Page load and render times</CardDescription>
               </CardHeader>
-              <CardContent>
-                {recentEvents.filter(event => 
-                  ['suspicious_activity', 'account_locked', 'password_reset'].includes(event.type)
-                ).length > 0 ? (
-                  <div className="space-y-3">
-                    {recentEvents
-                      .filter(event => ['suspicious_activity', 'account_locked', 'password_reset'].includes(event.type))
-                      .slice(0, 5)
-                      .map((event) => (
-                        <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <Badge variant="destructive" className="mb-1">
-                              {event.type.replace('_', ' ')}
-                            </Badge>
-                            <div className="text-sm">
-                              {event.user?.email} - {event.ipAddress}
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(event.timestamp)}
-                          </div>
-                        </div>
-                      ))}
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Average Load Time</span>
+                  <div className="text-right">
+                    <div className="font-medium">{metrics.performance.averageLoadTime.current}ms</div>
+                    <div className={cn(
+                      "text-sm flex items-center",
+                      metrics.performance.averageLoadTime.trend === 'down' ? "text-green-600" : "text-red-600"
+                    )}>
+                      {metrics.performance.averageLoadTime.trend === 'down' ? (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(metrics.performance.averageLoadTime.change)}ms
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No security incidents in the selected time range
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Average Render Time</span>
+                  <div className="text-right">
+                    <div className="font-medium">{metrics.performance.averageRenderTime.current}ms</div>
+                    <div className={cn(
+                      "text-sm flex items-center",
+                      metrics.performance.averageRenderTime.trend === 'down' ? "text-green-600" : "text-red-600"
+                    )}>
+                      {metrics.performance.averageRenderTime.trend === 'down' ? (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(metrics.performance.averageRenderTime.change)}ms
+                    </div>
                   </div>
-                )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Cache Hit Rate</span>
+                  <div className="text-right">
+                    <div className="font-medium">{(metrics.performance.cacheHitRate.current * 100).toFixed(1)}%</div>
+                    <div className={cn(
+                      "text-sm flex items-center",
+                      metrics.performance.cacheHitRate.trend === 'up' ? "text-green-600" : "text-red-600"
+                    )}>
+                      {metrics.performance.cacheHitRate.trend === 'up' ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {(Math.abs(metrics.performance.cacheHitRate.change) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-green-500" />
-                  Security Summary
-                </CardTitle>
-                <CardDescription>Overall security metrics and status</CardDescription>
+                <CardTitle>API Performance</CardTitle>
+                <CardDescription>Authentication API response times</CardDescription>
               </CardHeader>
-              <CardContent>
-                {metrics && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>Failed Login Attempts</span>
-                      <Badge variant={metrics.failedAttempts > 10 ? 'destructive' : 'secondary'}>
-                        {metrics.failedAttempts}
-                      </Badge>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Average Response</span>
+                  <span className="font-medium">{metrics.performance.apiResponseTime.current}ms</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>95th Percentile</span>
+                  <span className="font-medium">{metrics.performance.apiResponseTime.p95}ms</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>99th Percentile</span>
+                  <span className="font-medium">{metrics.performance.apiResponseTime.p99}ms</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Conversion Funnel Tab */}
+        <TabsContent value="funnel" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Authentication Conversion Funnel</CardTitle>
+              <CardDescription>
+                User journey from page view to successful authentication
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {metrics.userBehavior.funnelAnalysis.steps.map((step, index) => (
+                  <div key={step.step} className="flex items-center space-x-4">
+                    <div className="w-32 text-sm font-medium">{step.step}</div>
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">{step.users.toLocaleString()} users</span>
+                        <span className="text-sm">
+                          {(step.conversionRate * 100).toFixed(1)}% conversion
+                        </span>
+                      </div>
+                      <Progress value={step.conversionRate * 100} />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Suspicious Activities</span>
-                      <Badge variant={metrics.suspiciousActivities > 0 ? 'destructive' : 'default'}>
-                        {metrics.suspiciousActivities}
-                      </Badge>
+                    {step.dropOffRate > 0 && (
+                      <div className="text-sm text-red-600">
+                        -{(step.dropOffRate * 100).toFixed(1)}% drop-off
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <div className="text-sm font-medium">Overall Conversion Rate</div>
+                <div className="text-2xl font-bold">
+                  {(metrics.userBehavior.funnelAnalysis.overallConversionRate * 100).toFixed(1)}%
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Biggest drop-off: {metrics.userBehavior.funnelAnalysis.biggestDropOff.step} 
+                  ({(metrics.userBehavior.funnelAnalysis.biggestDropOff.dropOffRate * 100).toFixed(1)}%)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Devices & Social Tab */}
+        <TabsContent value="devices" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Device Breakdown</CardTitle>
+                <CardDescription>Authentication by device type</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Monitor className="h-4 w-4" />
+                    <span>Desktop</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.deviceBreakdown.desktop.percentage * 100).toFixed(1)}%
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>2FA Adoption Rate</span>
-                      <Badge variant="default">
-                        {metrics.activeUsers > 0 
-                          ? Math.round((metrics.twoFactorEnabled / metrics.activeUsers) * 100)
-                          : 0}%
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Overall Security Status</span>
-                      <Badge variant={
-                        metrics.suspiciousActivities === 0 && metrics.failedAttempts < 10 
-                          ? 'default' 
-                          : 'destructive'
-                      }>
-                        {metrics.suspiciousActivities === 0 && metrics.failedAttempts < 10 
-                          ? 'Good' 
-                          : 'Attention Required'}
-                      </Badge>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.deviceBreakdown.desktop.count.toLocaleString()} users
                     </div>
                   </div>
-                )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Smartphone className="h-4 w-4" />
+                    <span>Mobile</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.deviceBreakdown.mobile.percentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.deviceBreakdown.mobile.count.toLocaleString()} users
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Tablet className="h-4 w-4" />
+                    <span>Tablet</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.deviceBreakdown.tablet.percentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.deviceBreakdown.tablet.count.toLocaleString()} users
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Authentication</CardTitle>
+                <CardDescription>Usage by social provider</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                    <span>Google</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.socialAuthUsage.google.percentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.socialAuthUsage.google.count.toLocaleString()} users
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-gray-900 rounded"></div>
+                    <span>GitHub</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.socialAuthUsage.github.percentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.socialAuthUsage.github.count.toLocaleString()} users
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                    <span>Microsoft</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {(metrics.userBehavior.socialAuthUsage.microsoft.percentage * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {metrics.userBehavior.socialAuthUsage.microsoft.count.toLocaleString()} users
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Insights Tab */}
+        <TabsContent value="insights" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Key Insights</CardTitle>
+                <CardDescription>Automated insights from your authentication data</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {metrics.insights.map((insight, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <Badge variant={
+                      insight.type === 'positive' ? 'default' :
+                      insight.type === 'warning' ? 'destructive' : 'secondary'
+                    }>
+                      {insight.impact}
+                    </Badge>
+                    <div className="flex-1">
+                      <div className="font-medium">{insight.title}</div>
+                      <div className="text-sm text-muted-foreground">{insight.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recommendations</CardTitle>
+                <CardDescription>Actionable recommendations to improve performance</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {metrics.recommendations.map((rec, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{rec.title}</div>
+                      <Badge variant={
+                        rec.priority === 'high' ? 'destructive' :
+                        rec.priority === 'medium' ? 'default' : 'secondary'
+                      }>
+                        {rec.priority}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{rec.description}</div>
+                    <div className="text-sm font-medium text-green-600">{rec.expectedImpact}</div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+/**
+ * Metric Card Component
+ */
+interface MetricCardProps {
+  title: string
+  value: string
+  icon: React.ReactNode
+  description: string
+  change?: number
+  trend?: 'up' | 'down'
+}
+
+function MetricCard({ title, value, icon, description, change, trend }: MetricCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">{description}</p>
+          {change !== undefined && trend && (
+            <div className={cn(
+              "flex items-center text-xs",
+              trend === 'up' ? "text-green-600" : "text-red-600"
+            )}>
+              {trend === 'up' ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
+              {Math.abs(change * 100).toFixed(1)}%
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

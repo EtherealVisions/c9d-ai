@@ -1,0 +1,387 @@
+/**
+ * Authentication Performance Optimization Styles
+ * 
+ * This CSS file contains performance-optimized styles for authentication pages
+ * including GPU acceleration, efficient animations, and mobile optimizations.
+ */
+
+/* GPU Acceleration for smooth animations */
+.auth-page-optimized,
+.auth-layout-optimized,
+.mobile-form,
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimized loading states */
+.auth-form-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Performance-optimized transitions */
+.auth-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: opacity, transform, background-color, border-color;
+}
+
+.auth-transition-fast {
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-transition-slow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Lazy loading optimizations */
+.lazy-auth-component {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.lazy-auth-component.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Form performance optimizations */
+.mobile-form {
+  /* Optimize for mobile rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+}
+
+.mobile-form input,
+.mobile-form button,
+.mobile-form textarea {
+  /* Prevent zoom on iOS */
+  font-size: 16px;
+  /* Optimize touch targets */
+  min-height: 44px;
+  /* Improve tap responsiveness */
+  touch-action: manipulation;
+}
+
+/* Touch feedback optimizations */
+.touch-target-enhanced {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-target-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+  pointer-events: none;
+}
+
+.touch-target-enhanced:active::before {
+  width: 200px;
+  height: 200px;
+}
+
+/* Social auth button optimizations */
+.social-auth-mobile {
+  /* Optimize for mobile tapping */
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.social-auth-mobile:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Loading state optimizations */
+.mobile-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.mobile-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Virtual keyboard optimizations */
+.mobile-keyboard-aware {
+  /* Adjust for virtual keyboard */
+  min-height: calc(100vh - env(keyboard-inset-height, 0px));
+  transition: min-height 0.3s ease;
+}
+
+/* Password strength indicator optimizations */
+.password-strength-mobile .strength-bar {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-mobile .strength-fill {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+/* Form container optimizations */
+.form-container {
+  /* Optimize scrolling performance */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Safe area optimizations for mobile */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Touch spacing for better mobile UX */
+.touch-spacing {
+  /* Increase spacing between interactive elements */
+}
+
+.touch-spacing > * + * {
+  margin-top: 16px;
+}
+
+.touch-spacing button,
+.touch-spacing input,
+.touch-spacing [role="button"] {
+  margin: 8px 0;
+}
+
+/* High contrast mode optimizations */
+.high-contrast {
+  /* Ensure sufficient contrast in high contrast mode */
+  forced-color-adjust: none;
+}
+
+.high-contrast input,
+.high-contrast button {
+  border: 2px solid;
+}
+
+.high-contrast .auth-transition {
+  /* Disable transitions in high contrast mode for better accessibility */
+  transition: none;
+}
+
+/* Reduced motion optimizations */
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Performance monitoring styles (development only) */
+.perf-warning {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #ff6b6b;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 9999;
+  max-width: 300px;
+}
+
+.perf-info {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  background: #4ecdc4;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  z-index: 9999;
+  font-family: monospace;
+}
+
+/* Optimize for different screen sizes */
+@media (max-width: 640px) {
+  .auth-page-optimized {
+    /* Mobile-specific optimizations */
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .mobile-form {
+    padding: 16px;
+  }
+  
+  .touch-target-enhanced {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .auth-page-optimized {
+    /* Tablet-specific optimizations */
+  }
+}
+
+@media (min-width: 1025px) {
+  .auth-page-optimized {
+    /* Desktop-specific optimizations */
+  }
+  
+  .mobile-form {
+    /* Disable mobile-specific styles on desktop */
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+    text-rendering: auto;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  .auth-page-optimized {
+    /* Hide interactive elements when printing */
+    display: none;
+  }
+}
+
+/* Prefers-reduced-data optimizations */
+@media (prefers-reduced-data: reduce) {
+  .auth-page-optimized {
+    /* Reduce animations and effects for users with limited data */
+  }
+  
+  .auth-transition,
+  .auth-transition-fast,
+  .auth-transition-slow {
+    transition: none;
+  }
+  
+  .lazy-auth-component {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Container queries for responsive design */
+@container (max-width: 400px) {
+  .auth-form-container {
+    padding: 12px;
+  }
+  
+  .social-auth-mobile {
+    font-size: 14px;
+    min-height: 44px;
+  }
+}
+
+@container (min-width: 401px) {
+  .auth-form-container {
+    padding: 24px;
+  }
+}
+
+/* Focus optimizations for keyboard navigation */
+.auth-page-optimized :focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Optimize for different input methods */
+@media (hover: hover) {
+  .touch-target-enhanced:hover {
+    /* Only apply hover effects on devices that support hover */
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+@media (hover: none) {
+  .touch-target-enhanced:hover {
+    /* Remove hover effects on touch devices */
+    background-color: transparent;
+  }
+}
+
+/* Performance optimizations for animations */
+@supports (will-change: transform) {
+  .auth-transition {
+    will-change: transform, opacity;
+  }
+}
+
+@supports not (will-change: transform) {
+  .auth-transition {
+    /* Fallback for older browsers */
+    transform: translateZ(0);
+  }
+}
+
+/* Critical CSS inlining optimization */
+.auth-critical {
+  /* Styles that should be inlined for critical rendering path */
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+/* Lazy loading placeholder styles */
+.auth-placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

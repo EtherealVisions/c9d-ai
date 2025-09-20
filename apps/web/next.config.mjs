@@ -9,16 +9,36 @@ const nextConfig = {
   experimental: {
     // Ensure TypeScript path mapping works
     typedRoutes: false,
+    // Optimize bundle size and performance
+    optimizePackageImports: [
+      'lucide-react', 
+      '@radix-ui/react-icons',
+      '@clerk/nextjs',
+      'react-hook-form',
+      'zod'
+    ],
+    // Enable modern bundling optimizations
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+    // Optimize server components
+    serverComponentsExternalPackages: ['@clerk/nextjs'],
+    // Enable partial prerendering for better performance
+    ppr: false, // Disabled for now, enable when stable
   },
   images: {
     unoptimized: false,
     domains: [],
     formats: ['image/webp', 'image/avif'],
-  },
-  // Vercel optimization settings
-  experimental: {
-    // Optimize bundle size
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    // Optimize image loading
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Serverless function configuration
   serverRuntimeConfig: {
@@ -89,18 +109,49 @@ const nextConfig = {
   output: 'standalone',
   // Webpack configuration for optimization
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Optimize bundle size
+    // Optimize bundle size and performance
     if (!dev && !isServer) {
+      // Enhanced chunk splitting for better caching
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
+        chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           ...config.optimization.splitChunks.cacheGroups,
+          // Clerk authentication vendor chunk
+          clerk: {
+            test: /[\\/]node_modules[\\/]@clerk[\\/]/,
+            name: 'clerk',
+            chunks: 'all',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // React and core libraries
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true,
+          },
+          // UI components
+          ui: {
+            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+            name: 'ui',
+            chunks: 'all',
+            priority: 20,
+            reuseExistingChunk: true,
+          },
+          // Other vendor libraries
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            reuseExistingChunk: true,
           },
+          // Common application code
           common: {
             name: 'common',
             minChunks: 2,
@@ -108,9 +159,38 @@ const nextConfig = {
             priority: 5,
             reuseExistingChunk: true,
           },
+          // Authentication components
+          auth: {
+            test: /[\\/](components|lib)[\\/]auth[\\/]/,
+            name: 'auth',
+            chunks: 'all',
+            priority: 15,
+            reuseExistingChunk: true,
+          },
         },
       };
+
+      // Enable tree shaking optimizations
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
+
+      // Optimize module concatenation
+      config.optimization.concatenateModules = true;
     }
+
+    // Add performance optimizations for all builds
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      // Optimize React imports
+      'react/jsx-runtime': require.resolve('react/jsx-runtime'),
+      'react/jsx-dev-runtime': require.resolve('react/jsx-dev-runtime'),
+    };
+
+    // Optimize SVG handling
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
     
     return config;
   },
