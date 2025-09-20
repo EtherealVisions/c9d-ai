@@ -23,12 +23,16 @@ if (isBuildTime) {
     loadWithFallback: async () => ({
       success: false,
       error: 'Build-time stub',
-      variables: process.env,
+      variables: process.env || {},
       source: 'build-stub',
       nodeEnv: process.env.NODE_ENV || 'production',
       isDevelopment: false,
       isProduction: true,
-      totalVariables: Object.keys(process.env).length,
+      totalVariables: Object.keys(process.env || {}).length,
+      loadedFiles: [],
+      phaseAvailable: false,
+      phaseConfigLoaded: false,
+      phaseVariableCount: 0,
       phaseStatus: {
         available: false,
         success: false,
@@ -39,12 +43,31 @@ if (isBuildTime) {
       },
       diagnostics: {
         summary: 'Build-time stub',
-        tokenSourceDiagnostics: null
+        tokenSourceDiagnostics: null,
+        recommendations: []
       }
     }),
-    validateConfig: () => ({ valid: true, errors: [], isValid: true }),
-    createTestConfig: (vars: any) => vars || {},
-    getDiagnosticInfo: () => ({ summary: 'Build-time stub' })
+    validateConfig: () => ({ valid: true, errors: [], isValid: true, missingVars: [], warnings: [] }),
+    createTestConfig: (vars: any) => ({
+      variables: vars || process.env || {},
+      nodeEnv: process.env.NODE_ENV || 'production',
+      isDevelopment: false,
+      isProduction: true,
+      totalVariables: Object.keys(vars || process.env || {}).length,
+      loadedFiles: [],
+      phaseAvailable: false,
+      phaseConfigLoaded: false,
+      phaseVariableCount: 0,
+      phaseStatus: {
+        available: false,
+        success: false,
+        variableCount: 0,
+        error: 'Build-time stub',
+        source: 'build-stub',
+        tokenSource: null
+      }
+    }),
+    getDiagnosticInfo: () => ({ summary: 'Build-time stub', recommendations: [] })
   }
 } else {
   try {
@@ -61,12 +84,16 @@ if (isBuildTime) {
       loadWithFallback: async () => ({
         success: false,
         error: 'Runtime fallback stub',
-        variables: process.env,
+        variables: process.env || {},
         source: 'runtime-stub',
         nodeEnv: process.env.NODE_ENV || 'development',
         isDevelopment: process.env.NODE_ENV !== 'production',
         isProduction: process.env.NODE_ENV === 'production',
-        totalVariables: Object.keys(process.env).length,
+        totalVariables: Object.keys(process.env || {}).length,
+        loadedFiles: [],
+        phaseAvailable: false,
+        phaseConfigLoaded: false,
+        phaseVariableCount: 0,
         phaseStatus: {
           available: false,
           success: false,
@@ -77,12 +104,31 @@ if (isBuildTime) {
         },
         diagnostics: {
           summary: 'Runtime fallback stub',
-          tokenSourceDiagnostics: null
+          tokenSourceDiagnostics: null,
+          recommendations: []
         }
       }),
-      validateConfig: () => ({ valid: true, errors: [], isValid: true }),
-      createTestConfig: (vars: any) => vars || {},
-      getDiagnosticInfo: () => ({ summary: 'Runtime fallback stub' })
+      validateConfig: () => ({ valid: true, errors: [], isValid: true, missingVars: [], warnings: [] }),
+      createTestConfig: (vars: any) => ({
+        variables: vars || process.env || {},
+        nodeEnv: process.env.NODE_ENV || 'development',
+        isDevelopment: process.env.NODE_ENV !== 'production',
+        isProduction: process.env.NODE_ENV === 'production',
+        totalVariables: Object.keys(vars || process.env || {}).length,
+        loadedFiles: [],
+        phaseAvailable: false,
+        phaseConfigLoaded: false,
+        phaseVariableCount: 0,
+        phaseStatus: {
+          available: false,
+          success: false,
+          variableCount: 0,
+          error: 'Runtime fallback stub',
+          source: 'runtime-stub',
+          tokenSource: null
+        }
+      }),
+      getDiagnosticInfo: () => ({ summary: 'Runtime fallback stub', recommendations: [] })
     }
   }
 }

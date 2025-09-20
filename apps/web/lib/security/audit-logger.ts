@@ -702,7 +702,7 @@ export class SecurityAuditLogger {
     // In a real implementation, this would store in a secure audit database
     console.log(`Storing ${events.length} audit events`)
     
-    // Example implementation with database
+    // Example implementation with database (using lazy import)
     // const { createSupabaseClient } = await import('@/lib/database')
     // const supabase = createSupabaseClient()
     // 

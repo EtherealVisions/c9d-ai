@@ -93,7 +93,80 @@ export class TypedSupabaseClient {
   private currentOrganizationId?: string
 
   constructor(config: DatabaseConfig) {
-    this.client = createClient(config.url, config.anonKey)
+    // Build-time detection
+    const isBuildTime = typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )
+
+    // Check for invalid/placeholder URLs
+    const isInvalidUrl = !config.url ||
+      config.url.includes('build-placeholder') ||
+      config.url === 'undefined' ||
+      config.url === ''
+
+    if (isBuildTime || isInvalidUrl) {
+      console.log('[TypedDatabase] Using mock client for build/invalid config')
+      // Create a comprehensive mock client for build time
+      this.client = {
+        from: () => ({
+          select: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          insert: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          update: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          delete: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          single: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          eq: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          neq: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          gt: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          lt: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          gte: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          lte: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          like: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          ilike: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          is: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          in: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          contains: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          containedBy: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          rangeGt: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          rangeLt: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          rangeGte: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          rangeLte: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          rangeAdjacent: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          overlaps: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          textSearch: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          match: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          not: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          or: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          filter: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          order: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          limit: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          range: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          abortSignal: () => ({ data: null, error: { message: 'Build-time mock' } }),
+          maybeSingle: () => ({ data: null, error: { message: 'Build-time mock' } })
+        }),
+        auth: {
+          getSession: () => Promise.resolve({ data: { session: null }, error: null })
+        }
+      } as any;
+    } else {
+      try {
+        this.client = createClient(config.url, config.anonKey);
+      } catch (error) {
+        console.error('[TypedDatabase] Failed to create Supabase client:', error)
+        // Fallback to mock client if creation fails
+        this.client = {
+          from: () => ({
+            select: () => ({ data: null, error: { message: 'Failed to create client' } }),
+            insert: () => ({ data: null, error: { message: 'Failed to create client' } }),
+            update: () => ({ data: null, error: { message: 'Failed to create client' } }),
+            delete: () => ({ data: null, error: { message: 'Failed to create client' } })
+          }),
+          auth: {
+            getSession: () => Promise.resolve({ data: { session: null }, error: null })
+          }
+        } as any;
+      }
+    }
   }
 
   /**
@@ -102,7 +175,7 @@ export class TypedSupabaseClient {
   setUserContext(userId: string, organizationId?: string): void {
     this.currentUserId = userId
     this.currentOrganizationId = organizationId
-    
+
     // Set RLS context in Supabase
     if (userId) {
       this.client.auth.getSession().then(({ data: { session } }) => {
@@ -127,7 +200,7 @@ export class TypedSupabaseClient {
    */
   private async validateTenantAccess(organizationId: string, userId?: string): Promise<boolean> {
     const userIdToCheck = userId || this.currentUserId
-    
+
     if (!userIdToCheck) {
       throw new DatabaseError('User context required for tenant validation', 'MISSING_USER_CONTEXT')
     }
@@ -166,15 +239,15 @@ export class TypedSupabaseClient {
     queryFn: () => Promise<{ data: T | null; error: any }>
   ): Promise<T> {
     const { data, error } = await queryFn()
-    
+
     if (error) {
       throw new DatabaseError(error.message, error.code, error.details)
     }
-    
+
     if (data === null) {
       throw new DatabaseError('Query returned null data')
     }
-    
+
     return data
   }
 
@@ -211,7 +284,7 @@ export class TypedSupabaseClient {
 
   async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
     const rowData = transformUserToRow(userData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('users')
@@ -228,7 +301,7 @@ export class TypedSupabaseClient {
 
   async updateUser(id: string, userData: Partial<Omit<User, 'id' | 'clerkUserId' | 'createdAt' | 'updatedAt'>>): Promise<User> {
     const updateData: Partial<Omit<UserRow, 'id' | 'clerk_user_id' | 'created_at' | 'updated_at'>> = {}
-    
+
     if (userData.email) updateData.email = userData.email
     if (userData.firstName !== undefined) updateData.first_name = userData.firstName || null
     if (userData.lastName !== undefined) updateData.last_name = userData.lastName || null
@@ -325,7 +398,7 @@ export class TypedSupabaseClient {
 
   async createOrganization(orgData: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>): Promise<Organization> {
     const rowData = transformOrganizationToRow(orgData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('organizations')
@@ -350,7 +423,7 @@ export class TypedSupabaseClient {
     }
 
     const updateData: Partial<Omit<OrganizationRow, 'id' | 'slug' | 'created_at' | 'updated_at'>> = {}
-    
+
     if (orgData.name) updateData.name = orgData.name
     if (orgData.description !== undefined) updateData.description = orgData.description || null
     if (orgData.avatarUrl !== undefined) updateData.avatar_url = orgData.avatarUrl || null
@@ -454,7 +527,7 @@ export class TypedSupabaseClient {
 
   async createMembership(membershipData: Omit<Membership, 'id' | 'createdAt' | 'updatedAt' | 'user' | 'organization' | 'role'>): Promise<Membership> {
     const rowData = transformMembershipToRow(membershipData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('organization_memberships')
@@ -471,7 +544,7 @@ export class TypedSupabaseClient {
 
   async updateMembership(userId: string, organizationId: string, membershipData: Partial<Pick<Membership, 'roleId' | 'status'>>): Promise<Membership> {
     const updateData: Partial<Pick<MembershipRow, 'role_id' | 'status'>> = {}
-    
+
     if (membershipData.roleId) updateData.role_id = membershipData.roleId
     if (membershipData.status) updateData.status = membershipData.status
 
@@ -497,7 +570,7 @@ export class TypedSupabaseClient {
       .delete()
       .eq('user_id', userId)
       .eq('organization_id', organizationId)
-    
+
     if (error) {
       throw new DatabaseError(error.message, error.code)
     }
@@ -533,7 +606,7 @@ export class TypedSupabaseClient {
 
   async createRole(roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>): Promise<Role> {
     const rowData = transformRoleToRow(roleData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('roles')
@@ -563,7 +636,7 @@ export class TypedSupabaseClient {
 
   async createPermission(permissionData: Omit<Permission, 'id' | 'createdAt' | 'updatedAt'>): Promise<Permission> {
     const rowData = transformPermissionToRow(permissionData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('permissions')
@@ -648,7 +721,7 @@ export class TypedSupabaseClient {
 
   async createInvitation(invitationData: Omit<Invitation, 'id' | 'createdAt' | 'updatedAt' | 'organization' | 'role' | 'inviter'>): Promise<Invitation> {
     const rowData = transformInvitationToRow(invitationData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('invitations')
@@ -665,7 +738,7 @@ export class TypedSupabaseClient {
 
   async updateInvitation(id: string, invitationData: Partial<Pick<Invitation, 'status'>>): Promise<Invitation> {
     const updateData: Partial<Pick<InvitationRow, 'status'>> = {}
-    
+
     if (invitationData.status) updateData.status = invitationData.status
 
     const data = await this.executeQuery(async () =>
@@ -701,7 +774,7 @@ export class TypedSupabaseClient {
   // Audit log operations
   async createAuditLog(auditData: Omit<AuditLog, 'id' | 'createdAt' | 'updatedAt' | 'user' | 'organization'>): Promise<AuditLog> {
     const rowData = transformAuditLogToRow(auditData)
-    
+
     const data = await this.executeQuery(async () =>
       await this.client
         .from('audit_logs')
@@ -757,36 +830,72 @@ function getConfigWithFallback(key: string): string | undefined {
  * Create a typed database client instance with centralized configuration
  */
 export function createTypedSupabaseClient(): TypedSupabaseClient {
+  // Build-time detection - return mock client during build
+  const isBuildTime = typeof process !== 'undefined' && (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.VERCEL === '1' && process.env.CI === '1')
+  )
+
+  if (isBuildTime) {
+    console.warn('[TypedDatabase] Build-time detected - using mock client');
+    // Return a mock client that won't cause build failures
+    return {
+      setUserContext: () => { },
+      clearUserContext: () => { },
+      getClient: () => ({ from: () => ({ select: () => ({ data: null, error: null }) }) }),
+      // Add all the required methods as no-ops
+      getUser: async () => null,
+      getUserByClerkId: async () => null,
+      createUser: async () => ({ id: 'mock', email: 'mock@example.com' } as any),
+      updateUser: async () => ({ id: 'mock', email: 'mock@example.com' } as any),
+      getUserWithMemberships: async () => null,
+      getOrganization: async () => null,
+      getOrganizationBySlug: async () => null,
+      createOrganization: async () => ({ id: 'mock', name: 'Mock Org' } as any),
+      updateOrganization: async () => ({ id: 'mock', name: 'Mock Org' } as any),
+      getOrganizationWithMembers: async () => null,
+      getUserOrganizations: async () => [],
+      getMembership: async () => null,
+      createMembership: async () => ({ id: 'mock' } as any),
+      updateMembership: async () => ({ id: 'mock' } as any),
+      deleteMembership: async () => { },
+      getRole: async () => null,
+      getRolesByOrganization: async () => [],
+      createRole: async () => ({ id: 'mock', name: 'Mock Role' } as any),
+      getAllPermissions: async () => [],
+      createPermission: async () => ({ id: 'mock', name: 'Mock Permission' } as any),
+      getInvitation: async () => null,
+      getInvitationByToken: async () => null,
+      getInvitationByOrgAndEmail: async () => null,
+      getInvitationsByOrganization: async () => [],
+      createInvitation: async () => ({ id: 'mock' } as any),
+      updateInvitation: async () => ({ id: 'mock' } as any),
+      getUserByEmail: async () => null,
+      createAuditLog: async () => ({ id: 'mock' } as any),
+      getAuditLogs: async () => []
+    } as any;
+  }
+
   const supabaseUrl = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_URL');
   const supabaseKey = getConfigWithFallback('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  const nodeEnv = getConfigWithFallback('NODE_ENV') || 'unknown';
-  
+
+  // In production runtime, we MUST have valid configuration
   if (!supabaseUrl || !supabaseKey) {
-    console.error('[TypedDatabase] Configuration error:', {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseKey,
-      nodeEnv
-    });
-    
-    // During build time, return a mock client to prevent build failures
-    if (nodeEnv === 'production' || process.env.NODE_ENV === 'production') {
-      console.warn('[TypedDatabase] Missing Supabase configuration - using mock client for build');
-      return {
-        getUserById: async () => ({ data: null, error: null }),
-        createUser: async () => ({ data: null, error: null }),
-        updateUser: async () => ({ data: null, error: null }),
-        deleteUser: async () => ({ data: null, error: null }),
-        getOrganizationById: async () => ({ data: null, error: null }),
-        createOrganization: async () => ({ data: null, error: null }),
-        updateOrganization: async () => ({ data: null, error: null }),
-        deleteOrganization: async () => ({ data: null, error: null })
-      } as any;
-    }
-    
-    const errorMessage = 'Missing Supabase environment variables for typed client';
-    throw new Error(errorMessage);
+    throw new Error(
+      'Missing required Supabase configuration. ' +
+      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set.'
+    );
   }
-  
+
+  // Validate URL format
+  try {
+    new URL(supabaseUrl);
+  } catch {
+    throw new Error(
+      `Invalid NEXT_PUBLIC_SUPABASE_URL: "${supabaseUrl}". Must be a valid URL.`
+    );
+  }
+
   console.log('[TypedDatabase] Creating typed Supabase client with centralized configuration');
   return new TypedSupabaseClient({
     url: supabaseUrl,
@@ -803,13 +912,13 @@ export async function validateDatabaseSchema(): Promise<{
   systemRoles: boolean
 }> {
   const client = createTypedSupabaseClient()
-  
+
   const results = {
     tables: {} as Record<string, boolean>,
     permissions: false,
     systemRoles: false
   }
-  
+
   // Check if all required tables exist
   const tables: DatabaseTable[] = [
     'users',
@@ -820,7 +929,7 @@ export async function validateDatabaseSchema(): Promise<{
     'invitations',
     'audit_logs'
   ]
-  
+
   for (const table of tables) {
     try {
       const { error } = await client.getClient().from(table).select('*').limit(1)
@@ -829,7 +938,7 @@ export async function validateDatabaseSchema(): Promise<{
       results.tables[table] = false
     }
   }
-  
+
   // Check if system permissions exist
   try {
     const permissions = await client.getAllPermissions()
@@ -837,7 +946,7 @@ export async function validateDatabaseSchema(): Promise<{
   } catch (err) {
     results.permissions = false
   }
-  
+
   // Check if system roles exist
   try {
     // This would need to be implemented once we have a way to get system roles
@@ -845,6 +954,6 @@ export async function validateDatabaseSchema(): Promise<{
   } catch (err) {
     results.systemRoles = false
   }
-  
+
   return results
 }

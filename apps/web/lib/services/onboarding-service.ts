@@ -3,7 +3,7 @@
  * Requirements: 1.1, 1.2, 3.1, 10.1, 10.2
  */
 
-import { createSupabaseClient } from '@/lib/database'
+// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
 import { PathEngine, type UserBehavior } from './path-engine'
 import { ProgressTrackerService } from './progress-tracker-service'
@@ -25,7 +25,8 @@ import type {
 } from '@/lib/models'
 
 export class OnboardingService {
-  private static getSupabase() {
+  private static async getSupabase() {
+    const { createSupabaseClient } = await import('@/lib/database')
     return createSupabaseClient()
   }
 

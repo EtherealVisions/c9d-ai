@@ -3,7 +3,7 @@
  * Requirements: 1.1, 1.2, 3.1, 10.1, 10.2
  */
 
-import { createSupabaseClient } from '@/lib/database'
+// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
 import type {
   OnboardingPath,

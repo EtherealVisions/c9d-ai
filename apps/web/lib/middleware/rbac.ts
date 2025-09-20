@@ -57,6 +57,7 @@ function extractOrganizationId(request: NextRequest): string | null {
  * Get user from database using Clerk user ID
  */
 async function getUserFromClerkId(clerkUserId: string) {
+  const { createSupabaseClient } = await import('@/lib/database')
   const supabase = createSupabaseClient()
   
   const { data, error } = await supabase
@@ -207,6 +208,7 @@ export function withRBAC(options: RBACOptions = {}) {
           }
 
           // Add organization info to request
+          const { createSupabaseClient } = await import('@/lib/database')
           const supabase = createSupabaseClient()
           const { data: orgData } = await supabase
             .from('organizations')

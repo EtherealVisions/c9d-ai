@@ -3,7 +3,7 @@
  * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
  */
 
-import { createSupabaseClient } from '@/lib/database'
+// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/errors'
 import type {
   UserProgress,

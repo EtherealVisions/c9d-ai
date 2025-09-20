@@ -32,7 +32,10 @@ export interface OrganizationServiceResult<T> {
 }
 
 export class OrganizationService {
-  private db = createTypedSupabaseClient()
+  private async getDb() {
+    const { createTypedSupabaseClient } = await import('../models/database')
+    return createTypedSupabaseClient()
+  }
 
   /**
    * Create a new organization with unique slug generation
@@ -49,7 +52,7 @@ export class OrganizationService {
       const slug = await this.generateUniqueSlug(validatedData.name)
 
       // Create the organization
-      const organization = await this.db.createOrganization({
+      const organization = await (await this.getDb()).createOrganization({
         ...validatedData,
         slug,
         metadata: validatedData.metadata || {},
@@ -117,7 +120,7 @@ export class OrganizationService {
         }
       }
 
-      const organization = await this.db.getOrganization(id, userId)
+      const organization = await (await this.getDb()).getOrganization(id, userId)
       
       if (!organization) {
         return {
@@ -161,7 +164,7 @@ export class OrganizationService {
    */
   async getOrganizationBySlug(slug: string): Promise<OrganizationServiceResult<Organization>> {
     try {
-      const organization = await this.db.getOrganizationBySlug(slug)
+      const organization = await (await this.getDb()).getOrganizationBySlug(slug)
       
       if (!organization) {
         return {
@@ -209,7 +212,7 @@ export class OrganizationService {
       const validatedData = validateUpdateOrganization(updateData)
 
       // Check if organization exists
-      const existingOrganization = await this.db.getOrganization(id, userId)
+      const existingOrganization = await (await this.getDb()).getOrganization(id, userId)
       if (!existingOrganization) {
         return {
           error: 'Organization not found',
@@ -218,7 +221,7 @@ export class OrganizationService {
       }
 
       // Update the organization
-      const updatedOrganization = await this.db.updateOrganization(id, validatedData, userId)
+      const updatedOrganization = await (await this.getDb()).updateOrganization(id, validatedData, userId)
 
       // Log the organization update with security audit
       await securityAuditService.logOrganizationEvent(
@@ -284,7 +287,7 @@ export class OrganizationService {
   ): Promise<OrganizationServiceResult<Organization>> {
     try {
       // Get current organization to merge metadata
-      const existingOrganization = await this.db.getOrganization(id)
+      const existingOrganization = await (await this.getDb()).getOrganization(id)
       if (!existingOrganization) {
         return {
           error: 'Organization not found',
@@ -299,7 +302,7 @@ export class OrganizationService {
       }
 
       // Update organization with merged metadata
-      const updatedOrganization = await this.db.updateOrganization(id, {
+      const updatedOrganization = await (await this.getDb()).updateOrganization(id, {
         metadata: mergedMetadata
       })
 
@@ -336,7 +339,7 @@ export class OrganizationService {
   ): Promise<OrganizationServiceResult<Organization>> {
     try {
       // Get current organization to merge settings
-      const existingOrganization = await this.db.getOrganization(id)
+      const existingOrganization = await (await this.getDb()).getOrganization(id)
       if (!existingOrganization) {
         return {
           error: 'Organization not found',
@@ -351,7 +354,7 @@ export class OrganizationService {
       }
 
       // Update organization with merged settings
-      const updatedOrganization = await this.db.updateOrganization(id, {
+      const updatedOrganization = await (await this.getDb()).updateOrganization(id, {
         settings: mergedSettings
       })
 
@@ -387,7 +390,7 @@ export class OrganizationService {
   ): Promise<OrganizationServiceResult<Organization>> {
     try {
       // Get current organization
-      const existingOrganization = await this.db.getOrganization(id)
+      const existingOrganization = await (await this.getDb()).getOrganization(id)
       if (!existingOrganization) {
         return {
           error: 'Organization not found',
@@ -396,7 +399,7 @@ export class OrganizationService {
       }
 
       // Update metadata to mark as deleted
-      const updatedOrganization = await this.db.updateOrganization(id, {
+      const updatedOrganization = await (await this.getDb()).updateOrganization(id, {
         metadata: {
           ...existingOrganization.metadata,
           deleted: true,
@@ -433,7 +436,7 @@ export class OrganizationService {
    */
   async getUserOrganizations(userId: string): Promise<OrganizationServiceResult<Organization[]>> {
     try {
-      const organizations = await this.db.getUserOrganizations(userId)
+      const organizations = await (await this.getDb()).getUserOrganizations(userId)
       return { data: organizations }
     } catch (error) {
       console.error('Error getting user organizations:', error)
@@ -449,7 +452,7 @@ export class OrganizationService {
    */
   async getOrganizationWithMembers(id: string): Promise<OrganizationServiceResult<any>> {
     try {
-      const organizationWithMembers = await this.db.getOrganizationWithMembers(id)
+      const organizationWithMembers = await (await this.getDb()).getOrganizationWithMembers(id)
       
       if (!organizationWithMembers) {
         return {
@@ -473,7 +476,7 @@ export class OrganizationService {
    */
   async isOrganizationActive(id: string): Promise<OrganizationServiceResult<boolean>> {
     try {
-      const organization = await this.db.getOrganization(id)
+      const organization = await (await this.getDb()).getOrganization(id)
       
       if (!organization) {
         return {
@@ -533,7 +536,7 @@ export class OrganizationService {
    */
   private async isSlugTaken(slug: string): Promise<boolean> {
     try {
-      const organization = await this.db.getOrganizationBySlug(slug)
+      const organization = await (await this.getDb()).getOrganizationBySlug(slug)
       return organization !== null
     } catch (error) {
       console.error('Error checking slug availability:', error)
@@ -553,7 +556,7 @@ export class OrganizationService {
     metadata: Record<string, any> = {}
   ): Promise<void> {
     try {
-      await this.db.createAuditLog({
+      await (await this.getDb()).createAuditLog({
         userId,
         organizationId,
         action,

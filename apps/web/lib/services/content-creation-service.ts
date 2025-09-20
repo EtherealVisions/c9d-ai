@@ -3,7 +3,7 @@
  * Requirements: 7.3, 7.4
  */
 
-import { createSupabaseClient } from '@/lib/database'
+// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
 import type {
   OnboardingContentRow,
@@ -107,7 +107,8 @@ export interface ContentPreview {
 }
 
 export class ContentCreationService {
-  private static getSupabase() {
+  private static async getSupabase() {
+    const { createSupabaseClient } = await import('@/lib/database')
     return createSupabaseClient()
   }
 

@@ -119,6 +119,56 @@ export class AppConfig {
     this.config.clear()
     this.initialized = false
   }
+
+  /**
+   * Check if we're in build time
+   */
+  isBuildTime(): boolean {
+    return typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' || 
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )
+  }
+
+  /**
+   * Validate Supabase configuration
+   */
+  validateSupabaseConfig(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+    
+    const url = this.get('NEXT_PUBLIC_SUPABASE_URL')
+    const anonKey = this.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    
+    // During build, use placeholder values
+    if (this.isBuildTime()) {
+      return {
+        isValid: false,
+        errors: ['Build-time environment - using placeholder values']
+      }
+    }
+    
+    if (!url || url === 'https://build-placeholder.supabase.co') {
+      errors.push('NEXT_PUBLIC_SUPABASE_URL is required')
+    } else {
+      try {
+        const urlObj = new URL(String(url))
+        if (!['http:', 'https:'].includes(urlObj.protocol)) {
+          errors.push('NEXT_PUBLIC_SUPABASE_URL must be a valid HTTPS URL')
+        }
+      } catch {
+        errors.push('NEXT_PUBLIC_SUPABASE_URL must be a valid HTTPS URL')
+      }
+    }
+    
+    if (!anonKey || anonKey === 'build-placeholder-key') {
+      errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY is required')
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
 }
 
 /**

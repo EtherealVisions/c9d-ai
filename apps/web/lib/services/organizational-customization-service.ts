@@ -3,7 +3,7 @@
  * Requirements: 7.1, 7.2, 7.3, 7.4
  */
 
-import { createSupabaseClient } from '@/lib/database'
+// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
 import type {
   OrganizationOnboardingConfigRow,
