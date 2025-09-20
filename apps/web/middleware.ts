@@ -109,12 +109,13 @@ const isHealthRoute = createRouteMatcher([
 
 /**
  * Get configuration value with fallback (edge-safe)
+ * In edge runtime, this only accesses process.env
  */
 function getConfigWithFallback(key: string): string | undefined {
   try {
     return getConfigValue(key);
   } catch (error) {
-    console.warn(`[Middleware] Failed to get config '${key}':`, error);
+    console.warn(`[Middleware] Failed to get config '${key}' (Edge Runtime limitation):`, error);
     return undefined;
   }
 }
