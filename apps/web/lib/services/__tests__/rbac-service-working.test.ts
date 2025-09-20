@@ -44,7 +44,7 @@ vi.mock('../../models/database', () => ({
 const { RBACService } = await import('../rbac-service')
 
 describe('RBACService', () => {
-  let rbacService: RBACService
+  let rbacService: InstanceType<typeof RBACService>
 
   beforeEach(() => {
     vi.clearAllMocks()

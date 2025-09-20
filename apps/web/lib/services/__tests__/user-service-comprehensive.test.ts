@@ -197,8 +197,8 @@ describe('UserService - Comprehensive Coverage', () => {
 
       mockDb.getUser.mockResolvedValue(existingUser)
 
-      const { ValidationError } = await import('../models/database')
-      const { validateUpdateUser } = await import('../models/schemas')
+      const { ValidationError } = await import('../../models/database')
+      const { validateUpdateUser } = await import('../../models/schemas')
       ;(validateUpdateUser as Mock).mockImplementation(() => {
         throw new ValidationError('Invalid data')
       })

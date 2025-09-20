@@ -6,6 +6,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Server external packages (moved from experimental)
+  // serverExternalPackages: ['@clerk/nextjs'], // Temporarily disabled due to conflict
   experimental: {
     // Ensure TypeScript path mapping works
     typedRoutes: false,
@@ -26,8 +28,7 @@ const nextConfig = {
         },
       },
     },
-    // Optimize server components
-    serverComponentsExternalPackages: ['@clerk/nextjs'],
+
     // Enable partial prerendering for better performance
     ppr: false, // Disabled for now, enable when stable
   },
@@ -181,9 +182,9 @@ const nextConfig = {
     // Add performance optimizations for all builds
     config.resolve.alias = {
       ...config.resolve.alias,
-      // Optimize React imports
-      'react/jsx-runtime': require.resolve('react/jsx-runtime'),
-      'react/jsx-dev-runtime': require.resolve('react/jsx-dev-runtime'),
+      // Optimize React imports (using relative paths instead of require.resolve in ES module)
+      'react/jsx-runtime': 'react/jsx-runtime',
+      'react/jsx-dev-runtime': 'react/jsx-dev-runtime',
     };
 
     // Optimize SVG handling

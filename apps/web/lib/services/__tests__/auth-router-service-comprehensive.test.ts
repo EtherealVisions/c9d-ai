@@ -75,7 +75,7 @@ describe('AuthRouterService - Comprehensive Coverage', () => {
       email: 'test@example.com',
       firstName: 'John',
       lastName: 'Doe',
-      avatarUrl: null,
+      avatarUrl: undefined,
       emailVerified: true,
       lastSignInAt: new Date(),
       createdAt: new Date(),

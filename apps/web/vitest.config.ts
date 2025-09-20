@@ -26,7 +26,6 @@ export default defineConfig({
     isolate: true,
     restoreMocks: true,
     clearMocks: true,
-    resetMocks: true,
     // Skip problematic tests temporarily to focus on coverage
     exclude: [
       '**/node_modules/**',

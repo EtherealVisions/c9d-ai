@@ -633,7 +633,7 @@ export class SecurityEventTracker {
         action: `security.${eventType}`,
         resourceType: 'security_event',
         resourceId: userId || 'system',
-        severity: this.determineSeverity(eventType),
+        severity: this.mapSeverityToAuditLevel(this.determineSeverity(eventType)),
         metadata: {
           eventType,
           timestamp: new Date().toISOString(),
@@ -662,6 +662,19 @@ export class SecurityEventTracker {
 
     } catch (error) {
       console.error('Error tracking security event:', error)
+    }
+  }
+
+  /**
+   * Map internal severity levels to audit service levels
+   */
+  private mapSeverityToAuditLevel(severity: 'info' | 'warning' | 'error' | 'critical'): 'low' | 'medium' | 'high' | 'critical' {
+    switch (severity) {
+      case 'info': return 'low'
+      case 'warning': return 'medium'
+      case 'error': return 'high'
+      case 'critical': return 'critical'
+      default: return 'low'
     }
   }
 
