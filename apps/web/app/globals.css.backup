@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Define light theme variables if needed, or keep dark as default */
+    --background: 220 40% 5%; /* #0A192F approx */
+    --foreground: 210 20% 90%; /* Light gray for text */
+
+    --card: 220 30% 10%;
+    --card-foreground: 210 20% 90%;
+
+    --popover: 220 40% 5%;
+    --popover-foreground: 210 20% 90%;
+
+    --primary: 160 70% 50%; /* Teal #2CE4B8 approx */
+    --primary-foreground: 220 40% 5%; /* Dark blue for text on teal */
+
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 20% 60%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 220 40% 5%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 20% 25%; /* Slightly lighter border for dark theme */
+    --input: 220 20% 25%;
+    --ring: 160 70% 50%; /* Teal for rings */
+
+    --radius: 0.5rem;
+
+    /* Default mouse position for cards if JS hasn't run or for SSR */
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --glow-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Ensure .dark class applies these variables if you plan to toggle themes.
+     If always dark, these can be merged into :root. */
+  .dark {
+    --background: 220 40% 5%; /* #0A192F approx */
+    --foreground: 210 20% 90%;
+
+    --card: 220 30% 10%;
+    --card-foreground: 210 20% 90%;
+
+    --popover: 220 40% 5%;
+    --popover-foreground: 210 20% 90%;
+
+    --primary: 160 70% 50%;
+    --primary-foreground: 220 40% 5%;
+
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 20% 60%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 220 40% 5%;
+
+    --destructive: 0 72.2% 50.6%; /* Brighter destructive for dark theme */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 20% 25%;
+    --input: 220 20% 25%;
+    --ring: 160 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Apply a default dark background directly if not using ThemeProvider */
+    @apply bg-c9n-blue-dark text-gray-200;
+  }
+}
+
+/* Import mobile optimizations */
+@import '../styles/mobile-optimizations.css';
+
+/* Custom utility for radial gradient */
+.bg-radial-gradient {
+  background-image: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+/* Animated Gradient Background */
+.animated-gradient-bg {
+  background: linear-gradient(-45deg, #0a192f, #300d4f, #0f203a, #7b2cbf);
+  background-size: 400% 400%;
+  animation: gradient-wave 15s ease infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animated-gradient-bg {
+    animation: none;
+    background: #0a192f;
+  }
+}
+
+/* Styles for the interactive card glow effect */
+/*
+  The glow is now handled by a div inside InteractiveCard component,
+  styled directly with inline styles for dynamic mouse position and color.
+  No extra CSS needed here for the glow itself, but you could add base styles
+  for .interactive-card if needed beyond Tailwind classes.
+*/
+.interactive-card {
+  /* Base styles for the card if any, e.g., perspective for 3D effects */
+}

@@ -16,7 +16,7 @@ const UpdateStatusSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clerkUserId: string } }
+  { params }: { params: Promise<{ clerkUserId: string }> }
 ) {
   try {
     const { userId, orgId } = auth()
@@ -41,7 +41,7 @@ export async function GET(
       )
     }
 
-    const { clerkUserId } = params
+    const { clerkUserId } = await params
 
     // Get user analytics
     const analyticsResult = await userSyncService.getUserAnalytics(clerkUserId)
@@ -76,7 +76,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { clerkUserId: string } }
+  { params }: { params: Promise<{ clerkUserId: string }> }
 ) {
   try {
     const { userId, orgId } = auth()
@@ -101,7 +101,7 @@ export async function PATCH(
       )
     }
 
-    const { clerkUserId } = params
+    const { clerkUserId } = await params
 
     let body
     try {
