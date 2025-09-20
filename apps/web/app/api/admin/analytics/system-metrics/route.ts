@@ -9,7 +9,7 @@ import { createSupabaseClient } from '@/lib/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -95,13 +95,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate metrics
-    const signInEvents = authEvents.filter(e => e.action === 'sign_in')
-    const securityEvents = authEvents.filter(e => 
+    const signInEvents = authEvents.filter((e: any) => e.action === 'sign_in')
+    const securityEvents = authEvents.filter((e: any) => 
       ['suspicious_activity', 'account_locked'].includes(e.action)
     )
 
     // Calculate active users (unique users who signed in today)
-    const activeUserIds = new Set(signInEvents.map(e => e.user_id).filter(Boolean))
+    const activeUserIds = new Set(signInEvents.map((e: any) => e.user_id).filter(Boolean))
     const activeUsers = activeUserIds.size
 
     // Calculate trends

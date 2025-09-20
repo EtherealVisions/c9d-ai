@@ -88,6 +88,12 @@ interface MetricData {
   change: number
   trend: 'up' | 'down'
   timeSeries?: TimeSeriesPoint[]
+  breakdown?: {
+    signUp?: number
+    signIn?: number
+    emailVerification?: number
+    socialAuth?: number
+  }
 }
 
 interface PerformanceMetric extends MetricData {
@@ -418,37 +424,37 @@ export function AuthenticationMonitoringDashboard() {
                   <div className="flex justify-between">
                     <span>Sign-up Conversion</span>
                     <span className="font-medium">
-                      {(metrics.authentication.conversionRate.breakdown?.signUp * 100 || 0).toFixed(1)}%
+                      {((metrics.authentication.conversionRate.breakdown?.signUp || 0) * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={metrics.authentication.conversionRate.breakdown?.signUp * 100 || 0} />
+                  <Progress value={(metrics.authentication.conversionRate.breakdown?.signUp || 0) * 100} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Sign-in Conversion</span>
                     <span className="font-medium">
-                      {(metrics.authentication.conversionRate.breakdown?.signIn * 100 || 0).toFixed(1)}%
+                      {((metrics.authentication.conversionRate.breakdown?.signIn || 0) * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={metrics.authentication.conversionRate.breakdown?.signIn * 100 || 0} />
+                  <Progress value={(metrics.authentication.conversionRate.breakdown?.signIn || 0) * 100} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Email Verification</span>
                     <span className="font-medium">
-                      {(metrics.authentication.conversionRate.breakdown?.emailVerification * 100 || 0).toFixed(1)}%
+                      {((metrics.authentication.conversionRate.breakdown?.emailVerification || 0) * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={metrics.authentication.conversionRate.breakdown?.emailVerification * 100 || 0} />
+                  <Progress value={(metrics.authentication.conversionRate.breakdown?.emailVerification || 0) * 100} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Social Auth</span>
                     <span className="font-medium">
-                      {(metrics.authentication.conversionRate.breakdown?.socialAuth * 100 || 0).toFixed(1)}%
+                      {((metrics.authentication.conversionRate.breakdown?.socialAuth || 0) * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={metrics.authentication.conversionRate.breakdown?.socialAuth * 100 || 0} />
+                  <Progress value={(metrics.authentication.conversionRate.breakdown?.socialAuth || 0) * 100} />
                 </div>
               </CardContent>
             </Card>

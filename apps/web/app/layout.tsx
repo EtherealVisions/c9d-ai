@@ -10,7 +10,7 @@ import {
   EnvironmentFallbackManager,
   type EnvironmentConfig 
 } from '@c9d/config'
-import "./globals.css"
+import "./globals-backup.css"
 
 const inter = Inter({ subsets: ["latin"] })
 

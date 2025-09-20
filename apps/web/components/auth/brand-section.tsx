@@ -72,8 +72,6 @@ export function BrandSection() {
           <header className="mb-8">
             <C9nLogo 
               className="text-white text-4xl" 
-              role="img"
-              aria-label="C9d.ai logo"
             />
           </header>
 

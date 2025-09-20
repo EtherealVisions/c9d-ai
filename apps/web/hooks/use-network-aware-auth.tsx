@@ -185,8 +185,10 @@ export function useNetworkAwareAuth() {
       return result;
     } catch (error) {
       const authError = AuthErrorHandler.handleSignInError(error, emailAddress, {
-        networkStatus,
-        serviceStatus: serviceStatus.status
+        metadata: {
+          networkStatus,
+          serviceStatus: serviceStatus.status
+        }
       });
       
       setError(authError);
@@ -254,8 +256,10 @@ export function useNetworkAwareAuth() {
       return result;
     } catch (error) {
       const authError = AuthErrorHandler.handleSignUpError(error, emailAddress, {
-        networkStatus,
-        serviceStatus: serviceStatus.status
+        metadata: {
+          networkStatus,
+          serviceStatus: serviceStatus.status
+        }
       });
       
       setError(authError);

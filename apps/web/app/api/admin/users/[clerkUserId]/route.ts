@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ clerkUserId: string }> }
 ) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -79,7 +79,7 @@ export async function PATCH(
   { params }: { params: Promise<{ clerkUserId: string }> }
 ) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },

@@ -10,7 +10,7 @@ import { createSupabaseClient } from '@/lib/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Get analytics for each user
     const usersWithAnalytics = await Promise.all(
-      (users || []).map(async (user) => {
+      (users || []).map(async (user: any) => {
         const analyticsResult = await userSyncService.getUserAnalytics(user.clerk_user_id)
         return {
           user: {

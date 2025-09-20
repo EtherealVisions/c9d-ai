@@ -562,11 +562,13 @@ export class AuthAnalytics {
     
     events.forEach(event => {
       const sessionId = event.sessionId
-      if (!sessions.has(sessionId)) {
-        sessions.set(sessionId, { start: event.timestamp, end: event.timestamp })
-      } else {
-        const session = sessions.get(sessionId)!
-        session.end = Math.max(session.end, event.timestamp)
+      if (sessionId) {
+        if (!sessions.has(sessionId)) {
+          sessions.set(sessionId, { start: event.timestamp, end: event.timestamp })
+        } else {
+          const session = sessions.get(sessionId)!
+          session.end = Math.max(session.end, event.timestamp)
+        }
       }
     })
 
@@ -582,7 +584,9 @@ export class AuthAnalytics {
     
     events.forEach(event => {
       const sessionId = event.sessionId
-      sessions.set(sessionId, (sessions.get(sessionId) || 0) + 1)
+      if (sessionId) {
+        sessions.set(sessionId, (sessions.get(sessionId) || 0) + 1)
+      }
     })
 
     const singlePageSessions = Array.from(sessions.values()).filter(count => count === 1).length

@@ -141,7 +141,7 @@ export function OptimizedAuthPage({
       console.error('Form submission failed:', error)
       throw error
     } finally {
-      endInteraction()
+      endInteraction?.()
     }
   }
 

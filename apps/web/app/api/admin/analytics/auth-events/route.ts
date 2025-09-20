@@ -9,7 +9,7 @@ import { createSupabaseClient } from '@/lib/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform events for frontend consumption
-    const transformedEvents = (events || []).map(event => {
+    const transformedEvents = (events || []).map((event: any) => {
       // Parse user agent for device info
       const userAgent = event.user_agent || ''
       let deviceType = 'desktop'

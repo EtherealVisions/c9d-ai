@@ -9,7 +9,7 @@ import { createSupabaseClient } from '@/lib/database'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = auth()
+    const { userId, orgId } = await auth()
     if (!userId || !orgId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform audit logs into activity items
-    const activities = (auditLogs || []).map(log => {
+    const activities = (auditLogs || []).map((log: any) => {
       let type: 'user_created' | 'user_updated' | 'security_event' | 'system_event' = 'system_event'
       let description = ''
       let severity: 'info' | 'warning' | 'error' = 'info'

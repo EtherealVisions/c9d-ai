@@ -200,8 +200,10 @@ export async function POST(req: NextRequest) {
             evt.data.id,
             'session_created',
             {
-              ...metadata,
-              sessionData: evt.data
+              metadata: {
+                ...metadata,
+                sessionData: evt.data
+              }
             }
           )
           
@@ -236,9 +238,11 @@ export async function POST(req: NextRequest) {
             evt.data.id,
             'session_ended',
             {
-              ...metadata,
-              sessionData: evt.data,
-              endReason: evt.data.status === 'expired' ? 'expired' : 'user_logout'
+              metadata: {
+                ...metadata,
+                sessionData: evt.data,
+                endReason: evt.data.status === 'expired' ? 'expired' : 'user_logout'
+              }
             }
           )
           
@@ -438,9 +442,8 @@ export async function POST(req: NextRequest) {
             undefined,
             'webhook_unhandled_event',
             {
-              eventType,
-              eventData: evt.data,
-              ...metadata
+              ...metadata,
+              eventData: evt.data
             }
           )
       }

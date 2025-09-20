@@ -22,7 +22,12 @@ export class EdgeEnvironmentConfig implements EdgeConfig {
     // Initialize with environment variables if available
     if (typeof process !== 'undefined' && process.env) {
       // In Node.js or Edge Runtime with process.env
-      this.config = { ...process.env };
+      // Filter out undefined values
+      Object.entries(process.env).forEach(([key, value]) => {
+        if (value !== undefined) {
+          this.config[key] = value;
+        }
+      });
     }
   }
   
