@@ -282,6 +282,232 @@ export class ForbiddenError extends AuthorizationError {
   }
 }
 
+// Additional error classes for comprehensive coverage
+export class BadRequestError extends ValidationError {
+  constructor(message: string = 'Bad Request') {
+    super(ErrorCode.VALIDATION_ERROR, message);
+  }
+}
+
+export class UnprocessableEntityError extends ValidationError {
+  readonly statusCode = 422;
+  
+  constructor(message: string = 'Unprocessable Entity') {
+    super(ErrorCode.VALIDATION_ERROR, message);
+  }
+}
+
+export class TooManyRequestsError extends RateLimitError {
+  constructor(message: string = 'Too Many Requests', retryAfter?: number) {
+    super(message, retryAfter);
+  }
+}
+
+export class ServiceUnavailableError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 503;
+
+  constructor(message: string = 'Service Unavailable') {
+    super(message);
+  }
+}
+
+export class ConfigurationError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Configuration Error') {
+    super(message);
+  }
+}
+
+export class NetworkError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 502;
+
+  constructor(message: string = 'Network Error') {
+    super(message);
+  }
+}
+
+export class TimeoutError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 504;
+
+  constructor(message: string = 'Request Timeout') {
+    super(message);
+  }
+}
+
+export class CacheError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Cache Error') {
+    super(message);
+  }
+}
+
+export class QueueError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Queue Error') {
+    super(message);
+  }
+}
+
+export class FileSystemError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'File System Error') {
+    super(message);
+  }
+}
+
+export class PermissionError extends BaseError {
+  readonly code = ErrorCode.PERMISSION_DENIED;
+  readonly statusCode = 403;
+
+  constructor(message: string = 'Permission Error') {
+    super(message);
+  }
+}
+
+export class ResourceExhaustedError extends BaseError {
+  readonly code = ErrorCode.RATE_LIMIT_EXCEEDED;
+  readonly statusCode = 429;
+
+  constructor(message: string = 'Resource Exhausted') {
+    super(message);
+  }
+}
+
+export class DependencyError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 502;
+
+  constructor(message: string = 'Dependency Error') {
+    super(message);
+  }
+}
+
+export class CorruptionError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Data Corruption Error') {
+    super(message);
+  }
+}
+
+export class SecurityError extends BaseError {
+  readonly code = ErrorCode.UNAUTHORIZED_ACCESS;
+  readonly statusCode = 401;
+
+  constructor(message: string = 'Security Error') {
+    super(message);
+  }
+}
+
+export class ComplianceError extends BaseError {
+  readonly code = ErrorCode.FORBIDDEN;
+  readonly statusCode = 403;
+
+  constructor(message: string = 'Compliance Error') {
+    super(message);
+  }
+}
+
+export class BusinessRuleError extends BaseError {
+  readonly code = ErrorCode.VALIDATION_ERROR;
+  readonly statusCode = 400;
+
+  constructor(message: string = 'Business Rule Violation') {
+    super(message);
+  }
+}
+
+export class WorkflowError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Workflow Error') {
+    super(message);
+  }
+}
+
+export class IntegrationError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 502;
+
+  constructor(message: string = 'Integration Error') {
+    super(message);
+  }
+}
+
+export class MigrationError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Migration Error') {
+    super(message);
+  }
+}
+
+export class CompatibilityError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'Compatibility Error') {
+    super(message);
+  }
+}
+
+export class LicenseError extends BaseError {
+  readonly code = ErrorCode.FORBIDDEN;
+  readonly statusCode = 403;
+
+  constructor(message: string = 'License Error') {
+    super(message);
+  }
+}
+
+export class QuotaExceededError extends BaseError {
+  readonly code = ErrorCode.RATE_LIMIT_EXCEEDED;
+  readonly statusCode = 429;
+
+  constructor(message: string = 'Quota Exceeded') {
+    super(message);
+  }
+}
+
+export class MaintenanceError extends BaseError {
+  readonly code = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  readonly statusCode = 503;
+
+  constructor(message: string = 'Service Under Maintenance') {
+    super(message);
+  }
+}
+
+export class DeprecationError extends BaseError {
+  readonly code = ErrorCode.INTERNAL_ERROR;
+  readonly statusCode = 410;
+
+  constructor(message: string = 'Feature Deprecated') {
+    super(message);
+  }
+}
+
+// Authentication error for backward compatibility
+export class AuthenticationError extends BasicAuthenticationError {
+  constructor(message: string = 'Authentication Error') {
+    super(ErrorCode.AUTHENTICATION_ERROR, message);
+  }
+}
+
 /**
  * Type guard to check if an error is a BaseError
  */

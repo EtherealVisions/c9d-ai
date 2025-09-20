@@ -57,13 +57,23 @@ function hasPhaseToken() {
 function loadEnvFiles() {
   const envVars = {};
   const nodeEnv = process.env.NODE_ENV || 'development';
+  const isVercelBuild = process.env.VERCEL === '1' && process.env.CI === '1';
   
   // Define the order of .env files to load (later files override earlier ones)
-  const envFiles = [
+  let envFiles = [
     '.env',
     `.env.${nodeEnv}`,
     '.env.local'
   ];
+  
+  // Use build-specific environment in CI/Vercel builds
+  if (isVercelBuild) {
+    envFiles = [
+      '.env.build',
+      '.env'
+    ];
+    log('[EnvLoader] Using build-specific environment configuration', colors.cyan);
+  }
 
   // Find workspace root (look for pnpm-workspace.yaml)
   let rootPath = process.cwd();

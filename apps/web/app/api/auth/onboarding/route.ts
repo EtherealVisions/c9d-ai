@@ -21,8 +21,23 @@ const CompleteOnboardingSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    // Initialize configuration
-    await initializeAppConfig()
+    // Build-time safety check
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                       (process.env.VERCEL === '1' && process.env.CI === '1')
+    
+    if (isBuildTime) {
+      return NextResponse.json(
+        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
+        { status: 503 }
+      )
+    }
+
+    // Initialize configuration (only at runtime)
+    try {
+      await initializeAppConfig()
+    } catch (configError) {
+      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+    }
 
     const { userId } = await auth()
     
@@ -118,8 +133,23 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Initialize configuration
-    await initializeAppConfig()
+    // Build-time safety check
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                       (process.env.VERCEL === '1' && process.env.CI === '1')
+    
+    if (isBuildTime) {
+      return NextResponse.json(
+        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
+        { status: 503 }
+      )
+    }
+
+    // Initialize configuration (only at runtime)
+    try {
+      await initializeAppConfig()
+    } catch (configError) {
+      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+    }
 
     const { userId } = await auth()
     
@@ -194,8 +224,23 @@ export async function PUT(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Initialize configuration
-    await initializeAppConfig()
+    // Build-time safety check
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                       (process.env.VERCEL === '1' && process.env.CI === '1')
+    
+    if (isBuildTime) {
+      return NextResponse.json(
+        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
+        { status: 503 }
+      )
+    }
+
+    // Initialize configuration (only at runtime)
+    try {
+      await initializeAppConfig()
+    } catch (configError) {
+      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+    }
 
     const { userId } = await auth()
     
@@ -258,8 +303,23 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // Initialize configuration
-    await initializeAppConfig()
+    // Build-time safety check
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                       (process.env.VERCEL === '1' && process.env.CI === '1')
+    
+    if (isBuildTime) {
+      return NextResponse.json(
+        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
+        { status: 503 }
+      )
+    }
+
+    // Initialize configuration (only at runtime)
+    try {
+      await initializeAppConfig()
+    } catch (configError) {
+      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+    }
 
     const { userId } = await auth()
     

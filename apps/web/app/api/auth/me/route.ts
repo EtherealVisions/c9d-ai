@@ -7,12 +7,28 @@ import { initializeAppConfig, getAppConfigSync } from '@/lib/config/init'
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize configuration
-    await initializeAppConfig();
+    // Build-time safety check
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                       (process.env.VERCEL === '1' && process.env.CI === '1')
+    
+    if (isBuildTime) {
+      // Return a build-time stub response
+      return NextResponse.json(
+        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
+        { status: 503 }
+      )
+    }
 
-    // Check if we're in build mode
+    // Initialize configuration (only at runtime)
+    try {
+      await initializeAppConfig();
+    } catch (configError) {
+      console.warn('[Auth Me] Configuration initialization failed, using fallback:', configError)
+    }
+
+    // Check if we're in build mode or missing configuration
     const supabaseUrl = getAppConfigSync('NEXT_PUBLIC_SUPABASE_URL') || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) {
+    if (!supabaseUrl || supabaseUrl.includes('build-placeholder')) {
       return NextResponse.json(
         { error: { code: 'SERVICE_UNAVAILABLE', message: 'Database not configured' } },
         { status: 503 }

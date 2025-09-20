@@ -1,10 +1,60 @@
-import { 
-  loadFromPhase, 
-  getPhaseConfig,
-  EnvironmentFallbackManager,
-  PhaseSDKError,
-  PhaseSDKErrorCode
-} from '@c9d/config';
+// Build-time safety check
+const isBuildTime = typeof process !== 'undefined' && (
+  process.env.NEXT_PHASE === 'phase-production-build' || 
+  (process.env.VERCEL === '1' && process.env.CI === '1')
+)
+
+// Build-safe imports with fallbacks
+let loadFromPhase: any
+let EnvironmentFallbackManager: any
+
+if (isBuildTime) {
+  // Build-time stubs - don't import anything
+  console.warn('[ConfigManager] Build-time detected - using stubs')
+  loadFromPhase = async () => ({ success: false, error: 'Build-time stub' })
+  EnvironmentFallbackManager = class {
+    async loadEnvironment() {
+      return { 
+        success: false, 
+        error: 'Build-time stub',
+        variables: process.env,
+        source: 'build-stub'
+      }
+    }
+    static validateConfig() {
+      return { valid: true, errors: [] }
+    }
+    static createTestConfig() {
+      return {}
+    }
+  }
+} else {
+  try {
+    const config = require('@c9d/config')
+    loadFromPhase = config.loadFromPhase
+    EnvironmentFallbackManager = config.EnvironmentFallbackManager
+  } catch (error) {
+    // Runtime fallbacks
+    console.warn('[ConfigManager] Using runtime fallbacks for @c9d/config')
+    loadFromPhase = async () => ({ success: false, error: 'Runtime fallback stub' })
+    EnvironmentFallbackManager = class {
+      async loadEnvironment() {
+        return { 
+          success: false, 
+          error: 'Runtime fallback stub',
+          variables: process.env,
+          source: 'runtime-stub'
+        }
+      }
+      static validateConfig() {
+        return { valid: true, errors: [] }
+      }
+      static createTestConfig() {
+        return {}
+      }
+    }
+  }
+}
 
 /**
  * Configuration manager interface
@@ -58,7 +108,21 @@ export class CentralizedConfigManager implements ConfigManager {
     this.enableCaching = options.enableCaching ?? true;
     this.cacheTTL = options.cacheTTL ?? this.cacheTTL;
     this.fallbackToEnv = options.fallbackToEnv ?? true;
-    this.fallbackManager = new EnvironmentFallbackManager();
+    
+    // Build-safe fallback manager initialization
+    try {
+      this.fallbackManager = new EnvironmentFallbackManager();
+    } catch (error) {
+      console.warn('[ConfigManager] Failed to initialize EnvironmentFallbackManager, using stub');
+      this.fallbackManager = {
+        loadEnvironment: async () => ({
+          success: false,
+          error: 'Fallback manager stub',
+          variables: process.env,
+          source: 'stub'
+        })
+      } as any;
+    }
   }
 
   /**
