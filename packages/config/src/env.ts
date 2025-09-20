@@ -83,6 +83,14 @@ async function loadEnvFiles(rootPath: string = process.cwd()): Promise<EnvLoadRe
     return result;
   }
 
+  // Skip file loading in Vercel CI build environment
+  if (process.env.VERCEL === '1' && process.env.CI === '1') {
+    console.log('[Config] Skipping .env file loading in Vercel CI build environment');
+    result.config = { ...process.env } as EnvConfig;
+    result.loadedFiles = ['process.env'];
+    return result;
+  }
+
   const nodeEnv = process.env.NODE_ENV || 'development';
   const envFiles = getEnvFilesToLoad(nodeEnv);
 

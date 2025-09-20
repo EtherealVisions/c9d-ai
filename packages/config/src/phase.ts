@@ -221,6 +221,17 @@ export async function loadFromPhase(
   config?: Partial<PhaseConfig>,
   rootPath?: string
 ): Promise<PhaseEnvResult> {
+  // Skip Phase.dev loading in Vercel CI build environment
+  if (process.env.VERCEL === '1' && process.env.CI === '1') {
+    console.log('[Phase.dev] Skipping Phase.dev loading in Vercel CI build environment');
+    return {
+      variables: { ...process.env } as Record<string, string>,
+      success: false,
+      error: 'Phase.dev loading skipped in Vercel CI build environment',
+      source: 'fallback'
+    };
+  }
+
   const phaseConfig = await getPhaseConfig(config, rootPath);
   
   if (!phaseConfig) {

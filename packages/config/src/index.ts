@@ -16,6 +16,16 @@ if (typeof process === 'undefined' || !process.env) {
   );
 }
 
+// Warn about Vercel CI build environment
+// https://vercel.com/docs/environment-variables/system-environment-variables
+if (process.env.VERCEL === '1' && process.env.CI === '1') {
+  console.warn(
+    '[Config] Detected Vercel CI build environment (VERCEL=1, CI=1). ' +
+    'Configuration loading may be limited during build. ' +
+    'Consider using direct process.env access for build-time configuration.'
+  );
+}
+
 export * from './types';
 export * from './env';
 export * from './constants';
@@ -26,3 +36,4 @@ export * from './phase-sdk-cache';
 export * from './environment-fallback-manager';
 export * from './phase-error-handler';
 export * from './phase-monitoring';
+
