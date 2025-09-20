@@ -35,7 +35,13 @@
     "typecheck": "node ../../scripts/run-with-env.js tsc --noEmit",
     "test:coverage-focus": "NODE_OPTIONS=\"--max-old-space-size=16384\" node run-coverage-tests.js",
     "test:memory-safe": "NODE_OPTIONS=\"--max-old-space-size=8192\" node ../../scripts/run-with-env.js vitest run --pool=forks --poolOptions.forks.singleFork=true",
-    "test:essential": "NODE_OPTIONS=\"--max-old-space-size=8192\" node ../../scripts/run-with-env.js vitest run --exclude=\"**/interactive-step-component.test.tsx\" --exclude=\"**/organization-setup-wizard.test.tsx\" --exclude=\"**/progress-indicator.test.tsx\""
+    "test:essential": "NODE_OPTIONS=\"--max-old-space-size=8192\" node ../../scripts/run-with-env.js vitest run --exclude=\"**/interactive-step-component.test.tsx\" --exclude=\"**/organization-setup-wizard.test.tsx\" --exclude=\"**/progress-indicator.test.tsx\"",
+    "db:generate": "node ../../scripts/run-with-env.js drizzle-kit generate",
+    "db:migrate": "node ../../scripts/run-with-env.js drizzle-kit migrate",
+    "db:push": "node ../../scripts/run-with-env.js drizzle-kit push",
+    "db:studio": "node ../../scripts/run-with-env.js drizzle-kit studio",
+    "db:introspect": "node ../../scripts/run-with-env.js drizzle-kit introspect",
+    "db:drop": "node ../../scripts/run-with-env.js drizzle-kit drop"
   },
   "dependencies": {
     "@c9d/config": "workspace:*",
@@ -76,12 +82,16 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "drizzle-orm": "^0.44.5",
+    "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-themes": "^0.4.4",
     "node-fetch": "^3.3.2",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7",
     "qrcode.react": "^4.2.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
@@ -94,7 +104,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@clerk/testing": "^1.12.6",
@@ -105,10 +115,12 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22",
     "@types/node-fetch": "^2.6.13",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
+    "drizzle-kit": "^0.31.4",
     "jest-axe": "^9.0.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5",
