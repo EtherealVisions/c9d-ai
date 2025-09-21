@@ -1,74 +1,98 @@
 /**
- * Roles and Permissions Validation Schemas
+ * Roles Validation Schemas
  * 
  * This file contains Zod validation schemas for role and permission-related operations.
- * Schemas are generated from Drizzle definitions and extended with business rules.
+ * Schemas are manually defined to ensure type safety and compatibility.
  */
 
 import { z } from 'zod'
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { roles, permissions, PERMISSION_RESOURCES, PERMISSION_ACTIONS, SYSTEM_ROLES } from '@/lib/db/schema/roles'
 
-// Base schemas generated from Drizzle definitions
-export const selectRoleSchema = createSelectSchema(roles)
-export const insertRoleSchema = createInsertSchema(roles)
-export const selectPermissionSchema = createSelectSchema(permissions)
-export const insertPermissionSchema = createInsertSchema(permissions)
+// Constants for permissions
+export const PERMISSION_RESOURCES = {
+  USERS: 'users',
+  ORGANIZATIONS: 'organizations',
+  ROLES: 'roles',
+  INVITATIONS: 'invitations',
+  CONTENT: 'content',
+  ANALYTICS: 'analytics',
+  SETTINGS: 'settings'
+} as const
 
-// Permission string validation
+export const PERMISSION_ACTIONS = {
+  CREATE: 'create',
+  READ: 'read',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  MANAGE: 'manage'
+} as const
+
+// Permission validation
 export const permissionStringSchema = z.string()
-  .regex(/^[a-z_]+:[a-z_]+$/, 'Permission must be in format "resource:action"')
-  .refine(
-    (permission) => {
-      const [resource, action] = permission.split(':')
-      return Object.values(PERMISSION_RESOURCES).includes(resource as any) &&
-             Object.values(PERMISSION_ACTIONS).includes(action as any)
-    },
-    'Invalid permission resource or action'
-  )
+  .regex(/^[a-z_]+\.[a-z_]+$/, 'Permission must be in format "resource.action"')
+  .refine(val => {
+    const [resource, action] = val.split('.')
+    return Object.values(PERMISSION_RESOURCES).includes(resource as any) &&
+           Object.values(PERMISSION_ACTIONS).includes(action as any)
+  }, 'Invalid permission resource or action')
 
-// Role validation schemas
-export const createRoleSchema = insertRoleSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-}).extend({
+// Base role schema
+export const baseRoleSchema = z.object({
+  id: z.string().uuid(),
   name: z.string()
     .min(1, 'Role name is required')
     .max(100, 'Role name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name can only contain letters, numbers, spaces, hyphens, and underscores'),
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name contains invalid characters'),
   
   description: z.string()
     .max(500, 'Description must be less than 500 characters')
     .nullable(),
   
   organizationId: z.string()
-    .uuid('Invalid organization ID format'),
+    .uuid('Invalid organization ID'),
   
   isSystemRole: z.boolean()
     .default(false),
   
   permissions: z.array(permissionStringSchema)
-    .min(1, 'Role must have at least one permission')
-    .max(50, 'Role cannot have more than 50 permissions')
-    .refine(
-      (permissions) => {
-        // Check for duplicate permissions
-        const uniquePermissions = new Set(permissions)
-        return uniquePermissions.size === permissions.length
-      },
-      'Duplicate permissions are not allowed'
-    )
+    .default([])
+    .refine(arr => arr.length <= 100, 'Cannot have more than 100 permissions')
+    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique'),
+  
+  createdAt: z.date(),
+  updatedAt: z.date()
 })
 
-export const updateRoleSchema = createRoleSchema.partial().omit({
-  organizationId: true, // Organization cannot be changed
-  isSystemRole: true    // System role status cannot be changed
-}).extend({
+// Role validation schemas
+export const createRoleSchema = z.object({
   name: z.string()
-    .min(1, 'Role name cannot be empty')
+    .min(1, 'Role name is required')
     .max(100, 'Role name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name can only contain letters, numbers, spaces, hyphens, and underscores')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name contains invalid characters'),
+  
+  description: z.string()
+    .max(500, 'Description must be less than 500 characters')
+    .nullable()
+    .optional(),
+  
+  organizationId: z.string()
+    .uuid('Invalid organization ID'),
+  
+  isSystemRole: z.boolean()
+    .default(false)
+    .optional(),
+  
+  permissions: z.array(permissionStringSchema)
+    .default([])
+    .refine(arr => arr.length <= 100, 'Cannot have more than 100 permissions')
+    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique')
+    .optional()
+})
+
+export const updateRoleSchema = z.object({
+  name: z.string()
+    .min(1, 'Role name is required')
+    .max(100, 'Role name must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name contains invalid characters')
     .optional(),
   
   description: z.string()
@@ -77,75 +101,64 @@ export const updateRoleSchema = createRoleSchema.partial().omit({
     .optional(),
   
   permissions: z.array(permissionStringSchema)
-    .min(1, 'Role must have at least one permission')
-    .max(50, 'Role cannot have more than 50 permissions')
-    .refine(
-      (permissions) => {
-        if (!permissions) return true
-        const uniquePermissions = new Set(permissions)
-        return uniquePermissions.size === permissions.length
-      },
-      'Duplicate permissions are not allowed'
-    )
+    .refine(arr => arr.length <= 100, 'Cannot have more than 100 permissions')
+    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique')
     .optional()
 })
 
-// Permission validation schemas
-export const createPermissionSchema = insertPermissionSchema.omit({
-  id: true,
-  createdAt: true
-}).extend({
+// Permission schemas
+export const createPermissionSchema = z.object({
   name: z.string()
     .min(1, 'Permission name is required')
     .max(100, 'Permission name must be less than 100 characters')
-    .regex(/^[a-z_]+:[a-z_]+$/, 'Permission name must be in format "resource:action"'),
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Permission name contains invalid characters'),
   
   description: z.string()
     .max(500, 'Description must be less than 500 characters')
-    .nullable(),
+    .nullable()
+    .optional(),
   
   resource: z.enum(Object.values(PERMISSION_RESOURCES) as [string, ...string[]])
-    .refine(
-      (resource) => Object.values(PERMISSION_RESOURCES).includes(resource as any),
-      'Invalid permission resource'
-    ),
+    .refine(val => Object.values(PERMISSION_RESOURCES).includes(val as any), 'Invalid resource'),
   
   action: z.enum(Object.values(PERMISSION_ACTIONS) as [string, ...string[]])
-    .refine(
-      (action) => Object.values(PERMISSION_ACTIONS).includes(action as any),
-      'Invalid permission action'
-    )
+    .refine(val => Object.values(PERMISSION_ACTIONS).includes(val as any), 'Invalid action')
 })
 
-export const updatePermissionSchema = createPermissionSchema.partial().omit({
-  name: true,     // Permission name cannot be changed
-  resource: true, // Resource cannot be changed
-  action: true    // Action cannot be changed
-}).extend({
+export const updatePermissionSchema = z.object({
   description: z.string()
     .max(500, 'Description must be less than 500 characters')
     .nullable()
     .optional()
 })
 
-// API request/response schemas
-export const roleApiResponseSchema = selectRoleSchema.extend({
-  memberCount: z.number().int().min(0),
-  permissionCount: z.number().int().min(0),
-  organization: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    slug: z.string()
-  }).optional(),
+// API Response schemas
+export const roleApiResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  organizationId: z.string().uuid(),
+  isSystemRole: z.boolean(),
+  permissions: z.array(z.string()),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  memberCount: z.number().int().min(0).default(0),
   canEdit: z.boolean().default(false),
   canDelete: z.boolean().default(false)
 })
 
-export const permissionApiResponseSchema = selectPermissionSchema.extend({
-  roleCount: z.number().int().min(0),
+export const permissionApiResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  resource: z.string(),
+  action: z.string(),
+  createdAt: z.date(),
+  roleCount: z.number().int().min(0).default(0),
   isSystemPermission: z.boolean().default(false)
 })
 
+// List response schemas
 export const roleListResponseSchema = z.object({
   roles: z.array(roleApiResponseSchema),
   pagination: z.object({
@@ -166,64 +179,48 @@ export const permissionListResponseSchema = z.object({
   })
 })
 
-// Role and permission search schemas
+// Bulk operations schemas
+export const bulkAssignPermissionsSchema = z.object({
+  roleId: z.string().uuid(),
+  permissions: z.array(permissionStringSchema)
+    .min(1, 'At least one permission is required')
+    .max(100, 'Cannot assign more than 100 permissions at once')
+    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique')
+})
+
+export const bulkRevokePermissionsSchema = z.object({
+  roleId: z.string().uuid(),
+  permissions: z.array(permissionStringSchema)
+    .min(1, 'At least one permission is required')
+    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique')
+})
+
+// Search and filter schemas
 export const roleSearchSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
-  query: z.string().min(1).max(255).optional(),
-  name: z.string().max(100).optional(),
+  query: z.string().min(1).max(100).optional(),
+  organizationId: z.string().uuid().optional(),
   isSystemRole: z.boolean().optional(),
-  hasPermission: z.string().regex(/^[a-z_]+:[a-z_]+$/).optional(),
+  hasPermission: z.string().optional(),
   createdAfter: z.date().optional(),
   createdBefore: z.date().optional(),
-  limit: z.number().int().min(1).max(100).default(20),
-  offset: z.number().int().min(0).default(0),
-  sortBy: z.enum(['createdAt', 'updatedAt', 'name', 'memberCount']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc')
+  sortBy: z.enum(['name', 'createdAt', 'updatedAt', 'memberCount']).default('name'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(20)
 })
 
 export const permissionSearchSchema = z.object({
-  query: z.string().min(1).max(255).optional(),
+  query: z.string().min(1).max(100).optional(),
   resource: z.enum(Object.values(PERMISSION_RESOURCES) as [string, ...string[]]).optional(),
   action: z.enum(Object.values(PERMISSION_ACTIONS) as [string, ...string[]]).optional(),
-  limit: z.number().int().min(1).max(100).default(20),
-  offset: z.number().int().min(0).default(0),
-  sortBy: z.enum(['createdAt', 'name', 'resource', 'action']).default('name'),
-  sortOrder: z.enum(['asc', 'desc']).default('asc')
+  isSystemPermission: z.boolean().optional(),
+  sortBy: z.enum(['name', 'resource', 'action', 'createdAt']).default('name'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(20)
 })
 
-// Role assignment and permission check schemas
-export const roleAssignmentSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  organizationId: z.string().uuid('Invalid organization ID'),
-  roleId: z.string().uuid('Invalid role ID')
-})
-
-export const permissionCheckSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  organizationId: z.string().uuid('Invalid organization ID'),
-  permission: permissionStringSchema,
-  resourceId: z.string().uuid().optional() // For resource-specific permissions
-})
-
-export const bulkPermissionCheckSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  organizationId: z.string().uuid('Invalid organization ID'),
-  permissions: z.array(permissionStringSchema).min(1).max(20),
-  resourceId: z.string().uuid().optional()
-})
-
-// System role validation
-export const systemRoleSchema = z.enum(Object.values(SYSTEM_ROLES) as [string, ...string[]])
-
-// Role hierarchy validation
-export const roleHierarchySchema = z.object({
-  roleId: z.string().uuid('Invalid role ID'),
-  parentRoleId: z.string().uuid('Invalid parent role ID').nullable(),
-  level: z.number().int().min(0).max(10),
-  organizationId: z.string().uuid('Invalid organization ID')
-})
-
-// Type exports for TypeScript integration
+// Type exports
 export type CreateRole = z.infer<typeof createRoleSchema>
 export type UpdateRole = z.infer<typeof updateRoleSchema>
 export type CreatePermission = z.infer<typeof createPermissionSchema>
@@ -232,118 +229,22 @@ export type RoleApiResponse = z.infer<typeof roleApiResponseSchema>
 export type PermissionApiResponse = z.infer<typeof permissionApiResponseSchema>
 export type RoleListResponse = z.infer<typeof roleListResponseSchema>
 export type PermissionListResponse = z.infer<typeof permissionListResponseSchema>
+
+// Database schema types (simplified)
+export type SelectRole = z.infer<typeof baseRoleSchema>
+export type InsertRole = Omit<SelectRole, 'id' | 'createdAt' | 'updatedAt'>
+export type SelectPermission = {
+  id: string
+  name: string
+  description: string | null
+  resource: string
+  action: string
+  createdAt: Date
+}
+export type InsertPermission = Omit<SelectPermission, 'id' | 'createdAt'>
+
+// Search and bulk operation types
 export type RoleSearch = z.infer<typeof roleSearchSchema>
 export type PermissionSearch = z.infer<typeof permissionSearchSchema>
-export type RoleAssignment = z.infer<typeof roleAssignmentSchema>
-export type PermissionCheck = z.infer<typeof permissionCheckSchema>
-export type BulkPermissionCheck = z.infer<typeof bulkPermissionCheckSchema>
-export type SystemRole = z.infer<typeof systemRoleSchema>
-export type RoleHierarchy = z.infer<typeof roleHierarchySchema>
-export type PermissionString = z.infer<typeof permissionStringSchema>
-export type SelectRole = z.infer<typeof selectRoleSchema>
-export type InsertRole = z.infer<typeof insertRoleSchema>
-export type SelectPermission = z.infer<typeof selectPermissionSchema>
-export type InsertPermission = z.infer<typeof insertPermissionSchema>
-
-// Validation helper functions
-export function validateCreateRole(data: unknown): CreateRole {
-  return createRoleSchema.parse(data)
-}
-
-export function validateUpdateRole(data: unknown): UpdateRole {
-  return updateRoleSchema.parse(data)
-}
-
-export function validateCreatePermission(data: unknown): CreatePermission {
-  return createPermissionSchema.parse(data)
-}
-
-export function validateUpdatePermission(data: unknown): UpdatePermission {
-  return updatePermissionSchema.parse(data)
-}
-
-export function validateRoleSearch(data: unknown): RoleSearch {
-  return roleSearchSchema.parse(data)
-}
-
-export function validatePermissionSearch(data: unknown): PermissionSearch {
-  return permissionSearchSchema.parse(data)
-}
-
-export function validateRoleAssignment(data: unknown): RoleAssignment {
-  return roleAssignmentSchema.parse(data)
-}
-
-export function validatePermissionCheck(data: unknown): PermissionCheck {
-  return permissionCheckSchema.parse(data)
-}
-
-export function validateBulkPermissionCheck(data: unknown): BulkPermissionCheck {
-  return bulkPermissionCheckSchema.parse(data)
-}
-
-export function validatePermissionString(permission: string): PermissionString {
-  return permissionStringSchema.parse(permission)
-}
-
-// Safe parsing functions that return results instead of throwing
-export function safeValidateCreateRole(data: unknown) {
-  return createRoleSchema.safeParse(data)
-}
-
-export function safeValidateUpdateRole(data: unknown) {
-  return updateRoleSchema.safeParse(data)
-}
-
-export function safeValidateCreatePermission(data: unknown) {
-  return createPermissionSchema.safeParse(data)
-}
-
-export function safeValidateUpdatePermission(data: unknown) {
-  return updatePermissionSchema.safeParse(data)
-}
-
-export function safeValidateRoleSearch(data: unknown) {
-  return roleSearchSchema.safeParse(data)
-}
-
-export function safeValidatePermissionSearch(data: unknown) {
-  return permissionSearchSchema.safeParse(data)
-}
-
-export function safeValidateRoleAssignment(data: unknown) {
-  return roleAssignmentSchema.safeParse(data)
-}
-
-export function safeValidatePermissionCheck(data: unknown) {
-  return permissionCheckSchema.safeParse(data)
-}
-
-export function safeValidateBulkPermissionCheck(data: unknown) {
-  return bulkPermissionCheckSchema.safeParse(data)
-}
-
-export function safeValidatePermissionString(permission: string) {
-  return permissionStringSchema.safeParse(permission)
-}
-
-// Permission utility functions
-export function hasPermission(userPermissions: string[], requiredPermission: string): boolean {
-  return userPermissions.includes(requiredPermission)
-}
-
-export function hasAnyPermission(userPermissions: string[], requiredPermissions: string[]): boolean {
-  return requiredPermissions.some(permission => userPermissions.includes(permission))
-}
-
-export function hasAllPermissions(userPermissions: string[], requiredPermissions: string[]): boolean {
-  return requiredPermissions.every(permission => userPermissions.includes(permission))
-}
-
-export function getPermissionsByResource(permissions: string[], resource: string): string[] {
-  return permissions.filter(permission => permission.startsWith(`${resource}:`))
-}
-
-export function getPermissionsByAction(permissions: string[], action: string): string[] {
-  return permissions.filter(permission => permission.endsWith(`:${action}`))
-}
+export type BulkAssignPermissions = z.infer<typeof bulkAssignPermissionsSchema>
+export type BulkRevokePermissions = z.infer<typeof bulkRevokePermissionsSchema>

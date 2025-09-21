@@ -41,7 +41,15 @@
     "db:push": "node ../../scripts/run-with-env.js drizzle-kit push",
     "db:studio": "node ../../scripts/run-with-env.js drizzle-kit studio",
     "db:introspect": "node ../../scripts/run-with-env.js drizzle-kit introspect",
-    "db:drop": "node ../../scripts/run-with-env.js drizzle-kit drop"
+    "db:drop": "node ../../scripts/run-with-env.js drizzle-kit drop",
+    "migrate": "node ../../scripts/run-with-env.js tsx scripts/migrate.ts",
+    "migrate:status": "node ../../scripts/run-with-env.js tsx scripts/migrate.ts status",
+    "migrate:up": "node ../../scripts/run-with-env.js tsx scripts/migrate.ts up",
+    "migrate:validate": "node ../../scripts/run-with-env.js tsx scripts/migrate.ts validate",
+    "db:monitor": "node ../../scripts/run-with-env.js tsx scripts/db-monitor.ts",
+    "db:status": "node ../../scripts/run-with-env.js tsx scripts/db-monitor.ts status",
+    "db:health": "node ../../scripts/run-with-env.js tsx scripts/db-monitor.ts health",
+    "db:metrics": "node ../../scripts/run-with-env.js tsx scripts/db-monitor.ts metrics"
   },
   "dependencies": {
     "@c9d/config": "workspace:*",

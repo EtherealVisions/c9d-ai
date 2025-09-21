@@ -564,22 +564,22 @@ export function omitFields<T extends z.ZodRawShape, K extends keyof T>(
   schema: z.ZodObject<T>,
   fields: K[]
 ) {
-  const omitObj = {} as { [P in K]: true }
-  fields.forEach(field => {
-    omitObj[field] = true
-  })
-  return schema.omit(omitObj)
+  const omitObj = fields.reduce((acc, field) => {
+    acc[field] = true
+    return acc
+  }, {} as Record<K, true>)
+  return schema.omit(omitObj as any)
 }
 
 export function pickFields<T extends z.ZodRawShape, K extends keyof T>(
   schema: z.ZodObject<T>,
   fields: K[]
 ) {
-  const pickObj = {} as { [P in K]: true }
-  fields.forEach(field => {
-    pickObj[field] = true
-  })
-  return schema.pick(pickObj)
+  const pickObj = fields.reduce((acc, field) => {
+    acc[field] = true
+    return acc
+  }, {} as Record<K, true>)
+  return schema.pick(pickObj as any)
 }
 
 // Conditional validation utilities

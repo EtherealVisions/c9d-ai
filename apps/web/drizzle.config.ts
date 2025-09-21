@@ -1,3 +1,10 @@
+/**
+ * Drizzle Kit Configuration
+ * 
+ * This file configures Drizzle Kit for database migrations, introspection,
+ * and development tools like Drizzle Studio.
+ */
+
 import { defineConfig } from 'drizzle-kit'
 
 // Import configuration function with error handling
@@ -57,7 +64,7 @@ function getDatabaseUrl(): string {
 }
 
 export default defineConfig({
-  // Database connection configuration
+  // Database connection
   dialect: 'postgresql',
   dbCredentials: {
     url: getDatabaseUrl(),
@@ -69,17 +76,22 @@ export default defineConfig({
   
   // Migration configuration
   migrations: {
-    prefix: 'timestamp',
     table: 'drizzle_migrations',
     schema: 'public',
   },
   
-  // Development configuration
+  // Introspection configuration
+  introspect: {
+    casing: 'camel',
+  },
+  
+  // Development tools
   verbose: true,
   strict: true,
   
-  // Introspection configuration for existing database
-  introspect: {
-    casing: 'preserve',
+  // Drizzle Studio configuration
+  studio: {
+    port: 3008,
+    host: '127.0.0.1',
   },
 })
