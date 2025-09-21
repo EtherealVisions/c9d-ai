@@ -1,0 +1,43 @@
+{
+  "name": "Coordinated.App Development Environment",
+  "install": "pnpm install && pnpm db:generate",
+  "start": "echo 'Environment ready for development'",
+  "terminals": [
+    {
+      "name": "Next.js Dev Server",
+      "command": "cd apps/web && pnpm dev",
+      "description": "Runs the Next.js development server on port 3000 with hot reload"
+    },
+    {
+      "name": "Docusaurus Dev Server",
+      "command": "cd apps/docs && pnpm dev",
+      "description": "Runs the Docusaurus documentation server on port 3001"
+    },
+    {
+      "name": "Type Checking",
+      "command": "cd apps/web && pnpm type-check --watch",
+      "description": "Continuous TypeScript type checking in watch mode"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Next.js App",
+      "port": 3000
+    },
+    {
+      "name": "Docusaurus Documentation",
+      "port": 3001
+    },
+    {
+      "name": "Prisma Studio",
+      "port": 5555
+    }
+  ],
+  "repositoryDependencies": [
+    "github.com/EtherealVisions/webstudio"
+  ],
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  }
+}
