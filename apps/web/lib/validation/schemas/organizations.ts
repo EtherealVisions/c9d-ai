@@ -16,7 +16,7 @@ export const baseOrganizationSchema = z.object({
   name: z.string()
     .min(1, 'Organization name is required')
     .max(100, 'Organization name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_&.]+$/, 'Organization name contains invalid characters'),
+    .regex(/^[a-zA-Z0-9\s\-_&.,'()]+$/, 'Organization name contains invalid characters'),
   
   slug: z.string()
     .min(1, 'Slug is required')
@@ -51,7 +51,7 @@ export const createOrganizationSchema = z.object({
   name: z.string()
     .min(1, 'Organization name is required')
     .max(100, 'Organization name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_&.]+$/, 'Organization name contains invalid characters'),
+    .regex(/^[a-zA-Z0-9\s\-_&.,'()]+$/, 'Organization name contains invalid characters'),
   
   avatarUrl: z.string()
     .url('Invalid avatar URL')

@@ -4,74 +4,102 @@ import { authRouterService } from '@/lib/services/auth-router-service'
 import { userService } from '@/lib/services/user-service'
 import { initializeAppConfig } from '@/lib/config/init'
 import { z } from 'zod'
+import { 
+  withAuth, 
+  withBodyValidation, 
+  withErrorHandling, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/validation/middleware'
+import { ValidationError } from '@/lib/validation/errors'
 
+// Validation schemas for onboarding operations
 const UpdateOnboardingSchema = z.object({
-  step: z.string().min(1),
+  step: z.string()
+    .min(1, 'Step name is required')
+    .max(50, 'Step name must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Step name can only contain letters, numbers, hyphens, and underscores'),
   completed: z.boolean().optional().default(true),
-  data: z.record(z.any()).optional()
+  data: z.record(z.any()).optional().refine(
+    (data) => {
+      if (!data) return true
+      // Validate that data object is not too large (prevent DoS)
+      return JSON.stringify(data).length <= 10000
+    },
+    'Onboarding data is too large'
+  )
 })
 
 const CompleteOnboardingSchema = z.object({
   skipRemaining: z.boolean().optional().default(false)
 })
 
+// Response schemas
+const OnboardingResponseSchema = z.object({
+  success: z.boolean(),
+  onboarding: z.object({
+    isComplete: z.boolean(),
+    currentStep: z.string().optional(),
+    completedSteps: z.array(z.string()),
+    totalSteps: z.number(),
+    progress: z.number().min(0).max(100)
+  }),
+  nextDestination: z.string().optional(),
+  step: z.string().optional(),
+  completed: z.boolean().optional(),
+  completedAt: z.string().optional(),
+  resetAt: z.string().optional()
+})
+
 /**
  * POST /api/auth/onboarding
  * Updates onboarding progress for the current user
  */
-export async function POST(request: NextRequest) {
+async function postHandler(
+  request: NextRequest, 
+  { body, requestContext }: { body: z.infer<typeof UpdateOnboardingSchema>, requestContext: any }
+) {
+  // Build-time safety check
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    return createErrorResponse('API not available during build', { 
+      statusCode: 503, 
+      requestId: requestContext.requestId 
+    })
+  }
+
+  // Initialize configuration (only at runtime)
   try {
-    // Build-time safety check
-    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                       (process.env.VERCEL === '1' && process.env.CI === '1')
-    
-    if (isBuildTime) {
-      return NextResponse.json(
-        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
-        { status: 503 }
-      )
-    }
+    await initializeAppConfig()
+  } catch (configError) {
+    console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+  }
 
-    // Initialize configuration (only at runtime)
-    try {
-      await initializeAppConfig()
-    } catch (configError) {
-      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
-    }
+  const { userId } = requestContext
 
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
+  // Get user from database using new service
+  const userResult = await userService.getUserByClerkId(userId)
+  if (userResult.error || !userResult.data) {
+    return createErrorResponse('User not found', { 
+      statusCode: 404, 
+      requestId: requestContext.requestId 
+    })
+  }
 
-    // Parse request body
-    const body = await request.json()
-    const validatedData = UpdateOnboardingSchema.parse(body)
+  const user = userResult.data
 
-    // Get user from database
-    const userResult = await userService.getUserByClerkId(userId)
-    if (userResult.error || !userResult.data) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      )
-    }
-
-    const user = userResult.data
-
+  try {
     // Update onboarding progress
     await authRouterService.updateOnboardingProgress(
       user.id,
-      validatedData.step,
-      validatedData.completed
+      body.step,
+      body.completed
     )
 
     // If additional data is provided, update user preferences
-    if (validatedData.data) {
+    if (body.data) {
       const currentPreferences = user.preferences || {}
       const stepData = currentPreferences.onboardingData || {}
       
@@ -79,11 +107,18 @@ export async function POST(request: NextRequest) {
         ...currentPreferences,
         onboardingData: {
           ...stepData,
-          [validatedData.step]: validatedData.data
+          [body.step]: body.data
         }
       }
 
-      await userService.updateUserPreferences(user.id, updatedPreferences)
+      const updateResult = await userService.updateUserPreferences(user.id, updatedPreferences)
+      if (updateResult.error) {
+        throw new ValidationError('Failed to update user preferences', [{
+          field: 'preferences',
+          message: updateResult.error,
+          code: 'UPDATE_FAILED'
+        }])
+      }
     }
 
     // Get updated onboarding status
@@ -92,89 +127,76 @@ export async function POST(request: NextRequest) {
     // Get next destination
     const nextDestination = await authRouterService.getPostAuthDestination(user)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       onboarding: onboardingStatus,
       nextDestination,
-      step: validatedData.step,
-      completed: validatedData.completed
-    })
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: { 
-            code: 'VALIDATION_ERROR', 
-            message: 'Invalid request data',
-            details: error.errors
-          } 
-        },
-        { status: 400 }
-      )
+      step: body.step,
+      completed: body.completed
     }
 
+    // Validate response data
+    const validatedResponse = OnboardingResponseSchema.parse(responseData)
+    return createSuccessResponse(validatedResponse)
+
+  } catch (error) {
     console.error('Onboarding update error:', error)
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Internal server error' 
-        } 
-      },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to update onboarding progress', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const POST = withAuth(
+  withBodyValidation(UpdateOnboardingSchema, withErrorHandling(postHandler))
+)
 
 /**
  * PUT /api/auth/onboarding
  * Completes the onboarding process for the current user
  */
-export async function PUT(request: NextRequest) {
+async function putHandler(
+  request: NextRequest, 
+  { body, requestContext }: { body: z.infer<typeof CompleteOnboardingSchema>, requestContext: any }
+) {
+  // Build-time safety check
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    return createErrorResponse('API not available during build', { 
+      statusCode: 503, 
+      requestId: requestContext.requestId 
+    })
+  }
+
+  // Initialize configuration (only at runtime)
   try {
-    // Build-time safety check
-    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                       (process.env.VERCEL === '1' && process.env.CI === '1')
-    
-    if (isBuildTime) {
-      return NextResponse.json(
-        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
-        { status: 503 }
-      )
-    }
+    await initializeAppConfig()
+  } catch (configError) {
+    console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+  }
 
-    // Initialize configuration (only at runtime)
-    try {
-      await initializeAppConfig()
-    } catch (configError) {
-      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
-    }
+  const { userId } = requestContext
 
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
+  // Get user from database using new service
+  const userResult = await userService.getUserByClerkId(userId)
+  if (userResult.error || !userResult.data) {
+    return createErrorResponse('User not found', { 
+      statusCode: 404, 
+      requestId: requestContext.requestId 
+    })
+  }
 
-    // Parse request body
-    const body = await request.json().catch(() => ({}))
-    const validatedData = CompleteOnboardingSchema.parse(body)
+  const user = userResult.data
 
-    // Get user from database
-    const userResult = await userService.getUserByClerkId(userId)
-    if (userResult.error || !userResult.data) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      )
-    }
-
-    const user = userResult.data
-
+  try {
     // Complete onboarding
     await authRouterService.completeOnboarding(user.id)
 
@@ -184,84 +206,72 @@ export async function PUT(request: NextRequest) {
     // Get next destination (should be dashboard now)
     const nextDestination = await authRouterService.getPostAuthDestination(user)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       onboarding: onboardingStatus,
       nextDestination,
       completedAt: new Date().toISOString()
-    })
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: { 
-            code: 'VALIDATION_ERROR', 
-            message: 'Invalid request data',
-            details: error.errors
-          } 
-        },
-        { status: 400 }
-      )
     }
 
+    // Validate response data
+    const validatedResponse = OnboardingResponseSchema.parse(responseData)
+    return createSuccessResponse(validatedResponse)
+
+  } catch (error) {
     console.error('Onboarding completion error:', error)
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Internal server error' 
-        } 
-      },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to complete onboarding', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const PUT = withAuth(
+  withBodyValidation(CompleteOnboardingSchema, withErrorHandling(putHandler))
+)
 
 /**
  * GET /api/auth/onboarding
  * Gets the current onboarding status for the user
  */
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest, { requestContext }: any) {
+  // Build-time safety check
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    return createErrorResponse('API not available during build', { 
+      statusCode: 503, 
+      requestId: requestContext.requestId 
+    })
+  }
+
+  // Initialize configuration (only at runtime)
   try {
-    // Build-time safety check
-    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                       (process.env.VERCEL === '1' && process.env.CI === '1')
-    
-    if (isBuildTime) {
-      return NextResponse.json(
-        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
-        { status: 503 }
-      )
-    }
+    await initializeAppConfig()
+  } catch (configError) {
+    console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+  }
 
-    // Initialize configuration (only at runtime)
-    try {
-      await initializeAppConfig()
-    } catch (configError) {
-      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
-    }
+  const { userId } = requestContext
 
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
+  // Get user from database using new service
+  const userResult = await userService.getUserByClerkId(userId)
+  if (userResult.error || !userResult.data) {
+    return createErrorResponse('User not found', { 
+      statusCode: 404, 
+      requestId: requestContext.requestId 
+    })
+  }
 
-    // Get user from database
-    const userResult = await userService.getUserByClerkId(userId)
-    if (userResult.error || !userResult.data) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      )
-    }
+  const user = userResult.data
 
-    const user = userResult.data
-
+  try {
     // Get onboarding status
     const onboardingStatus = await authRouterService.getOnboardingStatus(user)
 
@@ -271,7 +281,7 @@ export async function GET(request: NextRequest) {
     // Get onboarding data from preferences
     const onboardingData = user.preferences?.onboardingData || {}
 
-    return NextResponse.json({
+    const responseData = {
       onboarding: onboardingStatus,
       nextDestination,
       data: onboardingData,
@@ -281,66 +291,63 @@ export async function GET(request: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName
       }
-    })
+    }
+
+    return createSuccessResponse(responseData)
 
   } catch (error) {
     console.error('Onboarding status error:', error)
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Internal server error' 
-        } 
-      },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to get onboarding status', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const GET = withAuth(withErrorHandling(getHandler))
 
 /**
  * DELETE /api/auth/onboarding
  * Resets onboarding progress (admin function)
  */
-export async function DELETE(request: NextRequest) {
+async function deleteHandler(request: NextRequest, { requestContext }: any) {
+  // Build-time safety check
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    return createErrorResponse('API not available during build', { 
+      statusCode: 503, 
+      requestId: requestContext.requestId 
+    })
+  }
+
+  // Initialize configuration (only at runtime)
   try {
-    // Build-time safety check
-    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                       (process.env.VERCEL === '1' && process.env.CI === '1')
-    
-    if (isBuildTime) {
-      return NextResponse.json(
-        { error: { code: 'BUILD_TIME', message: 'API not available during build' } },
-        { status: 503 }
-      )
-    }
+    await initializeAppConfig()
+  } catch (configError) {
+    console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
+  }
 
-    // Initialize configuration (only at runtime)
-    try {
-      await initializeAppConfig()
-    } catch (configError) {
-      console.warn('[Onboarding] Configuration initialization failed, using fallback:', configError)
-    }
+  const { userId } = requestContext
 
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
+  // Get user from database using new service
+  const userResult = await userService.getUserByClerkId(userId)
+  if (userResult.error || !userResult.data) {
+    return createErrorResponse('User not found', { 
+      statusCode: 404, 
+      requestId: requestContext.requestId 
+    })
+  }
 
-    // Get user from database
-    const userResult = await userService.getUserByClerkId(userId)
-    if (userResult.error || !userResult.data) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      )
-    }
+  const user = userResult.data
 
-    const user = userResult.data
-
+  try {
     // Reset onboarding
     await authRouterService.resetOnboarding(user.id)
 
@@ -350,23 +357,29 @@ export async function DELETE(request: NextRequest) {
     // Get next destination (should be onboarding now)
     const nextDestination = await authRouterService.getPostAuthDestination(user)
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       onboarding: onboardingStatus,
       nextDestination,
       resetAt: new Date().toISOString()
-    })
+    }
+
+    // Validate response data
+    const validatedResponse = OnboardingResponseSchema.parse(responseData)
+    return createSuccessResponse(validatedResponse)
 
   } catch (error) {
     console.error('Onboarding reset error:', error)
-    return NextResponse.json(
-      { 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Internal server error' 
-        } 
-      },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to reset onboarding', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const DELETE = withAuth(withErrorHandling(deleteHandler))

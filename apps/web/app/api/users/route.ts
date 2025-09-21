@@ -1,112 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withUserSync, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import { userService } from '@/lib/services/user-service'
-import { validateUpdateUser } from '@/lib/models/schemas'
+import { 
+  withAuth, 
+  withBodyValidation, 
+  withErrorHandling, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/validation/middleware'
+import { 
+  updateUserSchema, 
+  userApiResponseSchema,
+  validateUpdateUser,
+  type UpdateUser,
+  type UserApiResponse
+} from '@/lib/validation/schemas/users'
+import { ValidationError } from '@/lib/validation/errors'
 
 /**
  * GET /api/users - Get current user profile
  */
-async function getHandler(req: AuthenticatedRequest) {
-  try {
-    if (!req.user) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } },
-        { status: 401 }
-      )
-    }
+async function getHandler(request: NextRequest, { requestContext }: any) {
+  const { userId } = requestContext
 
-    const result = await userService.getUserWithMemberships(req.user.id)
+  try {
+    const result = await userService.getUserWithMemberships(userId)
     
     if (result.error) {
-      return NextResponse.json(
-        { success: false, error: { code: result.code, message: result.error } },
-        { status: result.code === 'USER_NOT_FOUND' ? 404 : 500 }
-      )
+      const statusCode = result.code === 'USER_NOT_FOUND' ? 404 : 500
+      return createErrorResponse(result.error, { 
+        statusCode, 
+        requestId: requestContext.requestId 
+      })
     }
 
-    return NextResponse.json({
-      user: result.data
-    })
+    // Transform user data to match API response schema
+    const userResponse: UserApiResponse = {
+      ...result.data,
+      fullName: `${result.data.firstName || ''} ${result.data.lastName || ''}`.trim() || null,
+      membershipCount: result.data.memberships?.length || 0,
+      isActive: true
+    }
+
+    // Validate response data
+    const validatedResponse = userApiResponseSchema.parse(userResponse)
+    return createSuccessResponse({ user: validatedResponse })
+
   } catch (error) {
     console.error('Error in GET /api/users:', error)
-    return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Failed to get user' } },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to get user', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
 
 /**
  * PUT /api/users - Update user profile
  */
-async function putHandler(req: AuthenticatedRequest) {
+async function putHandler(
+  request: NextRequest, 
+  { body, requestContext }: { body: UpdateUser, requestContext: any }
+) {
+  const { userId } = requestContext
+
   try {
-    if (!req.user) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'User not authenticated' } },
-        { status: 401 }
-      )
-    }
-
-    let body
-    try {
-      body = await req.json()
-    } catch (jsonError) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: { 
-            code: 'INVALID_JSON', 
-            message: 'Invalid JSON in request body'
-          } 
-        },
-        { status: 400 }
-      )
-    }
-    
-    // Validate the request body
-    try {
-      validateUpdateUser(body)
-    } catch (validationError) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: { 
-            code: 'VALIDATION_ERROR', 
-            message: 'Invalid request data',
-            details: validationError
-          } 
-        },
-        { status: 400 }
-      )
-    }
-
-    const result = await userService.updateUserProfile(req.user.id, body)
+    const result = await userService.updateUserProfile(userId, body)
     
     if (result.error) {
       const statusCode = result.code === 'USER_NOT_FOUND' ? 404 : 
                         result.code === 'VALIDATION_ERROR' ? 400 : 500
       
-      return NextResponse.json(
-        { success: false, error: { code: result.code, message: result.error } },
-        { status: statusCode }
-      )
+      return createErrorResponse(result.error, { 
+        statusCode, 
+        requestId: requestContext.requestId 
+      })
     }
 
-    return NextResponse.json({
+    // Transform updated user data to match API response schema
+    const userResponse: UserApiResponse = {
+      ...result.data,
+      fullName: `${result.data.firstName || ''} ${result.data.lastName || ''}`.trim() || null,
+      membershipCount: result.data.memberships?.length || 0,
+      isActive: true
+    }
+
+    // Validate response data
+    const validatedResponse = userApiResponseSchema.parse(userResponse)
+    
+    return createSuccessResponse({
       success: true,
-      data: result.data,
+      data: validatedResponse,
       message: 'Profile updated successfully'
     })
+
   } catch (error) {
     console.error('Error in PUT /api/users:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to update user profile' } },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Failed to update user profile', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
 
-export const GET = withUserSync(getHandler)
-export const PUT = withUserSync(putHandler)
-export const PATCH = withUserSync(putHandler)
+export const GET = withAuth(withErrorHandling(getHandler))
+export const PUT = withAuth(
+  withBodyValidation(updateUserSchema, withErrorHandling(putHandler))
+)
+export const PATCH = withAuth(
+  withBodyValidation(updateUserSchema, withErrorHandling(putHandler))
+)

@@ -1,193 +1,226 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { userSyncService } from '@/lib/services/user-sync'
+import { userService } from '@/lib/services/user-service'
 import { z } from 'zod'
+import { 
+  withAuth, 
+  withBodyValidation, 
+  withQueryValidation,
+  withErrorHandling, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/validation/middleware'
+import { 
+  updateUserSchema, 
+  userPreferencesSchema,
+  userApiResponseSchema,
+  type UpdateUser,
+  type UserPreferences,
+  type UserApiResponse
+} from '@/lib/validation/schemas/users'
+import { ValidationError } from '@/lib/validation/errors'
 
-// Validation schemas for profile updates
-const UpdateProfileSchema = z.object({
-  firstName: z.string().min(1).max(50).optional(),
-  lastName: z.string().min(1).max(50).optional(),
-  avatarUrl: z.string().url().optional(),
-  preferences: z.record(z.any()).optional(),
-  customFields: z.record(z.any()).optional()
+// Query parameter schemas
+const ProfileQuerySchema = z.object({
+  analytics: z.enum(['true', 'false']).optional().transform(val => val === 'true')
 })
 
-const UpdatePreferencesSchema = z.object({
-  theme: z.enum(['light', 'dark', 'system']).optional(),
-  language: z.string().min(2).max(10).optional(),
-  timezone: z.string().optional(),
-  notifications: z.object({
-    email: z.boolean().optional(),
-    push: z.boolean().optional(),
-    marketing: z.boolean().optional()
+const PreferencesQuerySchema = z.object({
+  validate: z.enum(['true', 'false']).optional().transform(val => val !== 'false')
+})
+
+// Enhanced profile update schema with custom fields
+const UpdateProfileSchema = updateUserSchema.extend({
+  customFields: z.record(z.any()).optional().refine(
+    (fields) => {
+      if (!fields) return true
+      // Validate that custom fields object is not too large (prevent DoS)
+      return JSON.stringify(fields).length <= 50000
+    },
+    'Custom fields data is too large'
+  )
+})
+
+// Response schemas
+const ProfileResponseSchema = z.object({
+  user: userApiResponseSchema.optional(),
+  analytics: z.object({
+    loginCount: z.number(),
+    lastLoginAt: z.date().nullable(),
+    accountAge: z.number(),
+    organizationCount: z.number(),
+    activityScore: z.number()
   }).optional(),
-  dashboard: z.object({
-    defaultView: z.string().optional(),
-    itemsPerPage: z.number().min(5).max(100).optional()
+  syncMetadata: z.object({
+    lastSyncAt: z.date(),
+    source: z.string(),
+    version: z.string()
   }).optional(),
-  customFields: z.record(z.any()).optional()
+  message: z.string().optional()
 })
 
 /**
  * GET /api/users/profile - Get current user profile with analytics
  * Requirement 8.1: Provide admin interfaces for user lookup, status management, and account actions
  */
-export async function GET(request: NextRequest) {
+async function getHandler(
+  request: NextRequest, 
+  { query, requestContext }: { query: z.infer<typeof ProfileQuerySchema>, requestContext: any }
+) {
+  const { userId } = requestContext
+
   try {
-    const { userId } = auth()
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Check if analytics are requested
-    const url = new URL(request.url)
-    const includeAnalytics = url.searchParams.get('analytics') === 'true'
-
-    if (includeAnalytics) {
+    if (query.analytics) {
       const analyticsResult = await userSyncService.getUserAnalytics(userId)
       
       if (analyticsResult.error) {
-        return NextResponse.json(
-          { error: analyticsResult.error },
-          { status: 404 }
-        )
+        return createErrorResponse(analyticsResult.error, { 
+          statusCode: 404, 
+          requestId: requestContext.requestId 
+        })
       }
 
-      return NextResponse.json({
-        user: analyticsResult.user,
+      // Transform user data to match API response schema
+      const userResponse: UserApiResponse = {
+        ...analyticsResult.user,
+        fullName: `${analyticsResult.user.firstName || ''} ${analyticsResult.user.lastName || ''}`.trim() || null,
+        membershipCount: 0, // Will be populated by analytics
+        isActive: true
+      }
+
+      const responseData = {
+        user: userApiResponseSchema.parse(userResponse),
         analytics: analyticsResult.analytics
-      })
-    } else {
-      const user = await userSyncService.getUserByClerkId(userId)
-      
-      if (!user) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        )
       }
 
-      return NextResponse.json({ user })
+      return createSuccessResponse(responseData)
+    } else {
+      // Get user using new service
+      const userResult = await userService.getUserByClerkId(userId)
+      
+      if (userResult.error || !userResult.data) {
+        return createErrorResponse('User not found', { 
+          statusCode: 404, 
+          requestId: requestContext.requestId 
+        })
+      }
+
+      // Transform user data to match API response schema
+      const userResponse: UserApiResponse = {
+        ...userResult.data,
+        fullName: `${userResult.data.firstName || ''} ${userResult.data.lastName || ''}`.trim() || null,
+        membershipCount: userResult.data.memberships?.length || 0,
+        isActive: true
+      }
+
+      const responseData = {
+        user: userApiResponseSchema.parse(userResponse)
+      }
+
+      return createSuccessResponse(responseData)
     }
   } catch (error) {
     console.error('Error in GET /api/users/profile:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Internal server error', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const GET = withAuth(
+  withQueryValidation(ProfileQuerySchema, withErrorHandling(getHandler))
+)
 
 /**
  * PUT /api/users/profile - Update user profile
  * Requirement 6.3: Support custom fields, validation rules, and user metadata collection
  */
-export async function PUT(request: NextRequest) {
+async function putHandler(
+  request: NextRequest, 
+  { body, requestContext }: { body: z.infer<typeof UpdateProfileSchema>, requestContext: any }
+) {
+  const { userId } = requestContext
+
   try {
-    const { userId } = auth()
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    let body
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      )
-    }
-
-    // Validate request body
-    try {
-      UpdateProfileSchema.parse(body)
-    } catch (validationError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationError instanceof z.ZodError ? validationError.errors : validationError
-        },
-        { status: 400 }
-      )
-    }
-
     // Extract metadata from request headers
     const metadata = {
-      userAgent: request.headers.get('user-agent'),
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      userAgent: requestContext.userAgent,
+      ipAddress: requestContext.ip,
       source: 'profile_api'
     }
 
     const result = await userSyncService.updateUserProfile(userId, body, metadata)
 
     if (result.error) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      )
+      return createErrorResponse(result.error, { 
+        statusCode: 400, 
+        requestId: requestContext.requestId 
+      })
     }
 
-    return NextResponse.json({
-      user: result.user,
+    // Transform user data to match API response schema
+    const userResponse: UserApiResponse = {
+      ...result.user,
+      fullName: `${result.user.firstName || ''} ${result.user.lastName || ''}`.trim() || null,
+      membershipCount: 0, // Will be populated if needed
+      isActive: true
+    }
+
+    const responseData = {
+      user: userApiResponseSchema.parse(userResponse),
       syncMetadata: result.syncMetadata,
       message: 'Profile updated successfully'
-    })
+    }
+
+    // Validate response data
+    const validatedResponse = ProfileResponseSchema.parse(responseData)
+    return createSuccessResponse(validatedResponse)
+
   } catch (error) {
     console.error('Error in PUT /api/users/profile:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Internal server error', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const PUT = withAuth(
+  withBodyValidation(UpdateProfileSchema, withErrorHandling(putHandler))
+)
 
 /**
  * PATCH /api/users/profile/preferences - Update user preferences
  * Requirement 6.3: Support custom fields, validation rules, and user metadata collection
  */
-export async function PATCH(request: NextRequest) {
+async function patchHandler(
+  request: NextRequest, 
+  { 
+    body, 
+    query, 
+    requestContext 
+  }: { 
+    body: UserPreferences, 
+    query: z.infer<typeof PreferencesQuerySchema>, 
+    requestContext: any 
+  }
+) {
+  const { userId } = requestContext
+
   try {
-    const { userId } = auth()
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    let body
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      )
-    }
-
-    // Validate request body
-    try {
-      UpdatePreferencesSchema.parse(body)
-    } catch (validationError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validationError instanceof z.ZodError ? validationError.errors : validationError
-        },
-        { status: 400 }
-      )
-    }
-
-    // Check if custom field validation should be enabled
-    const url = new URL(request.url)
-    const validateCustomFields = url.searchParams.get('validate') !== 'false'
+    const validateCustomFields = query.validate
 
     const result = await userSyncService.updateUserPreferences(
       userId, 
@@ -196,22 +229,47 @@ export async function PATCH(request: NextRequest) {
     )
 
     if (result.error) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      )
+      return createErrorResponse(result.error, { 
+        statusCode: 400, 
+        requestId: requestContext.requestId 
+      })
     }
 
-    return NextResponse.json({
-      user: result.user,
+    // Transform user data to match API response schema
+    const userResponse: UserApiResponse = {
+      ...result.user,
+      fullName: `${result.user.firstName || ''} ${result.user.lastName || ''}`.trim() || null,
+      membershipCount: 0, // Will be populated if needed
+      isActive: true
+    }
+
+    const responseData = {
+      user: userApiResponseSchema.parse(userResponse),
       syncMetadata: result.syncMetadata,
       message: 'Preferences updated successfully'
-    })
+    }
+
+    // Validate response data
+    const validatedResponse = ProfileResponseSchema.parse(responseData)
+    return createSuccessResponse(validatedResponse)
+
   } catch (error) {
     console.error('Error in PATCH /api/users/profile/preferences:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    
+    if (error instanceof ValidationError) {
+      return error.toResponse()
+    }
+    
+    return createErrorResponse('Internal server error', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const PATCH = withAuth(
+  withBodyValidation(
+    userPreferencesSchema, 
+    withQueryValidation(PreferencesQuerySchema, withErrorHandling(patchHandler))
+  )
+)

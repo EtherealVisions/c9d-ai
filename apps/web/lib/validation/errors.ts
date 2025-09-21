@@ -536,9 +536,4 @@ export function logError(
 }
 
 // Export error classes and utilities
-export {
-  ValidationError as default,
-  BusinessRuleError,
-  PermissionError,
-  ResourceError
-}
+export { ValidationError as default }

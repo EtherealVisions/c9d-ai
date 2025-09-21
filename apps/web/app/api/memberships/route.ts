@@ -1,52 +1,53 @@
 /**
  * API endpoints for membership management operations
  * Handles creating memberships and listing organization members
+ * Migrated to use Drizzle repositories and Zod validation
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { membershipService } from '@/lib/services/membership-service'
-import { validateCreateMembership } from '@/lib/models/schemas'
+import { 
+  withAuth, 
+  withBodyValidation, 
+  withQueryValidation,
+  withErrorHandling, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/validation/middleware'
+import { 
+  createOrganizationMembershipSchema,
+  organizationMembershipListResponseSchema,
+  type CreateOrganizationMembership,
+  type OrganizationMembershipListResponse
+} from '@/lib/validation/schemas/organizations'
+import { ValidationError } from '@/lib/validation/errors'
 import { z } from 'zod'
-
-// Schema for creating membership via API
-const createMembershipApiSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  organizationId: z.string().uuid('Invalid organization ID'),
-  roleId: z.string().uuid('Invalid role ID'),
-  status: z.enum(['active', 'inactive', 'pending']).optional()
-})
 
 // Schema for query parameters
 const getMembershipsQuerySchema = z.object({
   organizationId: z.string().uuid('Invalid organization ID').optional(),
-  userId: z.string().uuid('Invalid user ID').optional()
+  userId: z.string().uuid('Invalid user ID').optional(),
+  page: z.string().regex(/^\d+$/).transform(Number).optional().default('1'),
+  limit: z.string().regex(/^\d+$/).transform(Number).optional().default('20')
 })
 
 /**
  * POST /api/memberships - Create a new membership
  */
-export async function POST(request: NextRequest) {
+async function postHandler(
+  request: NextRequest, 
+  { body, requestContext }: { body: CreateOrganizationMembership, requestContext: any }
+) {
+  const { userId: clerkUserId } = requestContext
+  
   try {
-    // Check authentication
-    const { userId: clerkUserId } = await auth()
-    if (!clerkUserId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Parse request body
-    const body = await request.json()
-    const validatedData = createMembershipApiSchema.parse(body)
-
-    // Create membership
+    // Create membership using validated data
     const result = await membershipService.createMembership({
-      userId: validatedData.userId,
-      organizationId: validatedData.organizationId,
-      roleId: validatedData.roleId,
-      status: validatedData.status || 'active'
+      userId: body.userId,
+      organizationId: body.organizationId,
+      roleId: body.roleId,
+      status: body.status
     })
 
     if (result.error) {
@@ -54,104 +55,97 @@ export async function POST(request: NextRequest) {
                         result.code === 'VALIDATION_ERROR' ? 400 :
                         result.code === 'INVALID_REFERENCE' ? 400 : 500
 
-      return NextResponse.json(
-        { 
-          error: result.error,
-          code: result.code
-        },
-        { status: statusCode }
-      )
+      return createErrorResponse(result.error, { 
+        statusCode, 
+        requestId: requestContext.requestId 
+      })
     }
 
-    return NextResponse.json(result.data, { status: 201 })
+    return createSuccessResponse(result.data, { statusCode: 201 })
+
   } catch (error) {
     console.error('Error in POST /api/memberships:', error)
     
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: error.errors
-        },
-        { status: 400 }
-      )
+    if (error instanceof ValidationError) {
+      return error.toResponse()
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createErrorResponse('Internal server error', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const POST = withAuth(
+  withBodyValidation(createOrganizationMembershipSchema, withErrorHandling(postHandler))
+)
 
 /**
  * GET /api/memberships - Get memberships (by organization or user)
  */
-export async function GET(request: NextRequest) {
+async function getHandler(
+  request: NextRequest, 
+  { query, requestContext }: { query: z.infer<typeof getMembershipsQuerySchema>, requestContext: any }
+) {
+  const { userId: clerkUserId } = requestContext
+  
   try {
-    // Check authentication
-    const { userId: clerkUserId } = await auth()
-    if (!clerkUserId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Parse query parameters
-    const { searchParams } = new URL(request.url)
-    const queryData = {
-      organizationId: searchParams.get('organizationId') || undefined,
-      userId: searchParams.get('userId') || undefined
-    }
-
-    const validatedQuery = getMembershipsQuerySchema.parse(queryData)
-
     // Get memberships based on query parameters
-    if (validatedQuery.organizationId) {
+    if (query.organizationId) {
       // Get organization members
-      const result = await membershipService.getOrganizationMembers(validatedQuery.organizationId)
+      const result = await membershipService.getOrganizationMembers(query.organizationId)
       
       if (result.error) {
         const statusCode = result.code === 'ORGANIZATION_NOT_FOUND' ? 404 : 500
-        return NextResponse.json(
-          { 
-            error: result.error,
-            code: result.code
-          },
-          { status: statusCode }
-        )
+        return createErrorResponse(result.error, { 
+          statusCode, 
+          requestId: requestContext.requestId 
+        })
       }
 
-      return NextResponse.json(result.data)
-    } else if (validatedQuery.userId) {
-      // Get user memberships (would need to implement this method)
-      return NextResponse.json(
-        { error: 'User memberships endpoint not implemented yet' },
-        { status: 501 }
-      )
+      // Transform to match API response schema
+      const responseData: OrganizationMembershipListResponse = {
+        members: result.data || [],
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total: result.data?.length || 0,
+          totalPages: Math.ceil((result.data?.length || 0) / query.limit)
+        }
+      }
+
+      // Validate response data
+      const validatedResponse = organizationMembershipListResponseSchema.parse(responseData)
+      return createSuccessResponse(validatedResponse)
+
+    } else if (query.userId) {
+      // Get user memberships - implement this functionality
+      return createErrorResponse('User memberships endpoint not implemented yet', { 
+        statusCode: 501, 
+        requestId: requestContext.requestId 
+      })
     } else {
-      return NextResponse.json(
-        { error: 'Either organizationId or userId query parameter is required' },
-        { status: 400 }
-      )
+      return createErrorResponse('Either organizationId or userId query parameter is required', { 
+        statusCode: 400, 
+        requestId: requestContext.requestId 
+      })
     }
+
   } catch (error) {
     console.error('Error in GET /api/memberships:', error)
     
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Invalid query parameters',
-          details: error.errors
-        },
-        { status: 400 }
-      )
+    if (error instanceof ValidationError) {
+      return error.toResponse()
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createErrorResponse('Internal server error', { 
+      statusCode: 500, 
+      requestId: requestContext.requestId 
+    })
   }
 }
+
+export const GET = withAuth(
+  withQueryValidation(getMembershipsQuerySchema, withErrorHandling(getHandler))
+)

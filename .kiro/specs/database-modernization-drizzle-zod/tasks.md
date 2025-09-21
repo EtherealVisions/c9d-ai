@@ -117,22 +117,22 @@
     - Update interactive element validation with Zod schemas
     - _Requirements: 2.1, 2.4, 3.1, 4.1_
 
-- [ ] 7. Update API routes to use new validation and database layer
-  - [ ] 7.1 Migrate authentication and user API routes
+- [x] 7. Update API routes to use new validation and database layer
+  - [x] 7.1 Migrate authentication and user API routes
     - Update /api/auth/* routes to use Zod validation schemas
     - Implement proper error handling with structured responses
     - Add request/response validation middleware
     - Ensure backward compatibility with existing API contracts
     - _Requirements: 2.1, 2.2, 4.1, 5.2_
 
-  - [ ] 7.2 Migrate organization and membership API routes
+  - [x] 7.2 Migrate organization and membership API routes
     - Update /api/organizations/* routes with new validation layer
     - Implement proper authorization checks with Zod schemas
     - Add comprehensive error handling and logging
     - Update API documentation with new schema definitions
     - _Requirements: 2.1, 2.2, 4.1, 5.2_
 
-  - [ ] 7.3 Update content management API routes
+  - [x] 7.3 Update content management API routes
     - Migrate content creation and management endpoints
     - Add validation for complex content structures and templates
     - Implement proper file upload and media handling validation

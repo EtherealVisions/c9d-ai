@@ -42,23 +42,28 @@ export const createUserSchema = z.object({
     .min(1, 'First name is required')
     .max(100, 'First name must be less than 100 characters')
     .regex(/^[a-zA-Z\s'-]+$/, 'First name can only contain letters, spaces, hyphens, and apostrophes')
-    .nullable(),
+    .nullable()
+    .optional(),
   
   lastName: z.string()
     .min(1, 'Last name is required')
     .max(100, 'Last name must be less than 100 characters')
     .regex(/^[a-zA-Z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens, and apostrophes')
-    .nullable(),
+    .nullable()
+    .optional(),
   
   avatarUrl: z.string()
     .url('Invalid avatar URL format')
     .max(500, 'Avatar URL must be less than 500 characters')
-    .nullable(),
+    .nullable()
+    .optional(),
   
   preferences: z.record(z.unknown())
     .default({})
+    .optional()
     .refine(
       (prefs) => {
+        if (!prefs) return true
         // Validate preferences structure
         const validKeys = ['theme', 'language', 'notifications', 'accessibility', 'privacy']
         return Object.keys(prefs).every(key => validKeys.includes(key))
