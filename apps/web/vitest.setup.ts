@@ -65,6 +65,22 @@ vi.mock('next/navigation', () => ({
 
 // Clerk mocking is now handled by setupClerkTesting() using official @clerk/testing utilities
 
+// Mock ioredis for repository cache service
+vi.mock('ioredis', () => ({
+  Redis: vi.fn().mockImplementation(() => ({
+    get: vi.fn(),
+    set: vi.fn(),
+    setex: vi.fn(),
+    del: vi.fn(),
+    keys: vi.fn(),
+    flushall: vi.fn(),
+    quit: vi.fn(),
+    disconnect: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn()
+  }))
+}))
+
 // Mock NextResponse for API tests
 vi.mock('next/server', () => ({
   NextResponse: {

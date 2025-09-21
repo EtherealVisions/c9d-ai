@@ -239,3 +239,34 @@ export type ContentSearch = {
   page?: number
   limit?: number
 }
+
+// Validation helper functions
+export function validateCreateContent(data: unknown): CreateOnboardingContent {
+  return createOnboardingContentSchema.parse(data)
+}
+
+export function validateUpdateContent(data: unknown): UpdateOnboardingContent {
+  return updateOnboardingContentSchema.parse(data)
+}
+
+export function validateCreateStep(data: unknown): CreateOnboardingStep {
+  return createOnboardingStepSchema.parse(data)
+}
+
+export function validateUpdateStep(data: unknown): UpdateOnboardingStep {
+  return updateOnboardingStepSchema.parse(data)
+}
+
+// Safe parsing functions that return results instead of throwing
+export function safeValidateCreateContent(data: unknown) {
+  return createOnboardingContentSchema.safeParse(data)
+}
+
+export function safeValidateUpdateContent(data: unknown) {
+  return updateOnboardingContentSchema.safeParse(data)
+}
+
+// Type aliases for backward compatibility
+export type CreateContent = CreateOnboardingContent
+export type UpdateContent = UpdateOnboardingContent
+export type ContentApiResponse = OnboardingPathApiResponse

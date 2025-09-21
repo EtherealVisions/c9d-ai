@@ -235,3 +235,29 @@ export type InsertOrganizationMembership = Omit<SelectOrganizationMembership, 'i
 export type OrganizationSearch = z.infer<typeof organizationSearchSchema>
 export type BulkCreateOrganizations = z.infer<typeof bulkCreateOrganizationsSchema>
 export type BulkUpdateOrganizations = z.infer<typeof bulkUpdateOrganizationsSchema>
+
+// Validation helper functions
+export function validateCreateOrganization(data: unknown): CreateOrganization {
+  return createOrganizationSchema.parse(data)
+}
+
+export function validateUpdateOrganization(data: unknown): UpdateOrganization {
+  return updateOrganizationSchema.parse(data)
+}
+
+export function validateOrganizationSearch(data: unknown): OrganizationSearch {
+  return organizationSearchSchema.parse(data)
+}
+
+// Safe parsing functions that return results instead of throwing
+export function safeValidateCreateOrganization(data: unknown) {
+  return createOrganizationSchema.safeParse(data)
+}
+
+export function safeValidateUpdateOrganization(data: unknown) {
+  return updateOrganizationSchema.safeParse(data)
+}
+
+export function safeValidateOrganizationSearch(data: unknown) {
+  return organizationSearchSchema.safeParse(data)
+}

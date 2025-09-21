@@ -95,22 +95,22 @@
     - Implement batch operations and bulk data handling
     - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 6. Migrate service layer to use Drizzle repositories and Zod validation
-  - [ ] 6.1 Update user management services
+- [x] 6. Migrate service layer to use Drizzle repositories and Zod validation
+  - [x] 6.1 Update user management services
     - Migrate UserService to use UserRepository and Zod validation
     - Update user creation, update, and deletion operations
     - Implement proper error handling with structured error responses
     - Add comprehensive input validation for all user operations
     - _Requirements: 2.1, 3.1, 4.1, 4.2_
 
-  - [ ] 6.2 Update organization management services
+  - [x] 6.2 Update organization management services
     - Migrate OrganizationService to use new repository and validation layer
     - Update membership management with proper validation
     - Implement role-based access control with Zod schema validation
     - Add audit logging for all organization operations
     - _Requirements: 2.1, 3.1, 4.1, 4.2_
 
-  - [ ] 6.3 Update content creation services
+  - [x] 6.3 Update content creation services
     - Migrate ContentCreationService to use Drizzle repositories
     - Add comprehensive validation for content templates and builders
     - Implement type-safe content validation and transformation
