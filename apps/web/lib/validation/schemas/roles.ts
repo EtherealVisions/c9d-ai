@@ -2,10 +2,12 @@
  * Roles Validation Schemas
  * 
  * This file contains Zod validation schemas for role and permission-related operations.
- * Schemas are manually defined to ensure type safety and compatibility.
+ * Schemas are generated from Drizzle definitions and extended with business rules.
  */
 
 import { z } from 'zod'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { roles, permissions } from '@/lib/db/schema/roles'
 
 // Constants for permissions
 export const PERMISSION_RESOURCES = {
@@ -35,34 +37,16 @@ export const permissionStringSchema = z.string()
            Object.values(PERMISSION_ACTIONS).includes(action as any)
   }, 'Invalid permission resource or action')
 
-// Base role schema
-export const baseRoleSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string()
-    .min(1, 'Role name is required')
-    .max(100, 'Role name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name contains invalid characters'),
-  
-  description: z.string()
-    .max(500, 'Description must be less than 500 characters')
-    .nullable(),
-  
-  organizationId: z.string()
-    .uuid('Invalid organization ID'),
-  
-  isSystemRole: z.boolean()
-    .default(false),
-  
-  permissions: z.array(permissionStringSchema)
-    .default([])
-    .refine(arr => arr.length <= 100, 'Cannot have more than 100 permissions')
-    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique'),
-  
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+// Auto-generated base schemas from Drizzle
+export const selectRoleSchema = createSelectSchema(roles)
+export const insertRoleSchema = createInsertSchema(roles)
+export const selectPermissionSchema = createSelectSchema(permissions)
+export const insertPermissionSchema = createInsertSchema(permissions)
 
-// Role validation schemas
+// Legacy alias for backward compatibility
+export const baseRoleSchema = selectRoleSchema
+
+// Role validation schemas with business rules using drizzle-zod
 export const createRoleSchema = z.object({
   name: z.string()
     .min(1, 'Role name is required')
@@ -88,25 +72,12 @@ export const createRoleSchema = z.object({
     .optional()
 })
 
-export const updateRoleSchema = z.object({
-  name: z.string()
-    .min(1, 'Role name is required')
-    .max(100, 'Role name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Role name contains invalid characters')
-    .optional(),
-  
-  description: z.string()
-    .max(500, 'Description must be less than 500 characters')
-    .nullable()
-    .optional(),
-  
-  permissions: z.array(permissionStringSchema)
-    .refine(arr => arr.length <= 100, 'Cannot have more than 100 permissions')
-    .refine(arr => new Set(arr).size === arr.length, 'Permissions must be unique')
-    .optional()
-})
+export const updateRoleSchema = createRoleSchema.omit({
+  organizationId: true, // Organization ID should not be updatable
+  isSystemRole: true    // System role flag should not be updatable
+}).partial()
 
-// Permission schemas
+// Permission schemas with business rules using drizzle-zod
 export const createPermissionSchema = z.object({
   name: z.string()
     .min(1, 'Permission name is required')
@@ -132,30 +103,29 @@ export const updatePermissionSchema = z.object({
     .optional()
 })
 
-// API Response schemas
-export const roleApiResponseSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  description: z.string().nullable(),
-  organizationId: z.string().uuid(),
-  isSystemRole: z.boolean(),
-  permissions: z.array(z.string()),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+// API Response schemas with transformations
+export const roleApiResponseSchema = selectRoleSchema.extend({
   memberCount: z.number().int().min(0).default(0),
-  canEdit: z.boolean().default(false),
-  canDelete: z.boolean().default(false)
+  canEdit: z.boolean().default(false).transform((val, ctx) => {
+    // System roles cannot be edited
+    const role = ctx.path[0] as any
+    return role?.isSystemRole ? false : val
+  }),
+  canDelete: z.boolean().default(false).transform((val, ctx) => {
+    // System roles cannot be deleted
+    const role = ctx.path[0] as any
+    return role?.isSystemRole ? false : val
+  })
 })
 
-export const permissionApiResponseSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  description: z.string().nullable(),
-  resource: z.string(),
-  action: z.string(),
-  createdAt: z.date(),
+export const permissionApiResponseSchema = selectPermissionSchema.extend({
   roleCount: z.number().int().min(0).default(0),
-  isSystemPermission: z.boolean().default(false)
+  isSystemPermission: z.boolean().default(false),
+  permissionString: z.string().transform((val, ctx) => {
+    // Auto-generate permission string from resource and action
+    const permission = ctx.path[0] as any
+    return `${permission?.resource}:${permission?.action}`
+  })
 })
 
 // List response schemas

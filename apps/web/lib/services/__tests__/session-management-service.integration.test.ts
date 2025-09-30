@@ -1,52 +1,68 @@
 /**
- * Integration Tests for SessionManagementService
+ * Integration Tests for SessionManagementService - Drizzle Migration
  * 
- * These tests use a real Supabase database to validate:
+ * These tests use Drizzle database to validate:
  * - Database schema and constraints
- * - Actual SQL query execution
+ * - Actual SQL query execution with Drizzle
  * - Data integrity and relationships
  * - Performance characteristics
+ * Requirements: 5.4 - Update tests to use new database layer
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { SessionManagementService } from '../session-management-service'
-import { setupIntegrationTest, testDb, validateTestEnvironment } from '../../../__tests__/setup/test-database'
+import {
+  createTestDatabase,
+  seedTestDatabase,
+  cleanTestDatabase,
+  createTestDatabaseUtils,
+  TestDatabaseUtils,
+  testSetup,
+  testTeardown
+} from '../../../__tests__/setup/drizzle-testing-setup'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Validate test environment before running tests
-validateTestEnvironment()
-
-describe('SessionManagementService - Integration Tests', () => {
+describe('SessionManagementService - Integration Tests - Drizzle Migration', () => {
   let service: SessionManagementService
-  let cleanup: () => Promise<void>
+  let testDb: DrizzleDatabase
+  let testUtils: TestDatabaseUtils
   let testUser: any
   let testOrganization: any
 
   beforeAll(async () => {
-    // Setup integration test environment
-    const setup = await setupIntegrationTest()
-    cleanup = setup.cleanup
+    // Setup Drizzle test database
+    testDb = await testSetup()
+    testUtils = createTestDatabaseUtils(testDb)
     
-    // Create test data
-    testUser = await testDb.createTestUser({
-      first_name: 'Integration',
-      last_name: 'Test'
+    // Create test data using Drizzle utilities
+    testUser = await testUtils.createTestUser({
+      firstName: 'Integration',
+      lastName: 'Test',
+      email: 'integration.test@example.com',
+      clerkUserId: 'clerk_integration_test'
     })
     
-    testOrganization = await testDb.createTestOrganization({
-      name: 'Test Organization for Sessions'
+    testOrganization = await testUtils.createTestOrganization({
+      name: 'Test Organization for Sessions',
+      slug: 'test-org-sessions'
     })
     
-    await testDb.createTestMembership(testUser.id, testOrganization.id, 'admin')
+    const testRole = await testUtils.createTestRole({
+      name: 'Admin',
+      permissions: ['session.read', 'session.write']
+    })
+    
+    await testUtils.createTestMembership(testUser.id, testOrganization.id, testRole.id)
   })
 
   afterAll(async () => {
-    if (cleanup) {
-      await cleanup()
-    }
+    await testTeardown()
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     service = new SessionManagementService()
+    // Clean session data between tests
+    await cleanTestDatabase()
   })
 
   describe('Session Lifecycle', () => {

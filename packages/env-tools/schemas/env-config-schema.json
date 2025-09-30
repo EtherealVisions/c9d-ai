@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Environment Configuration Schema",
+  "description": "Schema for environment variable validation configuration",
+  "type": "object",
+  "required": ["appName", "displayName", "envVars"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "appName": {
+      "type": "string",
+      "description": "Phase.dev app name",
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable app name"
+    },
+    "description": {
+      "type": "string",
+      "description": "App description"
+    },
+    "envVars": {
+      "type": "object",
+      "required": ["required", "optional"],
+      "properties": {
+        "required": {
+          "type": "array",
+          "description": "Required environment variables",
+          "items": {
+            "$ref": "#/definitions/envVar"
+          }
+        },
+        "optional": {
+          "type": "array",
+          "description": "Optional environment variables",
+          "items": {
+            "$ref": "#/definitions/envVar"
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation configuration",
+      "properties": {
+        "strict": {
+          "type": "boolean",
+          "description": "Enable strict validation mode",
+          "default": false
+        },
+        "warnOnMissing": {
+          "type": "boolean",
+          "description": "Warn when optional variables are missing",
+          "default": true
+        },
+        "failOnInvalid": {
+          "type": "boolean",
+          "description": "Fail validation on invalid values",
+          "default": true
+        }
+      }
+    },
+    "environments": {
+      "type": "object",
+      "description": "Environment-specific overrides",
+      "patternProperties": {
+        "^(development|staging|production|test)$": {
+          "type": "object",
+          "properties": {
+            "requiredOverrides": {
+              "type": "array",
+              "description": "Additional required variables for this environment",
+              "items": {
+                "type": "string"
+              }
+            },
+            "optionalOverrides": {
+              "type": "array",
+              "description": "Variables that become optional in this environment",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "customValidation": {
+      "type": "object",
+      "description": "Custom validation rules",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "validator", "errorMessage"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Rule name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Rule description"
+              },
+              "validator": {
+                "type": "string",
+                "description": "JavaScript function as string"
+              },
+              "errorMessage": {
+                "type": "string",
+                "description": "Error message when validation fails"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "envVar": {
+      "type": "object",
+      "required": ["name", "description", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Environment variable name",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Variable description"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "url", "email", "json"],
+          "description": "Variable type"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["url", "email", "uuid", "jwt", "base64"],
+          "description": "String format validation"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed values",
+          "items": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "type": "string",
+          "description": "Example value"
+        },
+        "default": {
+          "description": "Default value"
+        },
+        "sensitive": {
+          "type": "boolean",
+          "description": "Whether the variable contains sensitive data",
+          "default": true
+        },
+        "validation": {
+          "type": "object",
+          "description": "Validation rules",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Regular expression pattern"
+            },
+            "minLength": {
+              "type": "integer",
+              "description": "Minimum string length",
+              "minimum": 0
+            },
+            "maxLength": {
+              "type": "integer",
+              "description": "Maximum string length",
+              "minimum": 1
+            },
+            "min": {
+              "type": "number",
+              "description": "Minimum numeric value"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum numeric value"
+            }
+          }
+        }
+      }
+    }
+  }
+}

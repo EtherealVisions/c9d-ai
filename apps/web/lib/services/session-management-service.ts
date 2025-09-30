@@ -4,7 +4,6 @@
  */
 
 import { useAuth, useSession } from '@clerk/nextjs'
-import { createSupabaseClient } from '../database'
 
 export interface SessionInfo {
   sessionId: string
@@ -34,7 +33,11 @@ export interface SessionEvent {
 }
 
 export class SessionManagementService {
-  private supabase = createSupabaseClient()
+  private getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
+  }
+  
   private sessionCheckInterval: NodeJS.Timeout | null = null
   private readonly SESSION_CHECK_INTERVAL = 5 * 60 * 1000 // 5 minutes
   private readonly SESSION_REFRESH_THRESHOLD = 10 * 60 * 1000 // 10 minutes before expiry

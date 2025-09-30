@@ -50,7 +50,10 @@ export interface AlternativePath {
 }
 
 export class PathEngine {
-  private static supabase = createSupabaseClient()
+  private static getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
+  }
 
   /**
    * Generate a personalized onboarding path based on user context and preferences

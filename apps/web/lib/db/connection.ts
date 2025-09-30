@@ -110,8 +110,15 @@ function getDatabaseUrl(): string {
  * Create PostgreSQL connection with appropriate configuration
  */
 function createPostgresConnection() {
-  const databaseUrl = getDatabaseUrl()
   const nodeEnv = getConfigValue('NODE_ENV') || 'development'
+  
+  // In test environment, return a mock connection to prevent real database attempts
+  if (nodeEnv === 'test') {
+    console.log('[Database] Test environment detected, using mock connection')
+    return createMockConnection()
+  }
+  
+  const databaseUrl = getDatabaseUrl()
   
   // Connection configuration based on environment
   const connectionConfig = {
@@ -154,10 +161,73 @@ function createPostgresConnection() {
   
   const connection = postgres(databaseUrl, connectionConfig)
   
-  // Set up connection monitoring
+  // Set up connection monitoring (not needed for mock connections)
   setupConnectionMonitoring(connection)
   
   return connection
+}
+
+/**
+ * Create a mock Drizzle database for testing
+ */
+function createMockDrizzleDatabase() {
+  const mockDb = {
+    select: () => mockDb,
+    insert: () => mockDb,
+    update: () => mockDb,
+    delete: () => mockDb,
+    from: () => mockDb,
+    where: () => mockDb,
+    orderBy: () => mockDb,
+    limit: () => mockDb,
+    offset: () => mockDb,
+    values: () => mockDb,
+    set: () => mockDb,
+    returning: () => Promise.resolve([]),
+    onConflictDoNothing: () => mockDb,
+    onConflictDoUpdate: () => mockDb,
+    execute: () => Promise.resolve([]),
+    then: (resolve: any) => resolve([]),
+    catch: (reject: any) => Promise.resolve([]),
+    // Transaction support
+    transaction: (callback: any) => callback(mockDb),
+    // Schema access
+    ...schema
+  }
+  
+  console.log('[Database] Mock Drizzle database created for testing')
+  return mockDb as any
+}
+
+/**
+ * Create a mock PostgreSQL connection for testing
+ */
+function createMockConnection(): postgres.Sql {
+  const mockConnection = {
+    end: async () => {
+      console.log('[Database] Mock connection closed')
+    },
+    listen: () => {
+      console.log('[Database] Mock connection listening')
+    },
+    query: async () => {
+      console.log('[Database] Mock query executed')
+      return []
+    },
+    // Add template literal support for SQL queries
+    [Symbol.for('nodejs.util.inspect.custom')]: () => '[Mock PostgreSQL Connection]'
+  } as any
+  
+  // Add template literal function for SQL queries
+  const sqlHandler = async () => {
+    console.log('[Database] Mock SQL query executed')
+    return []
+  }
+  
+  // Make the connection callable for template literals
+  Object.setPrototypeOf(mockConnection, sqlHandler)
+  
+  return mockConnection
 }
 
 /**
@@ -206,8 +276,15 @@ export function getConnection(): postgres.Sql {
  * Create Drizzle database instance with schema
  */
 export function createDrizzleDatabase() {
-  const connection = getConnection()
   const nodeEnv = getConfigValue('NODE_ENV') || 'development'
+  
+  // In test environment, return a mock database to prevent real database operations
+  if (nodeEnv === 'test') {
+    console.log('[Database] Test environment detected, using mock Drizzle database')
+    return createMockDrizzleDatabase()
+  }
+  
+  const connection = getConnection()
   
   return drizzle(connection, {
     schema,

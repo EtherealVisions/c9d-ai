@@ -1,0 +1,55 @@
+{
+  "name": "@coordinated/env-tools",
+  "version": "1.0.0",
+  "description": "Shared environment management tools for Phase.dev integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "env-wrapper": "./bin/cli.js",
+    "validate-env": "./bin/validate-cli.js",
+    "validate-config": "./bin/validate-config-cli.js",
+    "vercel-phase-prebuild": "./bin/vercel-prebuild.js"
+  },
+  "scripts": {
+    "build": "env-wrapper tsup",
+    "dev": "env-wrapper tsup --watch",
+    "clean": "rm -rf dist",
+    "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
+    "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
+    "test:ci": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --ci --coverage --watchAll=false --passWithNoTests --reporters=default --reporters=jest-junit --testResultsProcessor=jest-junit",
+    "test:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --watch --passWithNoTests",
+    "test:unit": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
+    "test:unit:ci": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --ci --watchAll=false --passWithNoTests --reporters=default --reporters=jest-junit --testResultsProcessor=jest-junit",
+    "test:unit:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --watch --passWithNoTests",
+    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --watch",
+    "test:coverage": "NODE_OPTIONS=\"--max-old-space-size=16384\" env-wrapper jest --coverage --passWithNoTests",
+    "test:coverage:ci": "NODE_OPTIONS=\"--max-old-space-size=16384\" env-wrapper jest --coverage --ci --watchAll=false --passWithNoTests --reporters=default --reporters=jest-junit --testResultsProcessor=jest-junit",
+    "test:integration": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --testPathPattern=integration --passWithNoTests",
+    "test:phase": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --testPathPattern=phase-integration --passWithNoTests",
+    "test:validation": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --testPathPattern=validation --passWithNoTests"
+  },
+  "dependencies": {
+    "@coordinated/phase-client": "workspace:*",
+    "@types/node": "^20.10.5",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.3.1",
+    "dotenv-cli": "^7.3.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/commander": "^2.12.5",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "phase": {
+    "appName": "AI.C9d"
+  }
+}

@@ -90,12 +90,13 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm dev',
+    command: 'pnpm --filter @c9d/web dev',
     url: 'http://localhost:3007',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI, // Reuse existing server in dev
     timeout: 120000,
     env: {
       NODE_ENV: 'test',
+      PORT: '3007',
     },
   },
 

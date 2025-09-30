@@ -12,7 +12,7 @@
 ### 1. Environment Variable Management
 - Created `.env.build` with build-safe default values
 - Updated `turbo.json` to include all required environment variables
-- Modified `run-with-env.js` to use build-specific environment in CI
+- Migrated to `env-wrapper` CLI tool for environment management
 
 ### 2. Build-Safe Configuration
 - Updated config package index to provide build-time stubs
@@ -53,4 +53,4 @@ The remaining issue is that the layout.tsx is trying to access properties that d
 8. `apps/web/app/layout.tsx` - Build-safe configuration loading
 9. `apps/web/app/api/*/route.ts` - Build-time safety checks
 10. `apps/web/lib/errors/custom-errors.ts` - Added missing error classes
-11. `scripts/run-with-env.js` - Build environment support
+11. Environment management migrated to `@coordinated/env-tools` package

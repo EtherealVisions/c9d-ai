@@ -3,19 +3,18 @@
  * Requirements: 1.1, 2.1, 6.1
  */
 
-// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
 import type {
-  OnboardingContentRow,
-  OnboardingContentInsert,
+  OnboardingContent,
+  NewOnboardingContent,
   OnboardingContentUpdate,
-  OnboardingPathRow,
-  OnboardingStepRow,
-  OnboardingStepInsert,
+  OnboardingPath,
+  OnboardingStep,
+  NewOnboardingStep,
   OnboardingStepUpdate,
-  OnboardingPathInsert,
+  NewOnboardingPath,
   OnboardingPathUpdate
-} from '@/lib/models'
+} from '@/lib/db/schema/content'
 
 export interface ContentContext {
   organizationId?: string
@@ -42,7 +41,10 @@ export interface ContentEffectiveness {
 }
 
 export class ContentManagerService {
-  private static supabase = createSupabaseClient()
+  private static getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
+  }
 
   /**
    * Get onboarding content by ID with context filtering
@@ -50,31 +52,37 @@ export class ContentManagerService {
   static async getOnboardingContent(
     contentId: string,
     context: ContentContext = {}
-  ): Promise<OnboardingContentRow | null> {
+  ): Promise<OnboardingContent | null> {
     try {
-      let query = this.supabase
-        .from('onboarding_content')
-        .select('*')
-        .eq('id', contentId)
-        .eq('is_active', true)
+      const { eq, and, or, isNull } = await import('drizzle-orm')
+      const { onboardingContent } = await import('@/lib/db/schema/content')
+      
+      const db = this.getDatabase()
+      
+      let whereConditions = [
+        eq(onboardingContent.id, contentId),
+        eq(onboardingContent.isActive, true)
+      ]
 
       // Filter by organization if specified
       if (context.organizationId) {
-        query = query.or(`organization_id.is.null,organization_id.eq.${context.organizationId}`)
+        whereConditions.push(
+          or(
+            isNull(onboardingContent.organizationId),
+            eq(onboardingContent.organizationId, context.organizationId)
+          )!
+        )
       } else {
-        query = query.is('organization_id', null)
+        whereConditions.push(isNull(onboardingContent.organizationId))
       }
 
-      const { data: content, error } = await query.single()
+      const content = await db
+        .select()
+        .from(onboardingContent)
+        .where(and(...whereConditions))
+        .limit(1)
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        throw new DatabaseError('Failed to fetch onboarding content', error)
-      }
-
-      return content
+      return content.length > 0 ? content[0] : null
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error

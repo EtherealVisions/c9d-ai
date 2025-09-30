@@ -1,0 +1,58 @@
+{
+  "$schema": "./packages/env-tools/schemas/phase-apps-schema.json",
+  "version": "1.0.0",
+  "apps": {
+    "web": {
+      "phaseAppName": "AI.C9d.Web",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"],
+      "validation": {
+        "strict": true
+      }
+    },
+    "docs": {
+      "phaseAppName": "AI.C9d.Docs",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"],
+      "validation": {
+        "strict": false
+      }
+    }
+  },
+  "packages": {
+    "ui": {
+      "phaseAppName": "AI.C9d",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"]
+    },
+    "types": {
+      "phaseAppName": "AI.C9d",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"]
+    },
+    "config": {
+      "phaseAppName": "AI.C9d",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"]
+    },
+    "phase-client": {
+      "phaseAppName": "AI.C9d",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"]
+    },
+    "env-tools": {
+      "phaseAppName": "AI.C9d",
+      "environment": "development",
+      "fallbackEnvFiles": [".env.local", ".env"]
+    }
+  },
+  "defaults": {
+    "environment": "development",
+    "fallbackEnvFiles": [".env.local", ".env"],
+    "validation": {
+      "strict": false
+    },
+    "timeout": 5000,
+    "retries": 3
+  }
+}

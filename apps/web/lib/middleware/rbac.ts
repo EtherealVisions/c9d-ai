@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '../services/rbac-service'
-import { createSupabaseClient } from '../database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 
 export interface RBACOptions {
   permissions?: string[]
@@ -57,25 +57,21 @@ function extractOrganizationId(request: NextRequest): string | null {
  * Get user from database using Clerk user ID
  */
 async function getUserFromClerkId(clerkUserId: string) {
-  const { createSupabaseClient } = await import('@/lib/database')
-  const supabase = createSupabaseClient()
+  const factory = getRepositoryFactory()
+  const userRepo = factory.createUserRepository()
   
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, clerk_user_id, email, first_name, last_name')
-    .eq('clerk_user_id', clerkUserId)
-    .single()
-
-  if (error || !data) {
+  const user = await userRepo.findByClerkId(clerkUserId)
+  
+  if (!user) {
     throw new Error('User not found in database')
   }
 
   return {
-    id: data.id,
-    clerkUserId: data.clerk_user_id,
-    email: data.email,
-    firstName: data.first_name,
-    lastName: data.last_name
+    id: user.id,
+    clerkUserId: user.clerkUserId,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
   }
 }
 
@@ -208,13 +204,9 @@ export function withRBAC(options: RBACOptions = {}) {
           }
 
           // Add organization info to request
-          const { createSupabaseClient } = await import('@/lib/database')
-          const supabase = createSupabaseClient()
-          const { data: orgData } = await supabase
-            .from('organizations')
-            .select('id, slug, name')
-            .eq('id', organizationId)
-            .single()
+          const factory = getRepositoryFactory()
+          const orgRepo = factory.createOrganizationRepository()
+          const orgData = await orgRepo.findById(organizationId)
 
           if (orgData) {
             request.organization = {

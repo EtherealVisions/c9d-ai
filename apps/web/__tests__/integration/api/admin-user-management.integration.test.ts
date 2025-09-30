@@ -1,11 +1,50 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET as searchUsers } from '@/app/api/admin/users/search/route'
 import { GET as getUserDetails, PATCH as updateUserStatus } from '@/app/api/admin/users/[clerkUserId]/route'
 import { GET as getAuthMetrics } from '@/app/api/admin/analytics/auth-metrics/route'
 import { GET as getAuthEvents } from '@/app/api/admin/analytics/auth-events/route'
-import { createSupabaseClient } from '@/lib/database'
-import { userSyncService } from '@/lib/services/user-sync'
+import { createMockDatabase } from '../../setup/drizzle-testing-setup'
+import type { DrizzleDatabase } from '@/lib/db/connection'
+
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
+
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
+
+// Mock repository factory with repository mocks
+const mockUserRepository = {
+  findById: vi.fn(),
+  findByClerkId: vi.fn(),
+  findByEmail: vi.fn(),
+  findMany: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  searchUsers: vi.fn()
+}
+
+const mockOrganizationRepository = {
+  findById: vi.fn(),
+  findMany: vi.fn()
+}
+
+const mockOrganizationMembershipRepository = {
+  findByUserId: vi.fn(),
+  findByUserAndOrganization: vi.fn(),
+  findMany: vi.fn()
+}
+
+vi.mock('@/lib/repositories/factory', () => ({
+  getRepositoryFactory: () => ({
+    getUserRepository: () => mockUserRepository,
+    getOrganizationRepository: () => mockOrganizationRepository,
+    getOrganizationMembershipRepository: () => mockOrganizationMembershipRepository
+  })
+}))
 
 // Mock auth
 const mockAuth = {
@@ -24,30 +63,42 @@ vi.mock('@/lib/services/rbac-service', () => ({
   }
 }))
 
-describe('Admin User Management API Integration', () => {
-  const supabase = createSupabaseClient()
+// Mock user sync service
+vi.mock('@/lib/services/user-sync', () => ({
+  userSyncService: {
+    getUserAnalytics: vi.fn(),
+    syncUserFromClerk: vi.fn()
+  }
+}))
+
+describe('Admin User Management API Integration - Drizzle Migration', () => {
   let testUserId: string
   let testClerkUserId: string
 
   beforeAll(async () => {
-    // Create test user for integration tests
+    // Setup test data using repository mocks
+    testClerkUserId = 'test-clerk-user-123'
+    testUserId = 'test-user-id-123'
+    
     const testUser = {
-      clerk_user_id: 'test-clerk-user-123',
+      id: testUserId,
+      clerkUserId: testClerkUserId,
       email: 'testuser@example.com',
-      first_name: 'Test',
-      last_name: 'User',
-      avatar_url: 'https://example.com/avatar.jpg',
+      firstName: 'Test',
+      lastName: 'User',
+      avatarUrl: 'https://example.com/avatar.jpg',
       preferences: {
         accountStatus: 'active',
         onboardingCompleted: true
-      }
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
 
-    const { data: createdUser, error } = await supabase
-      .from('users')
-      .insert(testUser)
-      .select()
-      .single()
+    // Mock repository responses
+    mockUserRepository.findByClerkId.mockResolvedValue(testUser)
+    mockUserRepository.findByEmail.mockResolvedValue(testUser)
+    mockUserRepository.searchUsers.mockResolvedValue([testUser])
 
     if (error) {
       console.error('Failed to create test user:', error)

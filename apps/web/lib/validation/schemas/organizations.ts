@@ -2,72 +2,50 @@
  * Organizations Validation Schemas
  * 
  * This file contains Zod validation schemas for organization-related operations.
- * Schemas are manually defined to ensure type safety and compatibility.
+ * Schemas are generated from Drizzle definitions and extended with business rules.
  */
 
 import { z } from 'zod'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { organizations, organizationMemberships } from '@/lib/db/schema/organizations'
+import { selectUserSchema } from './users'
+import { selectRoleSchema } from './roles'
 
 // Constants
 const MEMBERSHIP_STATUSES = ['active', 'inactive', 'pending'] as const
 
-// Base organization schema
-export const baseOrganizationSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string()
-    .min(1, 'Organization name is required')
-    .max(100, 'Organization name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-_&.,'()]+$/, 'Organization name contains invalid characters'),
-  
-  slug: z.string()
-    .min(1, 'Slug is required')
-    .max(50, 'Slug must be less than 50 characters')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
-    .transform(val => val.toLowerCase())
-    .refine(val => !val.startsWith('-') && !val.endsWith('-'), 'Slug cannot start or end with a hyphen')
-    .refine(val => !val.includes('--'), 'Slug cannot contain consecutive hyphens'),
-  
-  description: z.string()
-    .max(500, 'Description must be less than 500 characters')
-    .nullable(),
-  
-  avatarUrl: z.string()
-    .url('Invalid avatar URL')
-    .nullable(),
-  
-  metadata: z.record(z.unknown())
-    .default({})
-    .refine(val => Object.keys(val).length <= 50, 'Metadata cannot have more than 50 keys'),
-  
-  settings: z.record(z.unknown())
-    .default({})
-    .refine(val => Object.keys(val).length <= 100, 'Settings cannot have more than 100 keys'),
-  
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+// Auto-generated base schemas from Drizzle
+export const selectOrganizationSchema = createSelectSchema(organizations)
+export const insertOrganizationSchema = createInsertSchema(organizations)
+export const selectOrganizationMembershipSchema = createSelectSchema(organizationMemberships)
+export const insertOrganizationMembershipSchema = createInsertSchema(organizationMemberships)
 
-// Organization validation schemas
+// Legacy alias for backward compatibility
+export const baseOrganizationSchema = selectOrganizationSchema
+
+// Organization validation schemas with business rules using drizzle-zod
 export const createOrganizationSchema = z.object({
   name: z.string()
     .min(1, 'Organization name is required')
-    .max(100, 'Organization name must be less than 100 characters')
+    .max(255, 'Organization name must be less than 255 characters')
     .regex(/^[a-zA-Z0-9\s\-_&.,'()]+$/, 'Organization name contains invalid characters'),
-  
-  avatarUrl: z.string()
-    .url('Invalid avatar URL')
-    .nullable()
-    .optional(),
   
   slug: z.string()
     .min(1, 'Slug is required')
-    .max(50, 'Slug must be less than 50 characters')
+    .max(100, 'Slug must be less than 100 characters')
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
     .transform(val => val.toLowerCase())
     .refine(val => !val.startsWith('-') && !val.endsWith('-'), 'Slug cannot start or end with a hyphen')
     .refine(val => !val.includes('--'), 'Slug cannot contain consecutive hyphens'),
   
   description: z.string()
-    .max(500, 'Description must be less than 500 characters')
+    .max(1000, 'Description must be less than 1000 characters')
+    .nullable()
+    .optional(),
+  
+  avatarUrl: z.string()
+    .url('Invalid avatar URL')
+    .max(500, 'Avatar URL must be less than 500 characters')
     .nullable()
     .optional(),
   
@@ -82,9 +60,11 @@ export const createOrganizationSchema = z.object({
     .optional()
 })
 
-export const updateOrganizationSchema = createOrganizationSchema.partial()
+export const updateOrganizationSchema = createOrganizationSchema.omit({
+  slug: true // Slug should not be updatable after creation
+}).partial()
 
-// Organization membership schemas
+// Organization membership schemas with business rules using drizzle-zod
 export const createOrganizationMembershipSchema = z.object({
   userId: z.string()
     .uuid('Invalid user ID'),
@@ -104,17 +84,8 @@ export const updateOrganizationMembershipSchema = z.object({
   status: z.enum(MEMBERSHIP_STATUSES).optional()
 })
 
-// API Response schemas
-export const organizationApiResponseSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  slug: z.string(),
-  description: z.string().nullable(),
-  avatarUrl: z.string().nullable(),
-  metadata: z.record(z.unknown()),
-  settings: z.record(z.unknown()),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+// API Response schemas with transformations and composition
+export const organizationApiResponseSchema = selectOrganizationSchema.extend({
   memberCount: z.number().int().min(0).default(0),
   isOwner: z.boolean().default(false),
   canEdit: z.boolean().default(false),
@@ -122,33 +93,35 @@ export const organizationApiResponseSchema = z.object({
   userPermissions: z.array(z.string()).default([])
 })
 
-export const organizationMembershipApiResponseSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-  organizationId: z.string().uuid(),
-  roleId: z.string().uuid(),
-  status: z.enum(MEMBERSHIP_STATUSES),
-  joinedAt: z.date(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  user: z.object({
-    id: z.string().uuid(),
-    email: z.string().email(),
-    firstName: z.string().nullable(),
-    lastName: z.string().nullable(),
-    avatarUrl: z.string().nullable()
+// Nested schema composition for membership with relations
+export const organizationMembershipApiResponseSchema = selectOrganizationMembershipSchema.extend({
+  user: selectUserSchema.pick({
+    id: true,
+    email: true,
+    firstName: true,
+    lastName: true,
+    avatarUrl: true
+  }).extend({
+    fullName: z.string().nullable().transform((val, ctx) => {
+      const user = ctx.path[0] as any
+      if (val) return val
+      if (user?.firstName && user?.lastName) {
+        return `${user.firstName} ${user.lastName}`.trim()
+      }
+      return user?.firstName || user?.lastName || null
+    })
   }),
-  organization: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    slug: z.string(),
-    avatarUrl: z.string().nullable()
+  organization: selectOrganizationSchema.pick({
+    id: true,
+    name: true,
+    slug: true,
+    avatarUrl: true
   }),
-  role: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    description: z.string().nullable(),
-    permissions: z.array(z.string())
+  role: selectRoleSchema.pick({
+    id: true,
+    name: true,
+    description: true,
+    permissions: true
   })
 })
 

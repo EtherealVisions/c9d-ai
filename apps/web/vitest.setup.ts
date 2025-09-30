@@ -2,12 +2,19 @@ import '@testing-library/jest-dom'
 import { vi, beforeEach, afterEach } from 'vitest'
 import { setupCommonMocks } from './__tests__/setup/common-mocks'
 import { setupClerkTesting } from './__tests__/setup/clerk-testing-setup'
+import { setupPhaseDevTesting } from './__tests__/setup/phase-testing-setup'
 
 // Apply common mocks
 setupCommonMocks()
 
 // Setup official Clerk testing utilities
 setupClerkTesting()
+
+// Setup Phase.dev testing (for integration tests only)
+// This will validate environment for Phase.dev integration tests
+if (process.env.PHASE_SERVICE_TOKEN) {
+  setupPhaseDevTesting()
+}
 
 // Mock accessibility context globally
 vi.mock('@/contexts/accessibility-context', () => ({
@@ -81,6 +88,111 @@ vi.mock('ioredis', () => ({
   }))
 }))
 
+// Mock database connections to prevent real database attempts
+vi.mock('@/lib/db/connection', () => {
+  const { createMockDatabase } = require('./__tests__/setup/drizzle-testing-setup')
+  return {
+    getDatabase: () => createMockDatabase(),
+    getConnection: () => ({
+      end: vi.fn().mockResolvedValue(undefined),
+      listen: vi.fn(),
+      query: vi.fn().mockResolvedValue([])
+    }),
+    db: createMockDatabase(),
+    checkDatabaseHealth: vi.fn().mockResolvedValue({
+      connected: true,
+      healthy: true,
+      lastCheck: new Date(),
+      metrics: { totalConnections: 0, activeConnections: 0, idleConnections: 0 }
+    }),
+    closeConnection: vi.fn().mockResolvedValue(undefined)
+  }
+})
+
+// Mock postgres to prevent real connections
+vi.mock('postgres', () => {
+  return vi.fn().mockImplementation(() => ({
+    end: vi.fn().mockResolvedValue(undefined),
+    listen: vi.fn(),
+    query: vi.fn().mockResolvedValue([]),
+    [Symbol.for('nodejs.util.inspect.custom')]: () => '[Mock PostgreSQL Connection]'
+  }))
+})
+
+// Mock drizzle-orm to prevent real database operations
+vi.mock('drizzle-orm/postgres-js', () => ({
+  drizzle: vi.fn().mockImplementation(() => {
+    const { createMockDatabase } = require('./__tests__/setup/drizzle-testing-setup')
+    return createMockDatabase()
+  }),
+  migrate: vi.fn().mockResolvedValue(undefined)
+}))
+
+// Mock drizzle-orm core functions - comprehensive mock to prevent real database operations
+vi.mock('drizzle-orm', async (importOriginal) => {
+  // Import original to get proper types, but override with mocks
+  const actual = await importOriginal()
+  
+  return {
+    ...actual,
+    // Query builder functions
+    eq: vi.fn((column, value) => ({ column, value, type: 'eq' })),
+    and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+    or: vi.fn((...conditions) => ({ conditions, type: 'or' })),
+    sql: vi.fn((strings, ...values) => ({ strings, values, type: 'sql' })),
+    desc: vi.fn((column) => ({ column, type: 'desc' })),
+    asc: vi.fn((column) => ({ column, type: 'asc' })),
+    like: vi.fn((column, value) => ({ column, value, type: 'like' })),
+    ilike: vi.fn((column, value) => ({ column, value, type: 'ilike' })),
+    inArray: vi.fn((column, values) => ({ column, values, type: 'inArray' })),
+    notInArray: vi.fn((column, values) => ({ column, values, type: 'notInArray' })),
+    exists: vi.fn((query) => ({ query, type: 'exists' })),
+    notExists: vi.fn((query) => ({ query, type: 'notExists' })),
+    between: vi.fn((column, min, max) => ({ column, min, max, type: 'between' })),
+    notBetween: vi.fn((column, min, max) => ({ column, min, max, type: 'notBetween' })),
+    isNull: vi.fn((column) => ({ column, type: 'isNull' })),
+    isNotNull: vi.fn((column) => ({ column, type: 'isNotNull' })),
+    gt: vi.fn((column, value) => ({ column, value, type: 'gt' })),
+    gte: vi.fn((column, value) => ({ column, value, type: 'gte' })),
+    lt: vi.fn((column, value) => ({ column, value, type: 'lt' })),
+    lte: vi.fn((column, value) => ({ column, value, type: 'lte' })),
+    ne: vi.fn((column, value) => ({ column, value, type: 'ne' })),
+    
+    // Schema definition functions
+    relations: vi.fn(() => ({})),
+    one: vi.fn(() => ({})),
+    many: vi.fn(() => ({})),
+    
+    // Table definition functions (if needed)
+    pgTable: vi.fn(() => ({})),
+    serial: vi.fn(() => ({})),
+    text: vi.fn(() => ({})),
+    varchar: vi.fn(() => ({})),
+    integer: vi.fn(() => ({})),
+    boolean: vi.fn(() => ({})),
+    timestamp: vi.fn(() => ({})),
+    json: vi.fn(() => ({})),
+    jsonb: vi.fn(() => ({})),
+    uuid: vi.fn(() => ({})),
+    
+    // Migration functions
+    migrate: vi.fn().mockResolvedValue(undefined)
+  }
+})
+
+// Mock repository factory to use mocks
+vi.mock('@/lib/repositories/factory', () => {
+  const { createMockRepository } = require('./__tests__/setup/drizzle-testing-setup')
+  return {
+    getRepositoryFactory: () => ({
+      getUserRepository: () => createMockRepository(),
+      getOrganizationRepository: () => createMockRepository(),
+      getOrganizationMembershipRepository: () => createMockRepository(),
+      getRoleRepository: () => createMockRepository()
+    })
+  }
+})
+
 // Mock NextResponse for API tests
 vi.mock('next/server', () => ({
   NextResponse: {
@@ -108,14 +220,8 @@ vi.mock('next/server', () => ({
   NextRequest: vi.fn()
 }))
 
-// Mock environment variables with proper test values
-process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmstdGVzdC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ'
-process.env.CLERK_SECRET_KEY = 'sk_test_Y2xlcmstdGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLXB1cnBvc2VzLW9ubHk'
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test-project-id.supabase.co'
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QtcHJvamVjdC1pZCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQwOTk1MjAwLCJleHAiOjE5NTY1NzEyMDB9.test-anon-key-for-testing-purposes-only-with-sufficient-length'
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QtcHJvamVjdC1pZCIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2NDA5OTUyMDAsImV4cCI6MTk1NjU3MTIwMH0.test-service-role-key-for-testing-purposes-only-with-sufficient-length'
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db'
-// Set NODE_ENV for tests (only if not already set)
+// Environment variables should come from Phase.dev via env-wrapper CLI tool
+// Only set NODE_ENV if not already set (tests should use 'test' environment)
 if (!process.env.NODE_ENV) {
   // Use Object.defineProperty to avoid TypeScript read-only error
   Object.defineProperty(process.env, 'NODE_ENV', {
@@ -124,6 +230,13 @@ if (!process.env.NODE_ENV) {
     configurable: true
   })
 }
+
+// Ensure we have a test-specific database configuration that doesn't attempt real connections
+// This will be overridden by Phase.dev if available, but provides a safe fallback
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db'
+}
+
 
 // Global test configuration
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

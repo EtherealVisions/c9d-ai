@@ -25,9 +25,9 @@ import type {
 } from '@/lib/models'
 
 export class OnboardingService {
-  private static async getSupabase() {
-    const { createSupabaseClient } = await import('@/lib/database')
-    return createSupabaseClient()
+  private static getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
   }
 
   /**

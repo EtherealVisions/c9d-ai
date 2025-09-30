@@ -286,7 +286,7 @@ export class RepositoryPerformanceMonitor {
    */
   async getPerformanceReport(): Promise<{
     repository: PerformanceStats
-    cache: Awaited<ReturnType<typeof getCacheService>>['getStats']>
+    cache: Awaited<ReturnType<typeof getCacheService>>['getStats']
     recommendations: string[]
   }> {
     const repositoryStats = this.getStats()

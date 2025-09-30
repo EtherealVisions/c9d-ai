@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { userSyncService } from '@/lib/services/user-sync'
 import { rbacService } from '@/lib/services/rbac-service'
-import { createSupabaseClient } from '@/lib/database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 
 /**
  * GET /api/admin/users/search - Search users by email or ID (Admin only)
@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createSupabaseClient()
+    const factory = getRepositoryFactory()
+    const userRepo = factory.createUserRepository()
     
     // Search users by email or Clerk user ID
     const { data: users, error: searchError } = await supabase

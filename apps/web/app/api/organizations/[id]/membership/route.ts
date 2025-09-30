@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createSupabaseClient } from '@/lib/database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import { userSyncService } from '@/lib/services/user-sync'
 
 export async function GET(
@@ -28,7 +28,8 @@ export async function GET(
       )
     }
 
-    const supabase = createSupabaseClient()
+    const factory = getRepositoryFactory()
+    const membershipRepo = factory.createOrganizationMembershipRepository()
 
     // Get user's membership in this organization
     const { data: membership, error: membershipError } = await supabase

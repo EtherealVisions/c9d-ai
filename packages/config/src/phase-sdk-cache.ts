@@ -70,6 +70,7 @@ export interface CacheWarmingConfig {
  */
 export class PhaseSDKCache {
   private static instance: PhaseSDKCache | null = null;
+  private static shutdownHandlersRegistered: boolean = false;
   private cache: Map<string, PhaseCacheEntry> = new Map();
   private defaultTTL: number = 5 * 60 * 1000; // 5 minutes
   private maxEntries: number = 100; // Prevent memory bloat
@@ -89,8 +90,11 @@ export class PhaseSDKCache {
     // Start automatic cleanup
     this.startCleanupInterval();
     
-    // Register shutdown handlers for security
-    this.registerShutdownHandlers();
+    // Register shutdown handlers for security (only once)
+    if (!PhaseSDKCache.shutdownHandlersRegistered) {
+      this.registerShutdownHandlers();
+      PhaseSDKCache.shutdownHandlersRegistered = true;
+    }
   }
 
   /**
@@ -481,13 +485,14 @@ export class PhaseSDKCache {
       clearInterval(this.cleanupInterval);
     }
 
-    // Run cleanup every 2 minutes
+    // Run cleanup every 5 minutes (reduced frequency to avoid log spam)
     this.cleanupInterval = setInterval(() => {
       const deletedCount = this.invalidate(CacheInvalidationPattern.EXPIRED_ONLY);
       if (deletedCount > 0) {
         this.metrics.cleanups++;
+        console.log(`[PhaseSDKCache] Cleaned up ${deletedCount} expired entries`);
       }
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
   }
 
   /**

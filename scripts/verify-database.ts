@@ -6,7 +6,8 @@
  * with all required tables, RLS policies, and seed data.
  */
 
-import { validateDatabaseSchema, DATABASE_TABLES } from '../lib/database'
+import { getDatabase } from '../apps/web/lib/db/connection'
+import { DATABASE_TABLES } from '../apps/web/lib/models/types'
 
 async function main() {
   console.log('🔍 Verifying database schema...\n')

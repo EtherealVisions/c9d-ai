@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Phase Apps Configuration",
+  "description": "Configuration file for mapping apps and packages to Phase.dev contexts",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Configuration schema version"
+    },
+    "apps": {
+      "type": "object",
+      "description": "Application configurations",
+      "patternProperties": {
+        "^[a-zA-Z0-9-_]+$": {
+          "$ref": "#/definitions/appConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "packages": {
+      "type": "object",
+      "description": "Package configurations",
+      "patternProperties": {
+        "^[a-zA-Z0-9-_]+$": {
+          "$ref": "#/definitions/packageConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "defaults": {
+      "$ref": "#/definitions/defaultConfig",
+      "description": "Default configuration values"
+    }
+  },
+  "required": ["version", "apps"],
+  "additionalProperties": false,
+  "definitions": {
+    "appConfig": {
+      "type": "object",
+      "properties": {
+        "phaseAppName": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "description": "Phase.dev application name"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "description": "Default environment"
+        },
+        "fallbackEnvFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fallback environment files"
+        },
+        "validation": {
+          "$ref": "#/definitions/validationConfig"
+        },
+        "timeout": {
+          "type": "number",
+          "minimum": 1000,
+          "maximum": 30000,
+          "description": "API timeout in milliseconds"
+        },
+        "retries": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of retry attempts"
+        }
+      },
+      "required": ["phaseAppName"],
+      "additionalProperties": false
+    },
+    "packageConfig": {
+      "type": "object",
+      "properties": {
+        "phaseAppName": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "description": "Phase.dev application name"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "description": "Default environment"
+        },
+        "fallbackEnvFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fallback environment files"
+        },
+        "timeout": {
+          "type": "number",
+          "minimum": 1000,
+          "maximum": 30000,
+          "description": "API timeout in milliseconds"
+        },
+        "retries": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of retry attempts"
+        }
+      },
+      "required": ["phaseAppName"],
+      "additionalProperties": false
+    },
+    "validationConfig": {
+      "type": "object",
+      "properties": {
+        "strict": {
+          "type": "boolean",
+          "description": "Enable strict validation mode"
+        }
+      },
+      "additionalProperties": false
+    },
+    "defaultConfig": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "description": "Default environment"
+        },
+        "fallbackEnvFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Default fallback environment files"
+        },
+        "validation": {
+          "$ref": "#/definitions/validationConfig"
+        },
+        "timeout": {
+          "type": "number",
+          "minimum": 1000,
+          "maximum": 30000,
+          "description": "Default API timeout in milliseconds"
+        },
+        "retries": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Default number of retry attempts"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

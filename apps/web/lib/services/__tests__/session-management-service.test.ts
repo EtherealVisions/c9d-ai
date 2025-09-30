@@ -1,29 +1,53 @@
 /**
- * Unit Tests for SessionManagementService
+ * Unit Tests for SessionManagementService - Drizzle Migration
  * 
- * These tests focus on business logic and error handling without database calls.
- * For database integration testing, see session-management-service.integration.test.ts
+ * These tests focus on business logic and error handling using Drizzle ORM.
+ * Requirements: 5.4 - Update tests to use new database layer
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SessionManagementService } from '../session-management-service'
+import { createMockDatabase } from '../../../__tests__/setup/drizzle-testing-setup'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Create mock Supabase client
-const mockSupabaseClient = {
-  from: vi.fn().mockReturnThis(),
-  select: vi.fn().mockReturnThis(),
-  insert: vi.fn().mockReturnThis(),
-  update: vi.fn().mockReturnThis(),
-  upsert: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  single: vi.fn()
-}
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
 
-const mockSupabase = mockSupabaseClient
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
 
-// Mock the database to focus on business logic
-vi.mock('../../database', () => ({
-  createSupabaseClient: () => mockSupabaseClient
+// Mock Drizzle ORM functions
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((column, value) => ({ column, value, type: 'eq' })),
+  and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+  or: vi.fn((...conditions) => ({ conditions, type: 'or' })),
+  sql: vi.fn((strings, ...values) => ({ strings, values, type: 'sql' })),
+  desc: vi.fn((column) => ({ column, type: 'desc' })),
+  gt: vi.fn((column, value) => ({ column, value, type: 'gt' })),
+  lt: vi.fn((column, value) => ({ column, value, type: 'lt' }))
+}))
+
+// Mock schema imports
+vi.mock('@/lib/db/schema/users', () => ({
+  userSessions: {
+    id: 'id',
+    userId: 'userId',
+    sessionId: 'sessionId',
+    organizationId: 'organizationId',
+    lastActivity: 'lastActivity',
+    expiresAt: 'expiresAt',
+    isActive: 'isActive',
+    deviceInfo: 'deviceInfo'
+  },
+  sessionEvents: {
+    id: 'id',
+    sessionId: 'sessionId',
+    eventType: 'eventType',
+    eventData: 'eventData',
+    timestamp: 'timestamp'
+  }
 }))
 
 // Mock Clerk hooks
@@ -49,12 +73,19 @@ Object.defineProperty(window, 'navigator', {
   }
 })
 
-describe('SessionManagementService', () => {
+describe('SessionManagementService - Drizzle Migration', () => {
   let service: SessionManagementService
 
   beforeEach(() => {
     vi.clearAllMocks()
     service = new SessionManagementService()
+    
+    // Reset mock database methods
+    Object.keys(mockDatabase).forEach(key => {
+      if (typeof mockDatabase[key as keyof typeof mockDatabase] === 'function') {
+        vi.mocked(mockDatabase[key as keyof typeof mockDatabase]).mockClear()
+      }
+    })
     
     // Reset timers
     vi.useFakeTimers()
@@ -71,30 +102,36 @@ describe('SessionManagementService', () => {
       const sessionId = 'session-456'
       const organizationId = 'org-789'
 
-      mockSupabaseClient.from.mockReturnValue({
-        upsert: vi.fn().mockReturnValue({
-          error: null
-        }),
-        insert: vi.fn().mockReturnValue({
-          error: null
-        })
-      })
+      // Mock successful upsert operation
+      vi.mocked(mockDatabase.insert).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.values).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.onConflictDoUpdate).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.returning).mockResolvedValue([{
+        id: 'session-123',
+        userId,
+        sessionId,
+        organizationId,
+        lastActivity: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        isActive: true,
+        deviceInfo: {}
+      }])
 
       await service.initializeSession(userId, sessionId, organizationId)
 
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('user_sessions')
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('session_events')
+      expect(mockDatabase.insert).toHaveBeenCalled()
+      expect(mockDatabase.values).toHaveBeenCalled()
     })
 
     it('should handle initialization errors gracefully', async () => {
       const userId = 'user-123'
       const sessionId = 'session-456'
 
-      mockSupabaseClient.from.mockReturnValue({
-        upsert: vi.fn().mockReturnValue({
-          error: new Error('Database error')
-        })
-      })
+      // Mock database error
+      vi.mocked(mockDatabase.insert).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.values).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.onConflictDoUpdate).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.returning).mockRejectedValue(new Error('Database error'))
 
       await expect(service.initializeSession(userId, sessionId)).rejects.toThrow('Database error')
     })
@@ -103,25 +140,25 @@ describe('SessionManagementService', () => {
   describe('updateSessionActivity', () => {
     it('should update session last activity', async () => {
       const sessionId = 'session-456'
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            error: null
-          })
-        })
-      })
 
-      mockSupabaseClient.from.mockReturnValue({
-        update: mockUpdate
-      })
+      // Mock successful update operation
+      vi.mocked(mockDatabase.update).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.set).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.where).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.returning).mockResolvedValue([{
+        id: 'session-123',
+        sessionId,
+        lastActivity: new Date(),
+        updatedAt: new Date()
+      }])
 
       await service.updateSessionActivity(sessionId)
 
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('user_sessions')
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockDatabase.update).toHaveBeenCalled()
+      expect(mockDatabase.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          last_activity: expect.any(String),
-          updated_at: expect.any(String)
+          lastActivity: expect.any(Date),
+          updatedAt: expect.any(Date)
         })
       )
     })
@@ -129,15 +166,11 @@ describe('SessionManagementService', () => {
     it('should handle update errors gracefully', async () => {
       const sessionId = 'session-456'
       
-      mockSupabase.from.mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              error: new Error('Update failed')
-            })
-          })
-        })
-      })
+      // Mock database error
+      vi.mocked(mockDatabase.update).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.set).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.where).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.returning).mockRejectedValue(new Error('Update failed'))
 
       // Should not throw, just log error
       await expect(service.updateSessionActivity(sessionId)).resolves.toBeUndefined()

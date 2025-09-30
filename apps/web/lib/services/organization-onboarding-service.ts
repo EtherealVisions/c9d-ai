@@ -4,7 +4,7 @@
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
  */
 
-import { createSupabaseClient } from '../database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import { DatabaseError, NotFoundError, ValidationError } from '../models/database'
 import { membershipService } from './membership-service'
 import { OnboardingService } from './onboarding-service'
@@ -98,7 +98,9 @@ export interface OrganizationOnboardingServiceResult<T> {
 }
 
 export class OrganizationOnboardingService {
-  private db = createSupabaseClient()
+  private getRepositoryFactory() {
+    return getRepositoryFactory()
+  }
 
   /**
    * Get available organization templates

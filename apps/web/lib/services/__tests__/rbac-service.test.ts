@@ -1,53 +1,82 @@
 /**
- * Unit tests for RBACService
+ * Unit tests for RBACService - Drizzle Migration
  * Tests permission checking, role management, and access control functionality
+ * Requirements: 5.4 - Update tests to use new database layer
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RBACService } from '../rbac-service'
+import { createMockDatabase } from '../../../__tests__/setup/drizzle-testing-setup'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Mock the database module
-vi.mock('../../database', () => ({
-  createSupabaseClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: null, error: null })),
-          order: vi.fn(() => Promise.resolve({ data: [], error: null }))
-        })),
-        single: vi.fn(() => Promise.resolve({ data: null, error: null })),
-        order: vi.fn(() => Promise.resolve({ data: [], error: null }))
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: null, error: null }))
-        }))
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({ data: null, error: null }))
-          }))
-        }))
-      })),
-      delete: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null }))
-      }))
-    }))
-  })),
-  createTypedSupabaseClient: vi.fn(() => ({
-    setUserContext: vi.fn(),
-    clearUserContext: vi.fn(),
-    getClient: vi.fn(() => ({
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => Promise.resolve({ data: null, error: null }))
-          }))
-        }))
-      }))
-    })),
-    getRole: vi.fn(),
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
+
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
+
+// Mock repository factory
+vi.mock('@/lib/repositories/factory', () => ({
+  getRepositoryFactory: () => ({
+    getUserRepository: () => ({
+      findById: vi.fn(),
+      findByClerkId: vi.fn(),
+      findMany: vi.fn()
+    }),
+    getOrganizationRepository: () => ({
+      findById: vi.fn(),
+      findMany: vi.fn()
+    }),
+    getOrganizationMembershipRepository: () => ({
+      findByUserId: vi.fn(),
+      findByUserAndOrganization: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn()
+    }),
+    getRoleRepository: () => ({
+      findById: vi.fn(),
+      findByName: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn()
+    })
+  })
+}))
+
+// Mock Drizzle ORM functions
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((column, value) => ({ column, value, type: 'eq' })),
+  and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+  or: vi.fn((...conditions) => ({ conditions, type: 'or' })),
+  inArray: vi.fn((column, values) => ({ column, values, type: 'inArray' })),
+  desc: vi.fn((column) => ({ column, type: 'desc' })),
+  asc: vi.fn((column) => ({ column, type: 'asc' }))
+}))
+
+// Mock schema imports
+vi.mock('@/lib/db/schema/users', () => ({
+  users: {
+    id: 'id',
+    clerkUserId: 'clerkUserId',
+    email: 'email'
+  },
+  organizationMemberships: {
+    id: 'id',
+    userId: 'userId',
+    organizationId: 'organizationId',
+    roleId: 'roleId'
+  },
+  roles: {
+    id: 'id',
+    name: 'name',
+    permissions: 'permissions'
+  }
+}))
     getRolesByOrganization: vi.fn(),
     createRole: vi.fn(),
     getAllPermissions: vi.fn(),

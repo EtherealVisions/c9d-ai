@@ -11,14 +11,14 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src/",
-    "test": "node ../../scripts/run-with-env.js vitest run",
-    "test:run": "node ../../scripts/run-with-env.js vitest run",
-    "test:dev": "node ../../scripts/run-with-env.js vitest --watch",
-    "test:watch": "node ../../scripts/run-with-env.js vitest --watch",
-    "typecheck": "tsc --noEmit",
+    "build": "env-wrapper tsc",
+    "dev": "env-wrapper tsc --watch",
+    "lint": "env-wrapper eslint src/",
+    "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",
+    "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",
+    "test:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest --watch",
+    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest --watch",
+    "typecheck": "env-wrapper tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -33,6 +33,6 @@
     "vitest": "^3.2.4"
   },
   "phase": {
-    "appName": "AI.C9d.Web"
+    "appName": "AI.C9d"
   }
 }

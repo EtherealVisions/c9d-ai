@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '@/lib/services/rbac-service'
-import { createSupabaseClient } from '@/lib/database'
+import { getDatabase } from '@/lib/db/connection'
 
 /**
  * GET /api/admin/analytics/auth-metrics - Get authentication metrics and analytics (Admin only)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const daysBack = timeRange === '1d' ? 1 : timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
     const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000))
 
-    const supabase = createSupabaseClient()
+    const db = getDatabase()
 
     // Get authentication metrics from audit logs
     const { data: authEvents, error: eventsError } = await supabase

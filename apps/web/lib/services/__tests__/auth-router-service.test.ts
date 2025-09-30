@@ -1,35 +1,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthRouterService } from '../auth-router-service'
+import { createMockDatabase } from '../../../__tests__/setup/drizzle-testing-setup'
 import type { User } from '../../models/types'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Mock dependencies
-vi.mock('../../database', () => ({
-  createSupabaseClient: () => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            order: vi.fn(() => ({
-              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-              single: vi.fn().mockResolvedValue({ data: [], error: null })
-            })),
-            single: vi.fn().mockResolvedValue({ data: [], error: null })
-          })),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          order: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              single: vi.fn().mockResolvedValue({ data: null, error: null })
-            }))
-          }))
-        }))
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn().mockResolvedValue({ data: {}, error: null })
-        }))
-      }))
-    }))
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
+
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
+
+// Mock repository factory
+vi.mock('@/lib/repositories/factory', () => ({
+  getRepositoryFactory: () => ({
+    getUserRepository: () => ({
+      findById: vi.fn(),
+      findByClerkId: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn()
+    }),
+    getOrganizationRepository: () => ({
+      findById: vi.fn(),
+      findBySlug: vi.fn(),
+      findMany: vi.fn()
+    }),
+    getOrganizationMembershipRepository: () => ({
+      findByUserId: vi.fn(),
+      findByUserAndOrganization: vi.fn(),
+      create: vi.fn()
+    })
   })
+}))
+
+// Mock Drizzle ORM functions
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((column, value) => ({ column, value, type: 'eq' })),
+  and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+  or: vi.fn((...conditions) => ({ conditions, type: 'or' })),
+  desc: vi.fn((column) => ({ column, type: 'desc' })),
+  asc: vi.fn((column) => ({ column, type: 'asc' }))
 }))
 
 vi.mock('../user-service', () => ({

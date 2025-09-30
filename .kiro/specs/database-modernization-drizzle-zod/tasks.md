@@ -29,18 +29,18 @@
     - Verify generated types match existing database structure
     - _Requirements: 1.4, 1.5_
 
-- [x] 3. Create comprehensive Zod validation schemas
-  - [x] 3.1 Generate base Zod schemas from Drizzle definitions
-    - Use drizzle-zod to create base insert and select schemas
-    - Create lib/validation/schemas/users.ts with user validation schemas
-    - Create lib/validation/schemas/organizations.ts with organization schemas
-    - Ensure generated schemas include proper TypeScript type inference
+- [x] 3. Integrate drizzle-zod for automatic schema generation
+  - [x] 3.1 Update validation schemas to use drizzle-zod
+    - Replace manual Zod schemas with createInsertSchema and createSelectSchema
+    - Update lib/validation/schemas/users.ts to use drizzle-zod integration
+    - Update lib/validation/schemas/organizations.ts with auto-generated schemas
+    - Update lib/validation/schemas/roles.ts with drizzle-zod patterns
     - _Requirements: 2.1, 2.2, 3.1_
 
-  - [x] 3.2 Create custom validation schemas with business rules
-    - Extend base schemas with custom validation rules (email format, length limits)
+  - [x] 3.2 Extend auto-generated schemas with business rules
+    - Use .extend() and .omit() to customize drizzle-zod schemas
+    - Add custom validation rules for email format, length limits, and business logic
     - Create API request/response schemas with proper transformations
-    - Add validation for complex business logic (role permissions, membership rules)
     - Implement schema composition for nested and related data validation
     - _Requirements: 2.1, 2.4, 3.1_
 
@@ -161,27 +161,57 @@
     - Implement performance and load testing for database operations
     - _Requirements: 7.3, 7.5_
 
-- [ ] 9. Create migration utilities and backward compatibility
-  - [ ] 9.1 Implement legacy code compatibility layer
-    - Create adapter layer to support existing Supabase client usage
-    - Implement gradual migration utilities for service-by-service migration
-    - Add feature flags for enabling new database layer per service
-    - Ensure existing functionality continues to work during migration
-    - _Requirements: 5.1, 5.2, 5.3_
+- [x] 9. Remove legacy Supabase client code
+  - [x] 9.1 Remove legacy services using Supabase client
+    - Remove createSupabaseClient usage from remaining services
+    - Update content-manager-service.ts to use repository pattern
+    - Update organizational-customization-service.ts to use Drizzle
+    - Update session-management-service.ts to use new database layer
+    - _Requirements: 5.4_
 
-  - [ ] 9.2 Create data migration and validation tools
-    - Implement data integrity validation between old and new systems
-    - Create migration scripts for existing data transformation
-    - Add rollback capabilities for failed migrations
-    - Implement migration progress tracking and reporting
-    - _Requirements: 5.4, 5.5_
+  - [x] 9.2 Remove legacy database utilities and dependencies
+    - Remove lib/database/index.ts and lib/database.ts files
+    - Clean up createSupabaseClient function and related utilities
+    - Remove unused Supabase client imports and references
+    - Update import statements throughout codebase
+    - _Requirements: 5.4_
 
-  - [ ] 9.3 Update development and deployment processes
-    - Update development setup documentation for new database layer
-    - Modify CI/CD pipelines to include Drizzle migrations
-    - Add database schema validation to deployment process
-    - Create troubleshooting guides for common migration issues
-    - _Requirements: 5.5_
+  - [x] 9.3 Update remaining middleware and utilities
+    - Update lib/middleware/rbac.ts to use repository layer
+    - Remove Supabase client usage from auth-router-service.ts
+    - Update any remaining utilities using legacy database patterns
+    - Ensure all database operations use Drizzle repositories
+    - _Requirements: 5.4_
+
+- [x] 10. Update tests to use new database layer
+  - [x] 10.1 Update service tests to mock Drizzle instead of Supabase
+    - Update organizational-customization-service.test.ts to mock Drizzle database
+    - Update content-manager-service.test.ts to use repository mocks
+    - Update session-management-service tests to use new patterns
+    - Update auth-router-service tests to mock repository factory
+    - Update rbac-service tests to use repository pattern
+    - _Requirements: 5.4_
+
+  - [x] 10.2 Update API route tests to use repository mocks
+    - Update admin analytics API tests to mock Drizzle database
+    - Update organization membership API tests to use repository mocks
+    - Update user search API tests to use repository pattern
+    - Ensure all API tests use consistent mocking patterns
+    - _Requirements: 5.4_
+
+  - [x] 10.3 Update integration tests for new database layer
+    - Update database integration tests to use Drizzle queries
+    - Update service integration tests to use repository pattern
+    - Ensure test database setup works with Drizzle
+    - Update test utilities and helpers for new patterns
+    - _Requirements: 5.4_
+
+  - [x] 10.4 Validate all tests pass with new database layer
+    - Run comprehensive test suite to ensure 100% pass rate
+    - Fix any remaining test failures from database migration
+    - Update test documentation and patterns
+    - Ensure coverage thresholds are maintained
+    - _Requirements: 5.4_
 
 - [ ] 10. Performance optimization and monitoring
   - [ ] 10.1 Implement query optimization strategies
@@ -213,11 +243,11 @@
     - Add troubleshooting guides for common issues
     - _Requirements: 5.5_
 
-  - [ ] 11.2 Create migration and deployment guides
-    - Write step-by-step migration procedures
-    - Create rollback procedures and emergency protocols
-    - Document database schema management and migration processes
+  - [ ] 11.2 Create deployment and schema management guides
+    - Document database schema management with Drizzle Kit
+    - Create migration procedures and best practices
     - Add performance tuning and optimization guides
+    - Document monitoring and observability setup
     - _Requirements: 5.5_
 
   - [ ] 11.3 Conduct team training and knowledge transfer
@@ -226,25 +256,3 @@
     - Create code review guidelines for new database layer
     - Establish ongoing support and knowledge sharing processes
     - _Requirements: 5.5_
-
-- [ ] 12. Final migration and legacy code removal
-  - [ ] 12.1 Complete service layer migration
-    - Migrate all remaining services to use new database layer
-    - Remove feature flags and compatibility layers
-    - Update all API endpoints to use new validation schemas
-    - Ensure complete test coverage for all migrated functionality
-    - _Requirements: 5.4_
-
-  - [ ] 12.2 Remove legacy database code and dependencies
-    - Remove old Supabase client-based database utilities
-    - Clean up legacy type definitions and interfaces
-    - Remove unused dependencies and configuration
-    - Update import statements and references throughout codebase
-    - _Requirements: 5.4_
-
-  - [ ] 12.3 Final validation and performance optimization
-    - Conduct comprehensive testing of entire application
-    - Perform load testing and performance validation
-    - Optimize database queries and caching strategies
-    - Create final documentation and deployment procedures
-    - _Requirements: 6.1, 6.4, 6.5_

@@ -3,8 +3,8 @@
  * Requirements: 7.1, 7.2, 7.3, 7.4
  */
 
-// Database client imported lazily to avoid build-time execution
 import { DatabaseError, NotFoundError, ValidationError, ErrorCode } from '@/lib/errors'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import type {
   OrganizationOnboardingConfigRow,
   OrganizationOnboardingConfigInsert,
@@ -100,8 +100,9 @@ export interface ContentCreationRequest {
 }
 
 export class OrganizationalCustomizationService {
-  private static getSupabase() {
-    return createSupabaseClient()
+  private static getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
   }
 
   /**
@@ -111,21 +112,26 @@ export class OrganizationalCustomizationService {
     organizationId: string
   ): Promise<OrganizationCustomization | null> {
     try {
-      const { data: config, error } = await this.getSupabase()
-        .from('organization_onboarding_configs')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .eq('is_active', true)
-        .single()
+      const { eq, and } = await import('drizzle-orm')
+      const { organizationOnboardingConfigs } = await import('@/lib/db/schema/content')
+      
+      const db = this.getDatabase()
+      const configs = await db
+        .select()
+        .from(organizationOnboardingConfigs)
+        .where(
+          and(
+            eq(organizationOnboardingConfigs.organizationId, organizationId),
+            eq(organizationOnboardingConfigs.isActive, true)
+          )
+        )
+        .limit(1)
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        throw new DatabaseError('Failed to fetch organization customization', error)
+      if (configs.length === 0) {
+        return null
       }
 
-      return this.transformConfigRow(config)
+      return this.transformConfigRow(configs[0])
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error
@@ -142,48 +148,52 @@ export class OrganizationalCustomizationService {
     customization: Partial<OrganizationCustomization>
   ): Promise<OrganizationCustomization> {
     try {
+      const { eq } = await import('drizzle-orm')
+      const { organizationOnboardingConfigs } = await import('@/lib/db/schema/content')
+      
       // Check if configuration exists
       const existingConfig = await this.getOrganizationCustomization(organizationId)
       
-      const configData: OrganizationOnboardingConfigInsert | OrganizationOnboardingConfigUpdate = {
-        organization_id: organizationId,
-        welcome_message: customization.welcomeMessage || null,
-        branding_assets: (customization.brandingAssets || {}) as Record<string, unknown>,
-        custom_content: (customization.customContent || {}) as Record<string, unknown>,
-        role_configurations: customization.roleSpecificContent || {},
-        mandatory_modules: [],
-        completion_requirements: (customization.completionRequirements || {}) as Record<string, unknown>,
-        notification_settings: (customization.notificationSettings || {}) as Record<string, unknown>,
-        integration_settings: (customization.integrationSettings || []) as unknown as Record<string, unknown>,
-        is_active: true
+      const configData = {
+        organizationId: organizationId,
+        welcomeMessage: customization.welcomeMessage || null,
+        brandingAssets: (customization.brandingAssets || {}) as Record<string, unknown>,
+        customContent: (customization.customContent || {}) as Record<string, unknown>,
+        roleConfigurations: customization.roleSpecificContent || {},
+        mandatoryModules: [],
+        completionRequirements: (customization.completionRequirements || {}) as Record<string, unknown>,
+        notificationSettings: (customization.notificationSettings || {}) as Record<string, unknown>,
+        integrationSettings: (customization.integrationSettings || []) as unknown as Record<string, unknown>,
+        isActive: true,
+        updatedAt: new Date()
       }
 
+      const db = this.getDatabase()
       let result
+
       if (existingConfig) {
         // Update existing configuration
-        const { data, error } = await this.getSupabase()
-          .from('organization_onboarding_configs')
-          .update(configData)
-          .eq('organization_id', organizationId)
-          .select()
-          .single()
+        const updated = await db
+          .update(organizationOnboardingConfigs)
+          .set(configData)
+          .where(eq(organizationOnboardingConfigs.organizationId, organizationId))
+          .returning()
 
-        if (error) {
-          throw new DatabaseError('Failed to update organization customization', error)
+        if (updated.length === 0) {
+          throw new DatabaseError('Failed to update organization customization')
         }
-        result = data
+        result = updated[0]
       } else {
         // Create new configuration
-        const { data, error } = await this.getSupabase()
-          .from('organization_onboarding_configs')
-          .insert(configData)
-          .select()
-          .single()
+        const inserted = await db
+          .insert(organizationOnboardingConfigs)
+          .values(configData)
+          .returning()
 
-        if (error) {
-          throw new DatabaseError('Failed to create organization customization', error)
+        if (inserted.length === 0) {
+          throw new DatabaseError('Failed to create organization customization')
         }
-        result = data
+        result = inserted[0]
       }
 
       return this.transformConfigRow(result)
@@ -237,31 +247,33 @@ export class OrganizationalCustomizationService {
       // Validate content request
       this.validateContentRequest(contentRequest)
 
-      const contentData: OnboardingContentInsert = {
-        content_type: 'template',
+      const { onboardingContent } = await import('@/lib/db/schema/content')
+      
+      const contentData = {
+        contentType: 'template',
         title: contentRequest.title,
         description: contentRequest.description,
-        content_data: contentRequest.content,
-        media_urls: [],
-        interactive_config: {},
+        contentData: contentRequest.content,
+        mediaUrls: [],
+        interactiveConfig: {},
         tags: contentRequest.targetRole ? [contentRequest.targetRole] : [],
         version: 1,
-        is_active: true,
-        organization_id: organizationId,
-        created_by: null // Would be set from auth context
+        isActive: true,
+        organizationId: organizationId,
+        createdBy: null // Would be set from auth context
       }
 
-      const { data, error } = await this.getSupabase()
-        .from('onboarding_content')
-        .insert(contentData)
-        .select()
-        .single()
+      const db = this.getDatabase()
+      const inserted = await db
+        .insert(onboardingContent)
+        .values(contentData)
+        .returning()
 
-      if (error) {
-        throw new DatabaseError('Failed to create custom content', error)
+      if (inserted.length === 0) {
+        throw new DatabaseError('Failed to create custom content')
       }
 
-      return this.transformContentRow(data)
+      return this.transformContentRow(inserted[0])
     } catch (error) {
       if (error instanceof ValidationError || error instanceof DatabaseError) {
         throw error
@@ -628,31 +640,31 @@ export class OrganizationalCustomizationService {
   /**
    * Transform database row to OrganizationCustomization
    */
-  private static transformConfigRow(row: OrganizationOnboardingConfigRow): OrganizationCustomization {
+  private static transformConfigRow(row: any): OrganizationCustomization {
     return {
-      organizationId: row.organization_id,
-      welcomeMessage: row.welcome_message || '',
-      brandingAssets: (row.branding_assets as unknown) as BrandingAssets,
-      customContent: Array.isArray(row.custom_content) ? row.custom_content as CustomContent[] : [],
-      roleSpecificContent: row.role_configurations as Record<string, CustomContent[]>,
-      integrationSettings: Array.isArray(row.integration_settings) ? row.integration_settings as IntegrationSetting[] : [],
-      notificationSettings: (row.notification_settings as unknown) as NotificationSettings,
-      completionRequirements: (row.completion_requirements as unknown) as CompletionRequirements
+      organizationId: row.organizationId,
+      welcomeMessage: row.welcomeMessage || '',
+      brandingAssets: (row.brandingAssets as unknown) as BrandingAssets,
+      customContent: Array.isArray(row.customContent) ? row.customContent as CustomContent[] : [],
+      roleSpecificContent: row.roleConfigurations as Record<string, CustomContent[]>,
+      integrationSettings: Array.isArray(row.integrationSettings) ? row.integrationSettings as IntegrationSetting[] : [],
+      notificationSettings: (row.notificationSettings as unknown) as NotificationSettings,
+      completionRequirements: (row.completionRequirements as unknown) as CompletionRequirements
     }
   }
 
   /**
    * Transform content row to CustomContent
    */
-  private static transformContentRow(row: OnboardingContentRow): CustomContent {
+  private static transformContentRow(row: any): CustomContent {
     return {
       id: row.id,
-      type: row.content_type as any,
+      type: row.contentType as any,
       title: row.title,
-      content: JSON.stringify(row.content_data),
+      content: JSON.stringify(row.contentData),
       targetStepId: undefined, // Would be extracted from metadata
       targetRole: row.tags?.[0],
-      isActive: row.is_active,
+      isActive: row.isActive,
       priority: 1 // Default priority
     }
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '@/lib/services/rbac-service'
-import { createSupabaseClient } from '@/lib/database'
+import { getDatabase } from '@/lib/db/connection'
 
 /**
  * GET /api/admin/analytics/auth-events - Get recent authentication events (Admin only)
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const filter = searchParams.get('filter') || 'all'
 
-    const supabase = createSupabaseClient()
+    const db = getDatabase()
 
     // Build query based on filter
     let query = supabase

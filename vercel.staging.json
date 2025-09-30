@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "node scripts/vercel-build.js",
+  "buildCommand": "vercel-phase-prebuild && pnpm turbo build --filter=@c9d/web",
   "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
@@ -13,11 +13,13 @@
   },
   "env": {
     "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
+    "PHASE_ENV": "staging",
     "NODE_ENV": "staging"
   },
   "build": {
     "env": {
       "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
+      "PHASE_ENV": "staging",
       "NODE_ENV": "staging"
     }
   },

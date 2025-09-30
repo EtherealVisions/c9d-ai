@@ -19,8 +19,9 @@ import type {
 } from '@/lib/models'
 
 export class ProgressTrackerService {
-  private static getSupabase() {
-    return createSupabaseClient()
+  private static getDatabase() {
+    const { getDatabase } = require('@/lib/db/connection')
+    return getDatabase()
   }
 
   /**

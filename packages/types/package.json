@@ -5,14 +5,14 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src/",
-    "test": "vitest run",
-    "test:run": "vitest run",
-    "test:dev": "vitest --watch",
-    "test:watch": "vitest --watch",
-    "typecheck": "tsc --noEmit",
+    "build": "env-wrapper tsc",
+    "dev": "env-wrapper tsc --watch",
+    "lint": "env-wrapper eslint src/",
+    "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",
+    "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",
+    "test:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest --watch",
+    "test:watch": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest --watch",
+    "typecheck": "env-wrapper tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
@@ -20,6 +20,6 @@
     "vitest": "^3.2.4"
   },
   "phase": {
-    "appName": "AI.C9d.Web"
+    "appName": "AI.C9d"
   }
 }

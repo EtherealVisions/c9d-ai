@@ -4,7 +4,7 @@
  * Implements intelligent destination logic with redirect URL validation and onboarding integration
  */
 
-import { createSupabaseClient } from '../database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import { userService } from './user-service'
 import type { User } from '../models/types'
 
@@ -62,7 +62,9 @@ export interface UserContext {
 }
 
 export class AuthRouterService {
-  private supabase = createSupabaseClient()
+  private getRepositoryFactory() {
+    return getRepositoryFactory()
+  }
 
   /**
    * Determines the appropriate destination after successful authentication
@@ -382,18 +384,16 @@ export class AuthRouterService {
    */
   async getUserPrimaryOrganization(userId: string) {
     try {
-      const { data: membership } = await this.supabase
-        .from('organization_memberships')
-        .select(`
-          organization:organizations (*)
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single()
+      const factory = this.getRepositoryFactory()
+      const membershipRepo = factory.createOrganizationMembershipRepository()
+      
+      const memberships = await membershipRepo.findByUser(userId, { limit: 1 })
+      if (memberships.data.length === 0) {
+        return null
+      }
 
-      return membership?.organization || null
+      const organizationRepo = factory.createOrganizationRepository()
+      return await organizationRepo.findById(memberships.data[0].organizationId)
     } catch (error) {
       console.error('Error getting primary organization:', error)
       return null

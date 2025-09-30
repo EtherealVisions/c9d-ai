@@ -33,20 +33,43 @@ vi.mock('@clerk/nextjs/server', () => ({
   }))
 }))
 
-// Mock database
-vi.mock('@/lib/database', () => ({
-  createSupabaseClient: vi.fn(() => ({
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({
-      data: { id: '1', name: 'Test' },
-      error: null
-    })
-  }))
+// Mock Drizzle database
+import { createMockDatabase } from '../../__tests__/setup/drizzle-testing-setup'
+const mockDatabase = createMockDatabase()
+
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
+
+// Mock repository factory with consistent repository mocks
+const mockRepositories = {
+  getUserRepository: () => ({
+    findById: vi.fn().mockResolvedValue({ id: '1', name: 'Test User' }),
+    findByClerkId: vi.fn().mockResolvedValue({ id: '1', clerkUserId: 'clerk_123' }),
+    findMany: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue({ id: '1', name: 'Test User' }),
+    update: vi.fn().mockResolvedValue({ id: '1', name: 'Updated User' }),
+    delete: vi.fn().mockResolvedValue(undefined)
+  }),
+  getOrganizationRepository: () => ({
+    findById: vi.fn().mockResolvedValue({ id: '1', name: 'Test Org' }),
+    findBySlug: vi.fn().mockResolvedValue({ id: '1', slug: 'test-org' }),
+    findMany: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue({ id: '1', name: 'Test Org' }),
+    update: vi.fn().mockResolvedValue({ id: '1', name: 'Updated Org' }),
+    delete: vi.fn().mockResolvedValue(undefined)
+  }),
+  getOrganizationMembershipRepository: () => ({
+    findByUserId: vi.fn().mockResolvedValue([]),
+    findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockResolvedValue({ id: '1', userId: '1', organizationId: '1' }),
+    update: vi.fn().mockResolvedValue({ id: '1', userId: '1', organizationId: '1' }),
+    delete: vi.fn().mockResolvedValue(undefined)
+  })
+}
+
+vi.mock('@/lib/repositories/factory', () => ({
+  getRepositoryFactory: () => mockRepositories
 }))
 
 // Mock services

@@ -6,27 +6,14 @@
  */
 
 import { z } from 'zod'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { users } from '@/lib/db/schema/users'
 
-// Base schemas for user operations
-export const selectUserSchema = z.object({
-  id: z.string().uuid(),
-  clerkUserId: z.string(),
-  email: z.string().email(),
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
-  avatarUrl: z.string().url().nullable(),
-  preferences: z.record(z.unknown()),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+// Auto-generated base schemas from Drizzle
+export const selectUserSchema = createSelectSchema(users)
+export const insertUserSchema = createInsertSchema(users)
 
-export const insertUserSchema = selectUserSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-})
-
-// Custom validation schemas with business rules
+// Custom validation schemas with business rules using drizzle-zod
 export const createUserSchema = z.object({
   email: z.string()
     .email('Invalid email format')
@@ -105,10 +92,20 @@ export const updateUserSchema = z.object({
     .optional()
 })
 
-// API request/response schemas
+// API request/response schemas with transformations
 export const userApiResponseSchema = selectUserSchema.extend({
-  fullName: z.string().nullable(),
-  membershipCount: z.number().int().min(0),
+  fullName: z.string().nullable().transform((val, ctx) => {
+    // Auto-generate fullName from firstName and lastName if not provided
+    const user = ctx.path[0] as any
+    if (val) return val
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`.trim()
+    }
+    if (user?.firstName) return user.firstName
+    if (user?.lastName) return user.lastName
+    return null
+  }),
+  membershipCount: z.number().int().min(0).default(0),
   lastLoginAt: z.date().nullable().optional(),
   isActive: z.boolean().default(true)
 })
@@ -121,6 +118,48 @@ export const userListResponseSchema = z.object({
     total: z.number().int().min(0),
     totalPages: z.number().int().min(0)
   })
+})
+
+// Complex schema composition for user creation with organization membership
+export const createUserWithMembershipSchema = z.object({
+  user: createUserSchema,
+  membership: z.object({
+    organizationId: z.string().uuid('Invalid organization ID'),
+    roleId: z.string().uuid('Invalid role ID'),
+    status: z.enum(['active', 'pending']).default('active')
+  }).optional(),
+  sendInvitation: z.boolean().default(false),
+  invitationMessage: z.string().max(500, 'Invitation message must be less than 500 characters').optional()
+}).refine(
+  (data) => {
+    // If sending invitation, membership must be provided
+    if (data.sendInvitation && !data.membership) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'Membership information is required when sending invitation',
+    path: ['membership']
+  }
+)
+
+// Bulk user operations with validation
+export const bulkCreateUsersSchema = z.object({
+  users: z.array(createUserSchema)
+    .min(1, 'At least one user is required')
+    .max(100, 'Cannot create more than 100 users at once')
+    .refine(
+      (users) => {
+        // Check for duplicate emails
+        const emails = users.map(u => u.email.toLowerCase())
+        return new Set(emails).size === emails.length
+      },
+      'Duplicate email addresses found'
+    ),
+  defaultOrganizationId: z.string().uuid('Invalid organization ID').optional(),
+  defaultRoleId: z.string().uuid('Invalid role ID').optional(),
+  sendWelcomeEmails: z.boolean().default(true)
 })
 
 // User search and filter schemas
@@ -171,6 +210,8 @@ export type UserSearch = z.infer<typeof userSearchSchema>
 export type UserPreferences = z.infer<typeof userPreferencesSchema>
 export type SelectUser = z.infer<typeof selectUserSchema>
 export type InsertUser = z.infer<typeof insertUserSchema>
+export type CreateUserWithMembership = z.infer<typeof createUserWithMembershipSchema>
+export type BulkCreateUsers = z.infer<typeof bulkCreateUsersSchema>
 
 // Validation helper functions
 export function validateCreateUser(data: unknown): CreateUser {

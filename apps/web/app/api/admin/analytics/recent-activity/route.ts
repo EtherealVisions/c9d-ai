@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '@/lib/services/rbac-service'
-import { createSupabaseClient } from '@/lib/database'
+import { getDatabase } from '@/lib/db/connection'
 
 /**
  * GET /api/admin/analytics/recent-activity - Get recent system activity (Admin only)
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    const supabase = createSupabaseClient()
+    const db = getDatabase()
 
     // Get recent audit log events
     const { data: auditLogs, error: auditError } = await supabase

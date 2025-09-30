@@ -1,4 +1,4 @@
-import { createSupabaseClient } from '../database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import type { User, UserRow } from '../models/types'
 import { transformUserRow } from '../models/transformers'
 import type { User as ClerkUser } from '@clerk/nextjs/server'
@@ -54,7 +54,9 @@ export enum AuthEventType {
 }
 
 export class UserSyncService {
-  private supabase = createSupabaseClient()
+  private getRepositoryFactory() {
+    return getRepositoryFactory()
+  }
 
   /**
    * Synchronizes a Clerk user with the local database

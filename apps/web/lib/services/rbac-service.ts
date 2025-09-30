@@ -3,7 +3,7 @@
  * Handles permission checking, role management, and access control enforcement
  */
 
-import { createSupabaseClient } from '../database'
+import { getRepositoryFactory } from '@/lib/repositories/factory'
 import type { Role, Permission, Membership, User } from '../models/types'
 import { validateRole, validateCreateRole, validateUpdateRole } from '../models/schemas'
 
@@ -21,7 +21,9 @@ export interface PermissionCheck {
 }
 
 export class RBACService {
-  private supabase = createSupabaseClient()
+  private getRepositoryFactory() {
+    return getRepositoryFactory()
+  }
 
   /**
    * Check if a user has a specific permission within an organization

@@ -1,15 +1,41 @@
 /**
- * Integration tests for user API endpoints
+ * Integration tests for user API endpoints - Drizzle Migration
  * Tests the complete API flow including authentication and validation
+ * Requirements: 5.4 - Update tests to use new database layer
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, PUT } from '../route'
-import { userService } from '@/lib/services/user-service'
+import { createMockDatabase } from '../../../__tests__/setup/drizzle-testing-setup'
 import type { User } from '@/lib/models/types'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Mock the user service
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
+
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
+}))
+
+// Mock repository factory with repository mocks
+const mockUserRepository = {
+  findById: vi.fn(),
+  findByClerkId: vi.fn(),
+  findWithMemberships: vi.fn(),
+  update: vi.fn(),
+  create: vi.fn(),
+  delete: vi.fn()
+}
+
+vi.mock('@/lib/repositories/factory', () => ({
+  getRepositoryFactory: () => ({
+    getUserRepository: () => mockUserRepository
+  })
+}))
+
+// Mock the user service to use repository
 vi.mock('@/lib/services/user-service', () => ({
   userService: {
     getUserWithMemberships: vi.fn(),
@@ -23,9 +49,12 @@ vi.mock('@/lib/middleware/auth', () => ({
   type: {} // For TypeScript
 }))
 
-// Mock validation
-vi.mock('@/lib/models/schemas', () => ({
-  validateUpdateUser: vi.fn((data) => data)
+// Mock validation schemas
+vi.mock('@/lib/validation/schemas/users', () => ({
+  updateUserSchema: {
+    parse: vi.fn((data) => data),
+    safeParse: vi.fn((data) => ({ success: true, data }))
+  }
 }))
 
 describe('/api/users', () => {

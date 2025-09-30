@@ -10,21 +10,23 @@ export const metadata: Metadata = {
 }
 
 interface SignInPageProps {
-  searchParams: {
+  searchParams: Promise<{
     redirect_url?: string
     error?: string
-  }
+  }>
 }
 
-export default function SignInPage({ searchParams }: SignInPageProps) {
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const params = await searchParams
+  
   return (
     <AuthLayout
       title="Welcome back"
       subtitle="Sign in to your account to continue building with AI"
     >
       <SignInForm 
-        redirectUrl={searchParams.redirect_url}
-        error={searchParams.error}
+        redirectUrl={params.redirect_url}
+        error={params.error}
       />
     </AuthLayout>
   )

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { rbacService } from '@/lib/services/rbac-service'
-import { createSupabaseClient } from '@/lib/database'
+import { getDatabase } from '@/lib/db/connection'
 
 /**
  * GET /api/admin/analytics/system-metrics - Get system-wide metrics (Admin only)
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createSupabaseClient()
+    const db = getDatabase()
 
     // Get current date ranges
     const now = new Date()

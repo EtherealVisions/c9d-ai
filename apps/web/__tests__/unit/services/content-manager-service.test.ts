@@ -1,34 +1,78 @@
 /**
- * Unit tests for ContentManagerService
- * Requirements: 1.1, 2.1, 6.1
+ * Unit tests for ContentManagerService - Drizzle Migration
+ * Requirements: 1.1, 2.1, 6.1, 5.4 - Update tests to use new database layer
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ContentManagerService } from '@/lib/services/content-manager-service'
 import { DatabaseError, NotFoundError } from '@/lib/errors'
+import { createMockDatabase } from '../../setup/drizzle-testing-setup'
 import type { ContentContext, ContentEffectiveness } from '@/lib/services/content-manager-service'
+import type { DrizzleDatabase } from '@/lib/db/connection'
 
-// Mock the database
-vi.mock('@/lib/database', () => ({
-  createSupabaseClient: () => ({
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      or: vi.fn().mockReturnThis(),
-      is: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      overlaps: vi.fn().mockReturnThis(),
-      contains: vi.fn().mockReturnThis()
-    }))
-  })
+// Mock Drizzle database
+const mockDatabase = createMockDatabase()
+
+// Mock the database connection
+vi.mock('@/lib/db/connection', () => ({
+  getDatabase: () => mockDatabase
 }))
 
-describe('ContentManagerService', () => {
+// Mock Drizzle ORM functions
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((column, value) => ({ column, value, type: 'eq' })),
+  and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+  or: vi.fn((...conditions) => ({ conditions, type: 'or' })),
+  sql: vi.fn((strings, ...values) => ({ strings, values, type: 'sql' })),
+  desc: vi.fn((column) => ({ column, type: 'desc' })),
+  asc: vi.fn((column) => ({ column, type: 'asc' })),
+  like: vi.fn((column, value) => ({ column, value, type: 'like' })),
+  ilike: vi.fn((column, value) => ({ column, value, type: 'ilike' })),
+  inArray: vi.fn((column, values) => ({ column, values, type: 'inArray' }))
+}))
+
+// Mock schema imports
+vi.mock('@/lib/db/schema/content', () => ({
+  onboardingContent: {
+    id: 'id',
+    organizationId: 'organizationId',
+    contentType: 'contentType',
+    title: 'title',
+    description: 'description',
+    contentData: 'contentData',
+    tags: 'tags',
+    isActive: 'isActive',
+    createdBy: 'createdBy'
+  },
+  onboardingPaths: {
+    id: 'id',
+    organizationId: 'organizationId',
+    name: 'name',
+    description: 'description',
+    targetRole: 'targetRole',
+    subscriptionTier: 'subscriptionTier',
+    isActive: 'isActive'
+  },
+  onboardingSteps: {
+    id: 'id',
+    pathId: 'pathId',
+    title: 'title',
+    description: 'description',
+    stepType: 'stepType',
+    stepOrder: 'stepOrder',
+    isRequired: 'isRequired'
+  }
+}))
+
+describe('ContentManagerService - Drizzle Migration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset mock database methods
+    Object.keys(mockDatabase).forEach(key => {
+      if (typeof mockDatabase[key as keyof typeof mockDatabase] === 'function') {
+        vi.mocked(mockDatabase[key as keyof typeof mockDatabase]).mockClear()
+      }
+    })
   })
 
   afterEach(() => {
@@ -119,22 +163,38 @@ describe('ContentManagerService', () => {
 
   describe('Error Handling', () => {
     it('should handle database errors properly', async () => {
-      // This test validates that the service properly handles errors
-      // Since the mock returns null data, the service should return null for not found
-      const result = await ContentManagerService.getOnboardingContent('content-1')
-      expect(result).toBeNull()
+      // Mock database error
+      vi.mocked(mockDatabase.select).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.from).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.where).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.limit).mockRejectedValue(new Error('Database connection failed'))
+
+      await expect(
+        ContentManagerService.getOnboardingContent('content-1')
+      ).rejects.toThrow()
     })
 
     it('should handle not found errors', async () => {
-      // Test that NotFoundError is properly handled
-      await expect(async () => {
-        try {
-          await ContentManagerService.cloneContent('nonexistent', 'org-1')
-        } catch (error) {
-          expect(error).toBeInstanceOf(Error)
-          throw error
-        }
-      }).rejects.toThrow()
+      // Mock empty result for content not found
+      vi.mocked(mockDatabase.select).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.from).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.where).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.limit).mockResolvedValue([])
+
+      const result = await ContentManagerService.getOnboardingContent('nonexistent')
+      expect(result).toBeNull()
+    })
+
+    it('should handle clone content errors', async () => {
+      // Mock database error for clone operation
+      vi.mocked(mockDatabase.select).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.from).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.where).mockReturnValue(mockDatabase)
+      vi.mocked(mockDatabase.limit).mockRejectedValue(new Error('Content not found'))
+
+      await expect(
+        ContentManagerService.cloneContent('nonexistent', 'org-1')
+      ).rejects.toThrow()
     })
   })
 

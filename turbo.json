@@ -11,7 +11,9 @@
         "$TURBO_DEFAULT$",
         ".env.local",
         ".env.example",
-        ".env.build"
+        ".env.build",
+        ".phase-apps.json",
+        "**/env.config.json"
       ],
       "outputs": [
         ".next/**",
@@ -24,6 +26,8 @@
         "VERCEL",
         "CI",
         "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP",
         "DATABASE_URL",
         "DIRECT_URL",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -50,7 +54,9 @@
       "persistent": true,
       "env": [
         "NODE_ENV",
-        "PHASE_SERVICE_TOKEN"
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "lint": {
@@ -88,7 +94,10 @@
         "coverage/**"
       ],
       "env": [
-        "NODE_ENV"
+        "NODE_ENV",
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "test:run": {
@@ -105,7 +114,10 @@
         "coverage/**"
       ],
       "env": [
-        "NODE_ENV"
+        "NODE_ENV",
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "test:dev": {
@@ -121,7 +133,10 @@
         "**/*.spec.*"
       ],
       "env": [
-        "NODE_ENV"
+        "NODE_ENV",
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "test:watch": {
@@ -137,7 +152,10 @@
         "**/*.spec.*"
       ],
       "env": [
-        "NODE_ENV"
+        "NODE_ENV",
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "test:coverage": {
@@ -155,7 +173,10 @@
         "test-results/**"
       ],
       "env": [
-        "NODE_ENV"
+        "NODE_ENV",
+        "PHASE_SERVICE_TOKEN",
+        "PHASE_ENV",
+        "PHASE_ENV_MAP"
       ]
     },
     "test:e2e": {
@@ -187,6 +208,9 @@
   ],
   "globalEnv": [
     "NODE_ENV",
-    "CI"
+    "CI",
+    "PHASE_SERVICE_TOKEN",
+    "PHASE_ENV",
+    "PHASE_ENV_MAP"
   ]
 }
