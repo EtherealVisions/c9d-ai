@@ -22,7 +22,7 @@ export default function HeroSection() {
             <span className="block sm:inline bg-clip-text text-transparent bg-yellow-lime-gradient">Effortlessly.</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-windsurf-gray-light max-w-2xl mx-auto">
-            C9N.AI leverages advanced AI to analyze and coordinate disparate, opaque relationships, bringing you
+            C9D.AI leverages advanced AI to analyze and coordinate disparate, opaque relationships, bringing you
             relevant information and insights.
           </p>
           <div className="mt-10 flex items-center justify-center">

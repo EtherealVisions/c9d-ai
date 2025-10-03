@@ -8,9 +8,9 @@ describe('BrandSection Component', () => {
     it('should render the C9d.ai logo', () => {
       render(<BrandSection />)
       
-      // Check for the logo text content - should have at least one element with C9N.AI text
+      // Check for the logo text content - should have at least one element with C9D.AI text
       const logoElements = screen.getAllByText((content, element) => {
-        return element?.textContent === 'C9N.AI'
+        return element?.textContent === 'C9D.AI'
       })
       expect(logoElements.length).toBeGreaterThan(0)
     })

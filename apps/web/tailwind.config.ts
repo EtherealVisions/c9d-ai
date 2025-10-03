@@ -53,7 +53,7 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // C9N.AI Specific Colors (keeping existing for reference, can be merged/aliased)
+        // C9D.AI Specific Colors (keeping existing for reference, can be merged/aliased)
         "c9n-blue-dark": "#0A192F", // Existing dark background
         "c9n-blue-mid": "#0F203A", // Existing slightly lighter dark blue
         "c9n-teal": "#2CE4B8", // Existing accent teal

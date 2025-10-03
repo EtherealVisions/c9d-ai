@@ -5,21 +5,21 @@ const testimonials = [
   {
     name: "Dr. Eva Rostova",
     handle: "@eva_analytics",
-    quote: "C9N.AI is one ofthe best AI analysis tools I’ve ever used. Game changer for my research.",
+    quote: "C9D.AI is one ofthe best AI analysis tools I’ve ever used. Game changer for my research.",
     avatarUrl: "/female-data-scientist-avatar.png", // Keep existing
     highlight: false,
   },
   {
     name: "Marcus Chen",
     handle: "@datamarcus",
-    quote: "C9N.AI is simply better from my experience over the last month. The speed and accuracy are unmatched.",
+    quote: "C9D.AI is simply better from my experience over the last month. The speed and accuracy are unmatched.",
     avatarUrl: "/placeholder-vhfca.png",
     highlight: false,
   },
   {
     name: "Innovate Solutions Ltd.",
     handle: "Leading Tech Firm",
-    quote: "C9N.AI UX beats competitors. Just click 'analyze' - it keeps our team *active* and focused.",
+    quote: "C9D.AI UX beats competitors. Just click 'analyze' - it keeps our team *active* and focused.",
     avatarUrl: "/modern-abstract-logo.png",
     highlight: true, // Example of a highlighted card
   },
@@ -27,7 +27,7 @@ const testimonials = [
     name: "Dr. Kenji Tanaka",
     handle: "@kenji_insights",
     quote:
-      "I've been building a new model with C9N.AI and I spent the last hour in almost hysterical laughter because the insights are just so good.",
+      "I've been building a new model with C9D.AI and I spent the last hour in almost hysterical laughter because the insights are just so good.",
     avatarUrl: "/asian-male-researcher-avatar.png",
     highlight: false,
   },

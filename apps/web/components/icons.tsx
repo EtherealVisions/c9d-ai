@@ -1,6 +1,6 @@
 import React from 'react'
 
-// A simple text-based logo component for C9N.AI
+// A simple text-based logo component for C9D.AI
 export function C9nLogo({ className }: { className?: string }) {
   return (
     <span className={`font-bold text-2xl tracking-tight ${className}`}>

@@ -24,7 +24,7 @@ export default function TestimonialSection() {
             className="rounded-full mx-auto mb-6 border-4 border-white shadow-lg"
           />
           <blockquote className="text-2xl sm:text-3xl font-medium text-windsurf-purple-deep leading-tight md:leading-snug">
-            “Every single one of our analysts has to spend literally just one day making projects with C9N.AI and it
+            “Every single one of our analysts has to spend literally just one day making projects with C9D.AI and it
             will be like they strapped on <span className="text-windsurf-pink-hot">rocket boosters</span>.”
           </blockquote>
           <p className="mt-8 text-lg font-semibold text-windsurf-pink-hot">G. Analytex</p>

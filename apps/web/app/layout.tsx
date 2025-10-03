@@ -137,7 +137,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "C9N.AI - Unlock Deeper Insights",
+  title: "C9D.AI - Unlock Deeper Insights",
   description:
     "Leverage AI for relevant information, better analysis, and coordination of disparate, opaque relationships.",
     generator: 'v0.dev'

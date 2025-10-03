@@ -70,7 +70,7 @@ export default function FeatureGridSection() {
             </span>
           </h2>
           <p className="mt-4 text-lg text-windsurf-gray-light max-w-2xl mx-auto">
-            C9N.AI equips you with a comprehensive suite of AI-driven tools to tackle your most complex analytical
+            C9D.AI equips you with a comprehensive suite of AI-driven tools to tackle your most complex analytical
             challenges.
           </p>
         </div>

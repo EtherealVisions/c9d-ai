@@ -11,7 +11,7 @@ export default function FinalCtaSection() {
           <span className="bg-clip-text text-transparent bg-purple-pink-gradient">Unlock Your Data's Potential?</span>
         </h2>
         <p className="text-lg text-windsurf-gray-light max-w-xl mx-auto mb-10">
-          Connect with our experts to see how C9N.AI can transform complex information into actionable intelligence for
+          Connect with our experts to see how C9D.AI can transform complex information into actionable intelligence for
           your organization.
         </p>
         <div className="flex justify-center items-center">

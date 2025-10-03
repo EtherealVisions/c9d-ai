@@ -109,7 +109,7 @@ export default function MainFooter() {
         </div>
 
         <div className="mt-12 border-t border-gray-700 pt-8 text-sm text-center">
-          <p>&copy; {new Date().getFullYear()} C9N.AI Corporation. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} C9D.AI Corporation. All rights reserved.</p>
         </div>
       </div>
     </footer>

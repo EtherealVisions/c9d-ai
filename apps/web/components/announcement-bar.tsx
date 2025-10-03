@@ -9,7 +9,7 @@ export default function AnnouncementBar() {
     <div className="bg-[#2CE4B8] text-[#0A192F] py-2 px-4 sm:px-6 lg:px-8">
       <div className="container mx-auto flex items-center justify-between">
         <p className="text-sm font-medium text-center flex-grow">
-          Introducing the new C9N.AI platform - built for limitless insights.{" "}
+          Introducing the new C9D.AI platform - built for limitless insights.{" "}
           <Link href="/learn-more" className="font-bold underline hover:opacity-80">
             LEARN MORE
           </Link>

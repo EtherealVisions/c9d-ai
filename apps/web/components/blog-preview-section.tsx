@@ -14,7 +14,7 @@ const posts = [
     featured: true,
   },
   {
-    title: "Maximizing Insight Generation with C9N.AI",
+    title: "Maximizing Insight Generation with C9D.AI",
     category: "PRODUCT",
     date: "Jun 13, 2025",
     readTime: "9 min read",
