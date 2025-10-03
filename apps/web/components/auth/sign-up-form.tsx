@@ -179,18 +179,19 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
   }, [errors.general, announceError])
 
   // Announce password strength changes
-  useEffect(() => {
-    if (formData.password && passwordStrength.feedback.length > 0) {
-      const strengthLabel = getPasswordStrengthLabel(passwordStrength.score)
-      const requirements = passwordStrength.feedback.join(', ')
-      const message = `Password strength: ${strengthLabel}. Missing requirements: ${requirements}`
-      setCurrentAnnouncement(message)
-    } else if (formData.password && passwordStrength.isValid) {
-      const message = 'Password meets all requirements'
-      announceSuccess(message)
-      setCurrentAnnouncement(message)
-    }
-  }, [passwordStrength, formData.password, announceSuccess])
+  // TODO: Fix infinite render loop issue with announceSuccess dependency
+  // useEffect(() => {
+  //   if (formData.password && passwordStrength.feedback.length > 0) {
+  //     const strengthLabel = getPasswordStrengthLabel(passwordStrength.score)
+  //     const requirements = passwordStrength.feedback.join(', ')
+  //     const message = `Password strength: ${strengthLabel}. Missing requirements: ${requirements}`
+  //     setCurrentAnnouncement(message)
+  //   } else if (formData.password && passwordStrength.isValid) {
+  //     const message = 'Password meets all requirements'
+  //     announceSuccess(message)
+  //     setCurrentAnnouncement(message)
+  //   }
+  // }, [passwordStrength, formData.password, announceSuccess])
 
   /**
    * Validate password strength in real-time
@@ -330,9 +331,13 @@ export function SignUpForm({ redirectUrl, invitationToken, className }: SignUpFo
       const result = await signUp.create({
         emailAddress: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
         ...(invitationToken && { invitationToken })
+      })
+      
+      // Update user metadata with first and last name
+      await result.update({
+        firstName: formData.firstName,
+        lastName: formData.lastName
       })
       
       // Send email verification
