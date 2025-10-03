@@ -77,7 +77,7 @@ vi.mock('@/lib/config/clerk', () => ({
 
 // Mock icons
 vi.mock('@/components/icons', () => ({
-  C9nLogo: ({ className, ...props }: any) => (
+  C9DLogo: ({ className, ...props }: any) => (
     <div className={className} {...props}>C9d.ai Logo</div>
   )
 }))

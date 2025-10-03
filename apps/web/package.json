@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "env-wrapper next build",
-    "dev": "env-wrapper next dev -p 3007",
+    "dev": "env-wrapper next dev -p 3008",
     "lint": "env-wrapper next lint",
     "start": "env-wrapper next start",
     "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",

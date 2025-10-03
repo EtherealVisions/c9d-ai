@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { C9nLogo } from "./icons" // Assuming C9nLogo is in icons.tsx
+import { C9DLogo } from "./icons" // Assuming C9DLogo is in icons.tsx
 import { GithubIcon, TwitterIcon, LinkedinIcon } from "lucide-react"
 
 const footerLinks = {
@@ -39,7 +39,7 @@ export default function MainFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 xl:gap-12">
           <div className="col-span-2 lg:col-span-1 mb-8 lg:mb-0">
             <Link href="/" className="inline-block mb-4">
-              <C9nLogo className="h-8 w-auto text-white" />
+              <C9DLogo className="h-8 w-auto text-white" />
             </Link>
             <p className="text-sm">Leveraging AI to bring you relevant information and better analysis.</p>
             <div className="flex space-x-4 mt-6">

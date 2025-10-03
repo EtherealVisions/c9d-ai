@@ -117,15 +117,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true)
       
       const response = await fetch('/api/auth/me')
+      
+      // Handle unauthenticated users gracefully
+      if (response.status === 401 || response.status === 403) {
+        // User is not authenticated, this is expected on sign-in page
+        setUser(null)
+        setOrganizations([])
+        return
+      }
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch user data')
+        throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`)
       }
       
       const data = await response.json()
       setUser(data.user)
       setOrganizations(data.organizations || [])
     } catch (error) {
-      console.error('Failed to sync user data:', error)
+      // Only log errors that aren't related to authentication
+      if (error instanceof Error && !error.message.includes('401') && !error.message.includes('403')) {
+        console.error('Failed to sync user data:', error)
+      }
     } finally {
       setIsLoading(false)
     }

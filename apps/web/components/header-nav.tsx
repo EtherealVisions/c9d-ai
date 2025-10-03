@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDownIcon, UserIcon, MenuIcon } from "lucide-react"
 import { useState } from "react"
-import { C9nLogo } from "./icons" // Assuming a simple SVG logo
+import { C9DLogo } from "./icons" // Assuming a simple SVG logo
 
 const navItems = [
   {
@@ -54,7 +54,7 @@ export default function HeaderNav() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0">
-              <C9nLogo className="h-8 w-auto text-white" />
+              <C9DLogo className="h-8 w-auto text-white" />
             </Link>
           </div>
           <nav className="hidden md:flex md:items-center md:space-x-2 lg:space-x-4">

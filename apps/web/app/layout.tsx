@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ClerkProvider } from '@clerk/nextjs'
 import { AuthProvider } from '@/lib/contexts/auth-context'
+import { AccessibilityProvider } from '@/contexts/accessibility-context'
 // import { OrganizationProvider } from '@/lib/contexts/organization-context'
 // Build-safe config imports
 const isBuildTime = typeof process !== 'undefined' && (
@@ -561,11 +562,13 @@ export default async function RootLayout({
         <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
           <div className="min-h-screen">
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-            <AuthProvider>
-              {/* <OrganizationProvider> */}
-                {children}
-              {/* </OrganizationProvider> */}
-            </AuthProvider>
+            <AccessibilityProvider>
+              <AuthProvider>
+                {/* <OrganizationProvider> */}
+                  {children}
+                {/* </OrganizationProvider> */}
+              </AuthProvider>
+            </AccessibilityProvider>
           </div>
         </body>
       </html>
@@ -581,11 +584,13 @@ export default async function RootLayout({
         {await ClerkProvider({ publishableKey: clerkPublishableKey, children: (
           <>
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-            <AuthProvider>
-              {/* <OrganizationProvider> */}
-              {children}
-              {/* </OrganizationProvider> */}
-            </AuthProvider>
+            <AccessibilityProvider>
+              <AuthProvider>
+                {/* <OrganizationProvider> */}
+                {children}
+                {/* </OrganizationProvider> */}
+              </AuthProvider>
+            </AccessibilityProvider>
           </>
         ) })}
       </body>

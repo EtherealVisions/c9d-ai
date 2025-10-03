@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { C9nLogo } from '@/components/icons'
+import { C9DLogo } from '@/components/icons'
 import { useAccessibility } from '@/contexts/accessibility-context'
 import { cn } from '@/lib/utils'
 
@@ -70,7 +70,7 @@ export function BrandSection() {
         <div className="max-w-md">
           {/* Logo */}
           <header className="mb-8">
-            <C9nLogo 
+            <C9DLogo 
               className="text-white text-4xl" 
               role="img"
               aria-label="C9d.ai logo"

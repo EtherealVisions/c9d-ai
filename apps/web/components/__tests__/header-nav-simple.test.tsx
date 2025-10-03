@@ -20,7 +20,7 @@ vi.mock('next/link', () => ({
 
 // Mock the icons component
 vi.mock('../icons', () => ({
-  C9nLogo: ({ className }: any) => <div className={className}>Logo</div>
+  C9DLogo: ({ className }: any) => <div className={className}>Logo</div>
 }))
 
 describe('HeaderNav - Simple Navigation Test', () => {
