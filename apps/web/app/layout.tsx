@@ -1,9 +1,7 @@
 import React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ClerkProvider } from '@clerk/nextjs'
-import { AuthProvider } from '@/lib/contexts/auth-context'
-import { AccessibilityProvider } from '@/contexts/accessibility-context'
+import { Providers } from '@/components/providers'
 // import { OrganizationProvider } from '@/lib/contexts/organization-context'
 // Build-safe config imports
 const isBuildTime = typeof process !== 'undefined' && (
@@ -562,13 +560,11 @@ export default async function RootLayout({
         <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
           <div className="min-h-screen">
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-            <AccessibilityProvider>
-              <AuthProvider>
-                {/* <OrganizationProvider> */}
-                  {children}
-                {/* </OrganizationProvider> */}
-              </AuthProvider>
-            </AccessibilityProvider>
+            <Providers>
+              {/* <OrganizationProvider> */}
+                {children}
+              {/* </OrganizationProvider> */}
+            </Providers>
           </div>
         </body>
       </html>
@@ -581,16 +577,12 @@ export default async function RootLayout({
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
-        <ClerkProvider publishableKey={clerkPublishableKey}>
-          <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
-          <AccessibilityProvider>
-            <AuthProvider>
-              {/* <OrganizationProvider> */}
-              {children}
-              {/* </OrganizationProvider> */}
-            </AuthProvider>
-          </AccessibilityProvider>
-        </ClerkProvider>
+        <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
+        <Providers clerkPublishableKey={clerkPublishableKey}>
+          {/* <OrganizationProvider> */}
+          {children}
+          {/* </OrganizationProvider> */}
+        </Providers>
       </body>
     </html>
   );
