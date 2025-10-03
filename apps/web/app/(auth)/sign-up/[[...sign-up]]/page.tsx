@@ -10,22 +10,24 @@ export const metadata: Metadata = {
 }
 
 interface SignUpPageProps {
-  searchParams: {
+  searchParams: Promise<{
     redirect_url?: string
     invitation_token?: string
     error?: string
-  }
+  }>
 }
 
-export default function SignUpPage({ searchParams }: SignUpPageProps) {
+export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const params = await searchParams
+  
   return (
     <AuthLayout
       title="Join C9d.ai"
       subtitle="Create your account and start building the future with AI"
     >
       <SignUpForm 
-        redirectUrl={searchParams.redirect_url}
-        invitationToken={searchParams.invitation_token}
+        redirectUrl={params.redirect_url}
+        invitationToken={params.invitation_token}
       />
     </AuthLayout>
   )

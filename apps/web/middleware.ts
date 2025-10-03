@@ -137,13 +137,30 @@ function validateCriticalConfig(req: NextRequest): NextResponse | null {
   const criticalVars = [
     'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
     'CLERK_SECRET_KEY',
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY'
+    'NEXT_PUBLIC_SUPABASE_URL'
   ];
+  
+  // SUPABASE_SERVICE_ROLE_KEY is only required for admin routes
+  const adminOnlyVars: string[] = [];
+  const isAdminRoute = req.nextUrl.pathname.startsWith('/api/admin') || 
+                      req.nextUrl.pathname.includes('/webhooks/');
+  
+  if (isAdminRoute) {
+    adminOnlyVars.push('SUPABASE_SERVICE_ROLE_KEY');
+  }
 
   const missingVars: string[] = [];
   
+  // Check critical vars
   for (const varName of criticalVars) {
+    const value = getConfigWithFallback(varName);
+    if (!value || value.trim() === '') {
+      missingVars.push(varName);
+    }
+  }
+  
+  // Check admin-only vars if applicable
+  for (const varName of adminOnlyVars) {
     const value = getConfigWithFallback(varName);
     if (!value || value.trim() === '') {
       missingVars.push(varName);

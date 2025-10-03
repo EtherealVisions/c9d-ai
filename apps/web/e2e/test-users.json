@@ -1,0 +1,23 @@
+{
+  "users": [
+    {
+      "email": "admin@example.com",
+      "password": "C9d-Admin-1759514800228!Secure",
+      "firstName": "Admin",
+      "lastName": "User"
+    },
+    {
+      "email": "developer@example.com",
+      "password": "C9d-Dev-1759514800228!Secure",
+      "firstName": "Dev",
+      "lastName": "User"
+    },
+    {
+      "email": "testuser@example.com",
+      "password": "C9d-Test-1759514800228!Secure",
+      "firstName": "Test",
+      "lastName": "User"
+    }
+  ],
+  "createdAt": "2025-10-03T18:06:42.002Z"
+}
