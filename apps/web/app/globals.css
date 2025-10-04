@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Performance optimizations */
+@layer utilities {
+  /* Pause animations when not visible or user prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-gentle-float-1,
+    .animate-gentle-float-2,
+    .animate-gentle-float-3,
+    .animate-gradient-wave {
+      animation: none !important;
+    }
+  }
+
+  .animation-paused {
+    animation-play-state: paused !important;
+  }
+
+  /* Hardware acceleration for transforms */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  /* Optimize floating blob animations with GPU acceleration */
+  .animate-gentle-float-1,
+  .animate-gentle-float-2,
+  .animate-gentle-float-3 {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+}
+
 @layer base {
   :root {
     /* Define light theme variables if needed, or keep dark as default */

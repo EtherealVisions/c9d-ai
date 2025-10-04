@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Providers } from '@/components/providers'
+import { Analytics } from '@vercel/analytics/react'
 // import { OrganizationProvider } from '@/lib/contexts/organization-context'
 // Build-safe config imports
 const isBuildTime = typeof process !== 'undefined' && (
@@ -565,6 +566,7 @@ export default async function RootLayout({
                 {children}
               {/* </OrganizationProvider> */}
             </Providers>
+            <Analytics />
           </div>
         </body>
       </html>
@@ -583,6 +585,7 @@ export default async function RootLayout({
           {children}
           {/* </OrganizationProvider> */}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
