@@ -7,34 +7,12 @@
 
 import { defineConfig } from 'drizzle-kit'
 
-// Import configuration function with error handling
-let getAppConfigSync: ((key: string) => string | undefined) | undefined
-
-try {
-  const configModule = require('./lib/config/init')
-  getAppConfigSync = configModule.getAppConfigSync
-} catch (error) {
-  console.warn('[Drizzle Config] Could not load config module, using process.env only:', error)
-  getAppConfigSync = undefined
-}
-
 /**
- * Get configuration value with fallback to process.env
+ * Get configuration value from environment
+ * Note: Drizzle Kit runs in CommonJS context, so we use process.env directly
+ * to avoid module loading issues with ESM-only dependencies
  */
 function getConfigValue(key: string): string | undefined {
-  try {
-    // Try to get from configuration manager first if available
-    if (getAppConfigSync) {
-      const configValue = getAppConfigSync(key)
-      if (configValue) {
-        return configValue
-      }
-    }
-  } catch (error) {
-    // Fallback to process.env if config manager fails
-    console.warn(`[Drizzle Config] Failed to get config '${key}', using process.env fallback:`, error)
-  }
-  
   return process.env[key]
 }
 
@@ -70,8 +48,8 @@ export default defineConfig({
     url: getDatabaseUrl(),
   },
   
-  // Schema configuration
-  schema: './lib/db/schema/*',
+  // Schema configuration - only include TypeScript files, excluding tests
+  schema: './lib/db/schema/*.ts',
   out: './lib/db/migrations',
   
   // Migration configuration
