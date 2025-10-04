@@ -1,6 +1,7 @@
 import AnnouncementBar from "@/components/announcement-bar"
 import HeaderNav from "@/components/header-nav"
 import HeroSection from "@/components/hero-section"
+import C9CapabilitiesShowcase from "@/components/c9-capabilities-showcase"
 import FeatureHighlightSection from "@/components/feature-highlight-section"
 import FeatureGridSection from "@/components/feature-grid-section"
 import SolutionsSection from "@/components/solutions-section"
@@ -10,14 +11,17 @@ import SocialProofSection from "@/components/social-proof-section"
 import BlogPreviewSection from "@/components/blog-preview-section"
 import FinalCtaSection from "@/components/final-cta-section"
 import MainFooter from "@/components/main-footer"
+import PerformanceMonitor from "@/components/performance-monitor"
 
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-c9n-blue-dark text-gray-200">
+      <PerformanceMonitor />
       <AnnouncementBar />
       <HeaderNav />
       <main className="flex-grow">
         <HeroSection />
+        <C9CapabilitiesShowcase />
 
         <FeatureHighlightSection
           title="Explore the C9D.AI Insight Engine"

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { CalendarCheckIcon, CheckCircleIcon } from "lucide-react"
 import Link from "next/link"
+import { trackHeroInteraction, trackCTA } from "@/lib/analytics/events"
 
 export default function HeroSection() {
   return (
-    <section className="relative bg-c9n-blue-dark py-20 md:py-32 lg:py-40">
+    <section data-testid="hero-section" className="relative bg-c9n-blue-dark py-20 md:py-32 lg:py-40">
       {/* Vibrant, relaxing dynamic background */}
       {/* Changed z-index from -z-10 to z-0 for the blob container.
           This places blobs above the section's background but below the z-10 content. */}
@@ -29,6 +30,10 @@ export default function HeroSection() {
             <Button
               size="lg"
               className="bg-windsurf-pink-hot text-white hover:bg-opacity-90 font-semibold w-full sm:w-auto max-w-xs shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 py-3 px-8 text-lg"
+              onClick={() => {
+                trackHeroInteraction('cta_click')
+                trackCTA('hero', 'click', 'Request a Consultation', '/request-consultation')
+              }}
               asChild
             >
               <Link href="/request-consultation">
