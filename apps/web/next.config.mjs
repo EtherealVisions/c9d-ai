@@ -109,7 +109,44 @@ const nextConfig = {
   // Output configuration for Vercel
   output: 'standalone',
   // Webpack configuration for optimization
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack, nextRuntime }) => {
+    // Handle Edge Runtime compatibility
+    if (nextRuntime === 'edge' || !isServer) {
+      // Replace Node.js specific modules with browser-compatible versions
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'fs': false,
+        'path': false,
+        'crypto': false,
+        'stream': false,
+        'os': false,
+        'util': false,
+        'events': false,
+        'child_process': false,
+        'worker_threads': false,
+        'perf_hooks': false,
+        // Point to Edge-compatible versions of config modules
+        '@c9d/config/environment-fallback-manager': '@c9d/config',
+        '@c9d/config/phase-sdk-client': '@c9d/config',
+        '@c9d/config/phase-token-loader': '@c9d/config',
+      };
+      
+      // Exclude Node.js modules from Edge Runtime bundles
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+        stream: false,
+        os: false,
+        util: false,
+        events: false,
+        child_process: false,
+        worker_threads: false,
+        perf_hooks: false,
+      };
+    }
+    
     // Optimize bundle size and performance
     if (!dev && !isServer) {
       // Enhanced chunk splitting for better caching
