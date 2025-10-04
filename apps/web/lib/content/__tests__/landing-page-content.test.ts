@@ -155,11 +155,13 @@ describe('Landing Page Content Management', () => {
     })
 
     it('detects validation errors', () => {
-      // Manually corrupt the content
-      const content = contentManager.getContent()
-      content.capabilities[0].id = 'invalid-id' as any
+      // Create new content manager with corrupted data
+      const testManager = new ContentManager()
+      const content = testManager.getContent()
+      // @ts-ignore - intentionally setting invalid value for test
+      content.capabilities[0].id = 'invalid-id'
 
-      const validation = contentManager.validateContent()
+      const validation = testManager.validateContent()
       expect(validation.valid).toBe(false)
       expect(validation.errors.length).toBeGreaterThan(0)
     })
@@ -225,14 +227,17 @@ describe('Landing Page Content Management', () => {
 
   describe('Default Content', () => {
     it('contains all five C9 capabilities', () => {
-      const capabilities = DEFAULT_LANDING_PAGE_CONTENT.capabilities
+      // Get fresh default content
+      const freshContent = new ContentManager().getContent()
+      const capabilities = freshContent.capabilities
       const ids = capabilities.map(c => c.id)
 
       expect(ids).toEqual(['insight', 'persona', 'domain', 'orchestrator', 'narrative'])
     })
 
     it('has valid metadata', () => {
-      const metadata = DEFAULT_LANDING_PAGE_CONTENT.metadata
+      const freshContent = new ContentManager().getContent()
+      const metadata = freshContent.metadata
       
       expect(metadata.version).toMatch(/^\d+\.\d+\.\d+$/)
       expect(new Date(metadata.lastUpdated)).toBeInstanceOf(Date)
@@ -240,7 +245,8 @@ describe('Landing Page Content Management', () => {
     })
 
     it('passes schema validation', () => {
-      expect(() => LandingPageContentSchema.parse(DEFAULT_LANDING_PAGE_CONTENT)).not.toThrow()
+      const freshContent = new ContentManager().getContent()
+      expect(() => LandingPageContentSchema.parse(freshContent)).not.toThrow()
     })
   })
 })

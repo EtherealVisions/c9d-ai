@@ -143,11 +143,8 @@ describe('Web Vitals', () => {
         { name: 'font.woff2', duration: 80, transferSize: 20000, nextHopProtocol: 'h2' }
       ]
 
-      vi.stubGlobal('window', {
-        performance: {
-          getEntriesByType: vi.fn(() => mockResources)
-        }
-      })
+      const originalPerformance = window.performance.getEntriesByType
+      window.performance.getEntriesByType = vi.fn(() => mockResources)
 
       const metrics = measureResourceTiming()
 
@@ -156,7 +153,7 @@ describe('Web Vitals', () => {
       expect(metrics?.stylesheets).toHaveLength(1)
       expect(metrics?.fonts).toHaveLength(1)
 
-      vi.unstubAllGlobals()
+      window.performance.getEntriesByType = originalPerformance
     })
 
     it('returns undefined when performance API is not available', () => {

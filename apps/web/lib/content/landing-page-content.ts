@@ -224,7 +224,8 @@ export class ContentManager {
   private content: LandingPageContent
 
   constructor(initialContent: LandingPageContent = DEFAULT_LANDING_PAGE_CONTENT) {
-    this.content = initialContent
+    // Deep clone to avoid mutations
+    this.content = JSON.parse(JSON.stringify(initialContent))
   }
 
   getContent(): LandingPageContent {
