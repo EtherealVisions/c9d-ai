@@ -46,7 +46,17 @@
         "GITHUB_APP_ID",
         "GITHUB_APP_PRIVATE_KEY",
         "GITHUB_WEBHOOK_SECRET",
-        "GITHUB_WEBHOOK_URL"
+        "GITHUB_WEBHOOK_URL",
+        "REDIS_URL",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_PASSWORD",
+        "REDIS_DB",
+        "UPSTASH_REDIS_REST_URL",
+        "ENABLE_CACHE",
+        "REDIS_TOKEN",
+        "OPENAI_API_KEY",
+        "SLACK_SIGNING_SECRET"
       ]
     },
     "dev": {
