@@ -2,324 +2,490 @@
 
 ## Purpose
 
-This agent specializes in maintaining consistent database naming conventions and best practices for Supabase/PostgreSQL databases in the Coordinated.App application.
+This agent specializes in maintaining consistent database naming conventions and best practices for Supabase/PostgreSQL databases in the Coordinated.App application using Drizzle ORM.
 
 ## Core Conventions
 
-### Table Naming
+### Table Naming with Drizzle
 
-```prisma
-// ✅ Good - Plural, snake_case
-model User {
+```typescript
+// apps/web/lib/db/schema/users.ts
+import { pgTable, text, boolean, timestamp, uuid } from 'drizzle-orm/pg-core'
+
+// ✅ Good - Table name is automatically snake_case
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  isActive: boolean('is_active').default(true),
+  hasVerifiedEmail: boolean('has_verified_email').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+// ✅ Good - Composite table names
+export const organizationMembers = pgTable('organization_members', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull(),
+  userId: uuid('user_id').notNull(),
+})
+
+// ❌ Bad - Using camelCase in table name
+export const userProfiles = pgTable('userProfiles', { // Should be 'user_profiles'
   // ...
-  @@map("users")
-}
-
-model SwimSession {
-  // ...
-  @@map("swim_sessions")
-}
-
-// ✅ Good - Singular for join tables
-model BookingParticipant {
-  // ...
-  @@map("booking_participant")
-}
-
-// ❌ Bad - PascalCase, no mapping
-model UserProfile {
-  // No @@map directive
-}
+})
 ```
 
-### Column Naming
+### Column Naming Conventions
 
-```prisma
-model User {
-  // ✅ Good - Consistent mapping
-  id              String   @id @default(cuid())
-  firstName       String   @map("first_name")
-  lastName        String   @map("last_name")
-  isActive        Boolean  @default(true) @map("is_active")
-  hasVerifiedEmail Boolean @default(false) @map("has_verified_email")
-  canTeach        Boolean  @default(false) @map("can_teach")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+```typescript
+import { pgTable, text, boolean, timestamp, decimal, uuid, index } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
-  // Foreign keys
-  organizationId  String   @map("organization_id")
-
-  @@map("users")
-}
+export const users = pgTable('users', {
+  // Primary keys
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Regular columns - TypeScript camelCase, database snake_case
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull().unique(),
+  
+  // Boolean columns - use is_, has_, or can_ prefix
+  isActive: boolean('is_active').notNull().default(true),
+  hasVerifiedEmail: boolean('has_verified_email').notNull().default(false),
+  canTeach: boolean('can_teach').notNull().default(false),
+  
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  
+  // Foreign keys - use tableName_id pattern
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  createdById: uuid('created_by_id').references(() => users.id),
+}, (table) => {
+  return {
+    // Indexes follow idx_tablename_columns pattern
+    emailIdx: index('idx_users_email').on(table.email),
+    organizationIdx: index('idx_users_organization_id').on(table.organizationId),
+    createdAtIdx: index('idx_users_created_at').on(table.createdAt),
+  }
+})
 ```
 
 ### Complex Schema Example
 
-```prisma
-// Enum with proper mapping
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-  NO_SHOW
+```typescript
+// apps/web/lib/db/schema/bookings.ts
+import { pgTable, text, timestamp, decimal, uuid, index, uniqueIndex, pgEnum } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
-  @@map("booking_status")
-}
+// Enums
+export const bookingStatusEnum = pgEnum('booking_status', [
+  'PENDING',
+  'CONFIRMED', 
+  'CANCELLED',
+  'COMPLETED',
+  'NO_SHOW'
+])
 
 // Main table with all conventions
-model Booking {
-  id              String        @id @default(cuid())
-  sessionId       String        @map("session_id")
-  parentId        String        @map("parent_id")
-  childId         String        @map("child_id")
-  instructorId    String        @map("instructor_id")
+export const bookings = pgTable('bookings', {
+  // IDs
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: uuid('session_id').notNull(),
+  parentId: uuid('parent_id').notNull(),
+  childId: uuid('child_id').notNull(),
+  instructorId: uuid('instructor_id').notNull(),
+  
+  // Enum usage
+  status: bookingStatusEnum('status').notNull().default('PENDING'),
+  
+  // Timestamps with timezone
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  
+  // Money fields - use decimal for currency
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  isPaid: boolean('is_paid').notNull().default(false),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  
+  // Text fields
+  notes: text('notes'),
+  cancellationReason: text('cancellation_reason'),
+  
+  // Audit fields
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Single column indexes
+    sessionIdx: index('idx_bookings_session_id').on(table.sessionId),
+    parentIdx: index('idx_bookings_parent_id').on(table.parentId),
+    instructorIdx: index('idx_bookings_instructor_id').on(table.instructorId),
+    statusIdx: index('idx_bookings_status').on(table.status),
+    scheduledAtIdx: index('idx_bookings_scheduled_at').on(table.scheduledAt),
+    
+    // Composite indexes for common queries
+    sessionStatusIdx: index('idx_bookings_session_status').on(table.sessionId, table.status),
+    parentScheduledIdx: index('idx_bookings_parent_scheduled').on(table.parentId, table.scheduledAt),
+    instructorScheduledIdx: index('idx_bookings_instructor_scheduled').on(table.instructorId, table.scheduledAt),
+    
+    // Unique constraints
+    sessionChildScheduledUniq: uniqueIndex('uniq_bookings_session_child_scheduled')
+      .on(table.sessionId, table.childId, table.scheduledAt),
+  }
+})
 
-  status          BookingStatus @default(PENDING)
-  scheduledAt     DateTime      @map("scheduled_at")
-  completedAt     DateTime?     @map("completed_at")
-  cancelledAt     DateTime?     @map("cancelled_at")
-
-  // Money fields
-  amount          Decimal       @db.Decimal(10, 2)
-  isPaid          Boolean       @default(false) @map("is_paid")
-  paidAt          DateTime?     @map("paid_at")
-
-  // Metadata
-  notes           String?       @db.Text
-  cancellationReason String?    @map("cancellation_reason") @db.Text
-
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-
-  // Relations
-  session         SwimSession   @relation(fields: [sessionId], references: [id])
-  parent          ParentProfile @relation(fields: [parentId], references: [id])
-  child           Child         @relation(fields: [childId], references: [id])
-  instructor      InstructorProfile @relation(fields: [instructorId], references: [id])
-
-  // Indexes
-  @@index([sessionId], name: "idx_bookings_session_id")
-  @@index([parentId], name: "idx_bookings_parent_id")
-  @@index([instructorId], name: "idx_bookings_instructor_id")
-  @@index([status], name: "idx_bookings_status")
-  @@index([scheduledAt], name: "idx_bookings_scheduled_at")
-  @@index([createdAt], name: "idx_bookings_created_at")
-
-  // Composite indexes
-  @@index([sessionId, status], name: "idx_bookings_session_status")
-  @@index([parentId, status, scheduledAt], name: "idx_bookings_parent_status_scheduled")
-
-  // Constraints
-  @@unique([sessionId, childId, scheduledAt], name: "uniq_bookings_session_child_scheduled")
-
-  @@map("bookings")
-}
+// Relations
+export const bookingsRelations = relations(bookings, ({ one }) => ({
+  session: one(swimSessions, {
+    fields: [bookings.sessionId],
+    references: [swimSessions.id],
+  }),
+  parent: one(users, {
+    fields: [bookings.parentId],
+    references: [users.id],
+  }),
+  child: one(children, {
+    fields: [bookings.childId],
+    references: [children.id],
+  }),
+  instructor: one(users, {
+    fields: [bookings.instructorId],
+    references: [users.id],
+  }),
+}))
 ```
 
-## PostgreSQL Data Types
+## PostgreSQL Data Types in Drizzle
 
-### Common Mappings
+### Common Type Mappings
 
-```prisma
-model Example {
+```typescript
+import { 
+  pgTable, 
+  text, 
+  varchar, 
+  char,
+  integer, 
+  bigint, 
+  smallint, 
+  decimal, 
+  real, 
+  doublePrecision,
+  boolean,
+  timestamp, 
+  date, 
+  time,
+  json, 
+  jsonb,
+  uuid,
+  serial,
+  bigserial
+} from 'drizzle-orm/pg-core'
+
+export const examples = pgTable('examples', {
   // Text types
-  shortText       String        @db.VarChar(255)
-  longText        String        @db.Text
-  fixedText       String        @db.Char(10)
-
+  shortText: varchar('short_text', { length: 255 }),
+  longText: text('long_text'),
+  fixedText: char('fixed_text', { length: 10 }),
+  
   // Numeric types
-  integer         Int           @db.Integer
-  bigInteger      BigInt        @db.BigInt
-  smallInteger    Int           @db.SmallInt
-  decimal         Decimal       @db.Decimal(10, 2)
-  money           Decimal       @db.Money
+  count: integer('count').notNull().default(0),
+  bigCount: bigint('big_count', { mode: 'number' }),
+  smallCount: smallint('small_count'),
+  price: decimal('price', { precision: 10, scale: 2 }),
+  score: real('score'),
+  preciseScore: doublePrecision('precise_score'),
+  
+  // Boolean
+  isActive: boolean('is_active').notNull().default(true),
+  
+  // Date/Time types (always use timezone)
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  birthDate: date('birth_date'),
+  appointmentTime: time('appointment_time', { withTimezone: true }),
+  
+  // JSON types (prefer jsonb for performance)
+  metadata: jsonb('metadata').default({}),
+  settings: json('settings'),
+  
+  // UUIDs
+  id: uuid('id').defaultRandom().primaryKey(),
+  externalId: uuid('external_id'),
+  
+  // Serial types (auto-incrementing)
+  sequenceNumber: serial('sequence_number'),
+  bigSequenceNumber: bigserial('big_sequence_number'),
+})
+```
 
-  // Date/Time types
-  date            DateTime      @db.Date
-  time            DateTime      @db.Time
-  timestamp       DateTime      @db.Timestamp(3)
-  timestampTz     DateTime      @db.Timestamptz(3)
+### Array Types
 
-  // JSON types
-  metadata        Json          @db.JsonB
-  settings        Json          @db.Json
+```typescript
+import { pgTable, text, integer, uuid } from 'drizzle-orm/pg-core'
 
-  // Array types
-  tags            String[]      @db.Text
-  numbers         Int[]         @db.Integer
-
-  // UUID
-  uuid            String        @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-
-  @@map("examples")
-}
+export const instructorProfiles = pgTable('instructor_profiles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().unique(),
+  
+  // Array columns
+  specialties: text('specialties').array().notNull().default([]),
+  certifications: text('certifications').array().notNull().default([]),
+  availableDays: integer('available_days').array().default([]), // 0-6 for days
+  spokenLanguages: text('spoken_languages').array().default(['English']),
+})
 ```
 
 ## Supabase-Specific Patterns
 
-### Row Level Security (RLS)
+### Row Level Security (RLS) with Drizzle
 
 ```sql
--- Create policy for users to see their own data
-CREATE POLICY "Users can view own profile"
-ON public.users FOR SELECT
-USING (auth.uid() = clerk_id);
+-- After running Drizzle migrations, add RLS policies
 
--- Create policy for instructors to see their bookings
-CREATE POLICY "Instructors can view their bookings"
-ON public.bookings FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM public.instructor_profiles
-    WHERE instructor_profiles.id = bookings.instructor_id
-    AND instructor_profiles.user_id = auth.uid()
-  )
-);
+-- Enable RLS on tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can only see their own profile
+CREATE POLICY "Users can view own profile" ON users
+  FOR SELECT
+  USING (auth.uid()::text = clerk_id);
+
+-- Policy: Users can update their own profile
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE
+  USING (auth.uid()::text = clerk_id);
+
+-- Policy: Parents can see their own bookings
+CREATE POLICY "Parents can view own bookings" ON bookings
+  FOR SELECT
+  USING (
+    parent_id IN (
+      SELECT id FROM users WHERE clerk_id = auth.uid()::text
+    )
+  );
+
+-- Policy: Instructors can see bookings they're teaching
+CREATE POLICY "Instructors can view their bookings" ON bookings
+  FOR SELECT
+  USING (
+    instructor_id IN (
+      SELECT id FROM users WHERE clerk_id = auth.uid()::text
+    )
+  );
 ```
 
 ### Realtime Subscriptions
 
-```prisma
+```typescript
 // Design tables with realtime in mind
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  type        String
-  title       String
-  message     String   @db.Text
-  isRead      Boolean  @default(false) @map("is_read")
-  readAt      DateTime? @map("read_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Indexes for realtime queries
+    userUnreadIdx: index('idx_notifications_user_unread')
+      .on(table.userId, table.isRead, table.createdAt),
+    createdAtIdx: index('idx_notifications_created_at').on(table.createdAt),
+  }
+})
 
-  // Index for realtime queries
-  @@index([userId, isRead, createdAt], name: "idx_notifications_user_unread")
+// Enable realtime
+-- SQL: ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+```
 
-  @@map("notifications")
+### Supabase Functions Integration
+
+```typescript
+// Call Supabase Edge Functions from Drizzle queries
+import { sql } from 'drizzle-orm'
+
+// Call a Supabase function
+const nearbyInstructors = await db.execute(sql`
+  SELECT * FROM find_nearby_instructors(
+    ${userLat}::float,
+    ${userLng}::float,
+    ${radiusKm}::int
+  )
+`)
+
+// Create database function for complex queries
+export async function createDistanceFunction() {
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION calculate_distance(
+      lat1 float, lng1 float,
+      lat2 float, lng2 float
+    ) RETURNS float AS $$
+    BEGIN
+      RETURN ST_DistanceSphere(
+        ST_MakePoint(lng1, lat1)::geography,
+        ST_MakePoint(lng2, lat2)::geography
+      ) / 1000; -- Return km
+    END;
+    $$ LANGUAGE plpgsql IMMUTABLE;
+  `)
 }
 ```
 
 ### Audit Trail Pattern
 
-```prisma
-model AuditLog {
-  id          String   @id @default(cuid())
-  tableName   String   @map("table_name")
-  recordId    String   @map("record_id")
-  action      String   // CREATE, UPDATE, DELETE
-  userId      String   @map("user_id")
-  changes     Json     @db.JsonB
-  ipAddress   String?  @map("ip_address")
-  userAgent   String?  @map("user_agent") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
+```typescript
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tableName: text('table_name').notNull(),
+  recordId: uuid('record_id').notNull(),
+  action: text('action').notNull(), // CREATE, UPDATE, DELETE
+  userId: uuid('user_id').notNull(),
+  changes: jsonb('changes').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    tableRecordIdx: index('idx_audit_logs_table_record').on(table.tableName, table.recordId),
+    userIdx: index('idx_audit_logs_user_id').on(table.userId),
+    createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
+  }
+})
 
-  @@index([tableName, recordId], name: "idx_audit_logs_table_record")
-  @@index([userId], name: "idx_audit_logs_user")
-  @@index([createdAt], name: "idx_audit_logs_created")
+// Trigger for automatic audit logging
+export async function createAuditTrigger(tableName: string) {
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION audit_trigger_function()
+    RETURNS trigger AS $$
+    BEGIN
+      INSERT INTO audit_logs (table_name, record_id, action, user_id, changes)
+      VALUES (
+        TG_TABLE_NAME,
+        COALESCE(NEW.id, OLD.id),
+        TG_OP,
+        current_setting('app.current_user_id')::uuid,
+        jsonb_build_object(
+          'old', row_to_json(OLD),
+          'new', row_to_json(NEW)
+        )
+      );
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
 
-  @@map("audit_logs")
+    CREATE TRIGGER audit_${tableName}
+    AFTER INSERT OR UPDATE OR DELETE ON ${tableName}
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+  `)
 }
 ```
 
 ## Migration Best Practices
 
-### Safe Column Addition
+### Safe Migration Pattern
 
-```prisma
-// Step 1: Add nullable column
-model User {
-  // ... existing fields
-  phoneNumber String? @map("phone_number")
-}
+```typescript
+// migrations/0001_add_phone_to_users.sql
+-- Step 1: Add nullable column
+ALTER TABLE users ADD COLUMN phone_number text;
 
-// Step 2: Backfill data via script
+-- Step 2: Add check constraint for format
+ALTER TABLE users ADD CONSTRAINT check_phone_format 
+  CHECK (phone_number ~ '^\\+?[1-9]\\d{1,14}$' OR phone_number IS NULL);
 
-// Step 3: Make required if needed
-model User {
-  // ... existing fields
-  phoneNumber String @map("phone_number")
-}
+-- Step 3: Create index
+CREATE INDEX idx_users_phone_number ON users(phone_number);
+
+-- Step 4: After backfilling, make required if needed
+-- ALTER TABLE users ALTER COLUMN phone_number SET NOT NULL;
 ```
 
 ### Index Creation
 
-```sql
--- Create index concurrently to avoid locking
-CREATE INDEX CONCURRENTLY idx_bookings_scheduled_at
-ON public.bookings(scheduled_at);
+```typescript
+// Always create indexes concurrently in production
+await db.execute(sql`
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bookings_scheduled_at 
+  ON bookings(scheduled_at)
+`)
 ```
 
-## Performance Considerations
+## Performance Patterns
 
-### Efficient Queries
+### Efficient Queries with Drizzle
 
 ```typescript
-// ✅ Good - Use indexes
-const upcomingBookings = await prisma.booking.findMany({
-  where: {
-    instructorId: instructorId,
-    status: "CONFIRMED",
-    scheduledAt: {
-      gte: new Date(),
-    },
-  },
-  orderBy: {
-    scheduledAt: "asc",
-  },
-  include: {
-    child: {
-      select: {
-        firstName: true,
-        lastName: true,
-      },
-    },
-  },
-});
+import { eq, and, gte, sql, desc } from 'drizzle-orm'
 
-// ❌ Bad - No index usage
-const bookings = await prisma.booking.findMany({
-  where: {
-    notes: {
-      contains: "swimming",
-    },
-  },
-});
+// ✅ Good - Use indexes effectively
+const upcomingBookings = await db
+  .select({
+    id: bookings.id,
+    scheduledAt: bookings.scheduledAt,
+    instructorName: sql`${users.firstName} || ' ' || ${users.lastName}`,
+  })
+  .from(bookings)
+  .innerJoin(users, eq(bookings.instructorId, users.id))
+  .where(and(
+    eq(bookings.parentId, parentId),
+    eq(bookings.status, 'CONFIRMED'),
+    gte(bookings.scheduledAt, new Date())
+  ))
+  .orderBy(desc(bookings.scheduledAt))
+  .limit(10)
+
+// ✅ Good - Use partial indexes for specific queries
+export const activeBookingsIdx = index('idx_bookings_active')
+  .on(bookings.scheduledAt)
+  .where(sql`status = 'CONFIRMED' AND scheduled_at >= NOW()`)
+
+// ❌ Bad - Full text search without proper index
+const results = await db
+  .select()
+  .from(bookings)
+  .where(sql`notes ILIKE ${`%${searchTerm}%`}`)
 ```
 
-### Pagination Pattern
+### Connection Pooling with Supabase
 
 ```typescript
-const PAGE_SIZE = 20;
+// lib/db/connection.ts
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import * as schema from './schema'
 
-const getBookings = async (page: number) => {
-  const [bookings, total] = await prisma.$transaction([
-    prisma.booking.findMany({
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.booking.count(),
-  ]);
+// Use connection string with pooling
+const connectionString = process.env.DATABASE_URL!
 
-  return {
-    data: bookings,
-    pagination: {
-      page,
-      pageSize: PAGE_SIZE,
-      total,
-      totalPages: Math.ceil(total / PAGE_SIZE),
-    },
-  };
-};
+// For Supabase, use connection pooling
+const queryClient = postgres(connectionString, {
+  max: 10, // Maximum connections
+  idle_timeout: 20,
+  connect_timeout: 10,
+})
+
+export const db = drizzle(queryClient, { schema })
 ```
 
 ## Common Mistakes to Avoid
 
-1. **Missing @map() directives** - Always map camelCase to snake_case
-2. **Incorrect foreign key names** - Use `{table_singular}_id` pattern
-3. **Missing indexes** - Add indexes for all foreign keys and query fields
-4. **Wrong boolean prefixes** - Use is*, has*, or can\_
-5. **Inconsistent timestamps** - Always include created_at, updated_at
-6. **No soft deletes** - Consider deleted_at for important data
-7. **Missing constraints** - Add unique constraints where needed
+1. **Wrong table names** - Always use plural, snake_case
+2. **Missing timezone** - Always use `withTimezone: true` for timestamps
+3. **Wrong boolean prefixes** - Use is_, has_, or can_
+4. **Missing indexes** - Add indexes for all foreign keys and query fields
+5. **Using SERIAL with UUID** - Pick one ID strategy
+6. **Not using JSONB** - Prefer jsonb over json for performance
+7. **Missing RLS policies** - Always add RLS for user-facing tables
+8. **Incorrect money type** - Use decimal for currency, not float
+9. **No audit trail** - Add created_at, updated_at to all tables
+10. **Bad index names** - Follow idx_tablename_columns pattern

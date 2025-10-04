@@ -1,40 +1,75 @@
 {
-  "name": "Coordinated.App Development Environment",
-  "install": "pnpm install && pnpm db:generate",
-  "start": "echo 'Environment ready for development'",
+  "name": "C9D AI Development Environment",
+  "install": "pnpm install && pnpm db:ensure-wrapper && pnpm db:generate",
+  "start": "echo 'Environment ready for development - Drizzle ORM configured'",
   "terminals": [
     {
       "name": "Next.js Dev Server",
       "command": "cd apps/web && pnpm dev",
-      "description": "Runs the Next.js development server on port 3000 with hot reload"
+      "description": "Runs the Next.js development server on port 3008 with hot reload and Phase.dev integration"
     },
     {
-      "name": "Docusaurus Dev Server",
-      "command": "cd apps/docs && pnpm dev",
-      "description": "Runs the Docusaurus documentation server on port 3001"
+      "name": "Drizzle Studio",
+      "command": "pnpm db:studio",
+      "description": "Runs Drizzle Studio database UI on port 4983"
     },
     {
       "name": "Type Checking",
-      "command": "cd apps/web && pnpm type-check --watch",
-      "description": "Continuous TypeScript type checking in watch mode"
+      "command": "pnpm typecheck --watch",
+      "description": "Continuous TypeScript type checking across the monorepo"
+    },
+    {
+      "name": "Test Runner",
+      "command": "pnpm test:dev",
+      "description": "Runs tests in watch mode with Vitest"
     }
   ],
   "ports": [
     {
       "name": "Next.js App",
-      "port": 3000
+      "port": 3008,
+      "description": "Main web application"
     },
     {
-      "name": "Docusaurus Documentation",
-      "port": 3001
-    },
-    {
-      "name": "Prisma Studio",
-      "port": 5555
+      "name": "Drizzle Studio",
+      "port": 4983,
+      "description": "Database management UI"
     }
   ],
+  "tasks": {
+    "db:generate": {
+      "command": "pnpm db:generate",
+      "description": "Generate Drizzle migrations from schema changes"
+    },
+    "db:migrate": {
+      "command": "pnpm db:migrate",
+      "description": "Apply database migrations"
+    },
+    "db:validate": {
+      "command": "pnpm db:validate-setup",
+      "description": "Validate Drizzle ORM setup"
+    },
+    "env:validate": {
+      "command": "pnpm validate-env",
+      "description": "Validate environment variables"
+    }
+  },
+  "environment": {
+    "required": [
+      "DATABASE_URL",
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "CLERK_SECRET_KEY",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    ],
+    "optional": [
+      "PHASE_SERVICE_TOKEN",
+      "REDIS_URL",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
   "repositoryDependencies": [
-    "github.com/EtherealVisions/webstudio"
+    "github.com/EtherealVisions/c9d-ai"
   ],
   "build": {
     "context": ".",

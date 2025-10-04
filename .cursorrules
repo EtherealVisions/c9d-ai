@@ -1,0 +1,150 @@
+# Drizzle ORM Development Guidelines
+
+## Database Schema Conventions
+
+### Schema Files
+- All database schemas must be in `apps/web/lib/db/schema/`
+- Use TypeScript files with `.ts` extension
+- Export both the table and its TypeScript types
+- Follow the naming pattern: `tableName.ts` for schema files
+
+### Table Naming
+- Use plural, snake_case for table names (e.g., `users`, `organization_memberships`)
+- Use singular, camelCase for relation names
+
+### Column Naming
+- Use snake_case for column names in the database
+- Use camelCase in TypeScript code (Drizzle handles the mapping)
+
+### Type Exports
+```typescript
+// Always export these types from schema files
+export type TableName = InferSelectModel<typeof tableName>
+export type NewTableName = InferInsertModel<typeof tableName>
+```
+
+## Migration Guidelines
+
+### Creating Migrations
+1. Make schema changes in `apps/web/lib/db/schema/`
+2. Run `pnpm db:generate` to create migration SQL
+3. Review generated migration in `apps/web/lib/db/migrations/`
+4. Test migration locally with `pnpm db:migrate`
+
+### Migration Naming
+- Migrations are auto-named with timestamps
+- Add descriptive comments in the schema file
+
+### Migration Best Practices
+- Always include both UP and DOWN migrations
+- Test rollbacks before deploying
+- Never edit existing migrations in production
+
+## Query Patterns
+
+### Type-Safe Queries
+```typescript
+// Always use typed queries
+import { db } from '@/lib/db/connection'
+import { users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
+
+// Good
+const user = await db.select().from(users).where(eq(users.id, userId))
+
+// Avoid raw SQL unless necessary
+```
+
+### Transactions
+```typescript
+// Use transactions for multi-table operations
+await db.transaction(async (tx) => {
+  await tx.insert(organizations).values(orgData)
+  await tx.insert(organizationMemberships).values(membershipData)
+})
+```
+
+### Relations
+```typescript
+// Define relations in schema for type-safe joins
+export const usersRelations = relations(users, ({ many }) => ({
+  memberships: many(organizationMemberships),
+}))
+```
+
+## Performance Optimization
+
+### Indexing
+- Add indexes for frequently queried columns
+- Use composite indexes for multi-column queries
+- Monitor query performance with `EXPLAIN ANALYZE`
+
+### Query Optimization
+- Use `select()` with specific columns instead of `select()`
+- Batch operations when possible
+- Use prepared statements for repeated queries
+
+## Development Workflow
+
+### Local Development
+1. Use `pnpm db:studio` for visual database inspection
+2. Test all migrations locally before pushing
+3. Keep schema files organized by domain
+
+### Testing Philosophy
+- Focus on integration and E2E tests with real infrastructure (60% E2E, 35% Integration, 5% Unit)
+- Always use real PostgreSQL, real Redis, real services - no infrastructure mocks
+- Ensure all tests are idempotent using unique identifiers (timestamps + UUIDs)
+- Design tests to run in parallel without conflicts
+- Use transaction rollback or schema isolation for test cleanup
+- Only write unit tests for complex business logic or algorithms
+
+### Debugging
+- Enable query logging in development
+- Use Drizzle Studio for query testing
+- Check migration status with custom tooling
+
+## Error Handling
+
+### Database Errors
+```typescript
+import { DatabaseError } from '@/lib/errors/custom-errors'
+
+try {
+  await db.insert(users).values(userData)
+} catch (error) {
+  if (error.code === '23505') { // Unique violation
+    throw new DatabaseError('User already exists')
+  }
+  throw error
+}
+```
+
+### Connection Management
+- Let Drizzle handle connection pooling
+- Don't create multiple database instances
+- Use the singleton pattern from `@/lib/db/connection`
+
+## Security
+
+### SQL Injection Prevention
+- Always use parameterized queries via Drizzle
+- Never concatenate user input into queries
+- Validate input before database operations
+
+### Access Control
+- Implement Row Level Security (RLS) where needed
+- Use database roles appropriately
+- Keep credentials in environment variables
+
+## Documentation
+
+### Schema Documentation
+- Document complex schemas with JSDoc comments
+- Explain business logic in schema files
+- Keep README.md updated in schema directory
+
+### Migration Documentation
+- Add comments explaining migration purpose
+- Document any data transformations
+- Note any required manual steps

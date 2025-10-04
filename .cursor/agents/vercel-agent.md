@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This agent specializes in optimizing Next.js applications for Vercel deployment, ensuring best practices for performance, scalability, and reliability.
+This agent specializes in optimizing Next.js applications for Vercel deployment with Drizzle ORM, ensuring best practices for performance, scalability, and reliability.
 
 ## Build Configuration
 
@@ -11,16 +11,36 @@ This agent specializes in optimizing Next.js applications for Vercel deployment,
 ```json
 {
   "scripts": {
-    "dev": "next dev",
+    "dev": "env-wrapper next dev -p 3008",
     "build": "next build",
-    "start": "next start",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
-    "postinstall": "prisma generate"
+    "start": "next start -p 3008",
+    "vercel-build": "pnpm db:generate && pnpm db:migrate && next build",
+    "postinstall": "pnpm db:generate"
   }
 }
 ```
 
-### Next.js Configuration
+### Drizzle Build Integration
+
+```json
+{
+  "scripts": {
+    // Database commands using env-wrapper
+    "db:generate": "env-wrapper -- drizzle-kit generate",
+    "db:migrate": "env-wrapper -- drizzle-kit migrate",
+    "db:push": "env-wrapper -- drizzle-kit push",
+    
+    // Production deployment
+    "vercel-build": "pnpm db:ensure-wrapper && pnpm db:generate && pnpm db:migrate && next build",
+    
+    // Development
+    "dev:db": "pnpm db:generate && pnpm db:push",
+    "postinstall": "pnpm db:ensure-wrapper && pnpm db:generate"
+  }
+}
+```
+
+### Next.js Configuration with Drizzle
 
 ```javascript
 // next.config.mjs
@@ -28,6 +48,20 @@ This agent specializes in optimizing Next.js applications for Vercel deployment,
 const nextConfig = {
   // Optimize for Vercel
   output: process.env.VERCEL ? undefined : "standalone",
+  
+  // Ensure database types are available
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't include server-only modules in client bundle
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
+  },
 
   // Image optimization
   images: {
@@ -35,7 +69,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "your-cdn.com",
+        hostname: "**.supabase.co",
       },
     ],
   },
@@ -76,362 +110,506 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
 
-  // Redirects
+  // Environment-specific redirects
   async redirects() {
     return [
       {
-        source: "/old-path",
-        destination: "/new-path",
-        permanent: true,
+        source: "/admin",
+        has: [
+          {
+            type: "host",
+            value: "(?!admin\\.)",
+          },
+        ],
+        destination: "https://admin.coordinated.app/admin",
+        permanent: false,
       },
-    ];
+    ]
   },
 
-  // Rewrites for API proxying
-  async rewrites() {
-    return [
-      {
-        source: "/api/external/:path*",
-        destination: "https://external-api.com/:path*",
-      },
-    ];
+  // Experimental features for Drizzle
+  experimental: {
+    serverComponentsExternalPackages: ["drizzle-orm", "postgres"],
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig
 ```
 
-## Environment Configuration
+## Environment Configuration for Drizzle
 
 ### Vercel Environment Variables
 
 ```bash
 # Production (via Vercel Dashboard)
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."  # For migrations
+DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+DIRECT_URL="postgresql://user:pass@host:5432/db?sslmode=require" # For migrations
+
+# Phase.dev integration
+PHASE_SERVICE_TOKEN="pss_service:v1:..."
+PHASE_APP_ENV="production"
+PHASE_HOST="https://api.phase.dev"
+
+# Authentication
 CLERK_SECRET_KEY="sk_live_..."
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_live_..."
 
-# Preview (via Vercel Dashboard)
-DATABASE_URL="postgresql://...staging"
-CLERK_SECRET_KEY="sk_test_..."
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL="https://project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
+SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
-# Development (local .env.development)
-DATABASE_URL="postgresql://localhost..."
+# Redis (if using caching)
+REDIS_URL="redis://default:password@host:6379"
+REDIS_TOKEN="..."
 ```
 
-### Environment-Specific Configs
+### Build-Time Environment Loading
 
 ```typescript
-// lib/config.ts
-export const config = {
-  // Use Vercel system env vars
-  isProduction: process.env.VERCEL_ENV === "production",
-  isPreview: process.env.VERCEL_ENV === "preview",
-  isDevelopment: process.env.NODE_ENV === "development",
+// lib/env.ts
+import { loadEnvConfig } from '@next/env'
 
-  // URLs
-  appUrl: process.env.NEXT_PUBLIC_VERCEL_URL
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+// Load environment variables at build time
+const projectDir = process.cwd()
+loadEnvConfig(projectDir)
 
-  // Feature flags
-  features: {
-    analytics: process.env.VERCEL_ENV === "production",
-    debugMode: process.env.VERCEL_ENV !== "production",
-  },
-};
+// Validate required variables
+const requiredEnvVars = [
+  'DATABASE_URL',
+  'CLERK_SECRET_KEY',
+  'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+] as const
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`)
+  }
+}
+
+// Export typed environment
+export const env = {
+  DATABASE_URL: process.env.DATABASE_URL!,
+  DIRECT_URL: process.env.DIRECT_URL || process.env.DATABASE_URL!,
+  isProduction: process.env.VERCEL_ENV === 'production',
+  isPreview: process.env.VERCEL_ENV === 'preview',
+} as const
+```
+
+## Database Connection for Serverless
+
+### Optimized Drizzle Connection
+
+```typescript
+// lib/db/connection.ts
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import * as schema from './schema'
+
+// Different configs for different environments
+const connectionString = process.env.DATABASE_URL!
+
+let queryClient: postgres.Sql
+
+if (process.env.VERCEL) {
+  // Vercel serverless optimizations
+  queryClient = postgres(connectionString, {
+    max: 1, // Serverless should use minimal connections
+    idle_timeout: 20,
+    connect_timeout: 10,
+    ssl: { rejectUnauthorized: false }, // Required for some providers
+    prepare: false, // Disable prepared statements for serverless
+  })
+} else {
+  // Local development
+  queryClient = postgres(connectionString, {
+    max: 10,
+    idle_timeout: 60,
+  })
+}
+
+export const db = drizzle(queryClient, { schema })
+
+// Ensure proper cleanup in serverless
+if (process.env.VERCEL) {
+  process.on('exit', () => queryClient.end())
+}
+```
+
+### Migration Strategy
+
+```typescript
+// scripts/migrate-production.ts
+import { drizzle } from 'drizzle-orm/postgres-js'
+import { migrate } from 'drizzle-orm/postgres-js/migrator'
+import postgres from 'postgres'
+
+async function runMigrations() {
+  console.log('Running migrations...')
+  
+  const sql = postgres(process.env.DATABASE_URL!, { 
+    max: 1,
+    ssl: { rejectUnauthorized: false }
+  })
+  
+  const db = drizzle(sql)
+  
+  try {
+    await migrate(db, { 
+      migrationsFolder: './apps/web/lib/db/migrations',
+      migrationsTable: 'drizzle_migrations',
+    })
+    console.log('Migrations completed successfully')
+  } catch (error) {
+    console.error('Migration failed:', error)
+    process.exit(1)
+  } finally {
+    await sql.end()
+  }
+}
+
+runMigrations()
 ```
 
 ## Edge Runtime Optimization
 
-### Edge API Routes
+### Edge-Compatible Database Queries
 
 ```typescript
 // app/api/edge/route.ts
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server'
+import { neon } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-http'
+import * as schema from '@/lib/db/schema'
 
-export const runtime = "edge"; // Enable Edge Runtime
-export const dynamic = "force-dynamic";
+export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
+
+// Use Neon for Edge Runtime compatibility
+const sql = neon(process.env.DATABASE_URL!)
+const db = drizzle(sql, { schema })
 
 export async function GET(request: NextRequest) {
-  // Edge-compatible code only
-  // No Node.js APIs, use Web APIs
-
-  const data = await fetch("https://api.example.com/data", {
-    next: { revalidate: 60 }, // Cache for 60 seconds
-  });
-
-  return Response.json(await data.json());
+  try {
+    // Edge-compatible query
+    const users = await db
+      .select({
+        id: schema.users.id,
+        email: schema.users.email,
+      })
+      .from(schema.users)
+      .limit(10)
+    
+    return Response.json({ success: true, data: users })
+  } catch (error) {
+    console.error('Edge function error:', error)
+    return Response.json(
+      { success: false, error: 'Database error' },
+      { status: 500 }
+    )
+  }
 }
 ```
 
-### Middleware Configuration
+### Middleware with Database Access
 
 ```typescript
 // middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { verifyAuth } from '@clerk/nextjs/server'
 
-export function middleware(request: NextRequest) {
-  // Geolocation
-  const country = request.geo?.country || "US";
-
-  // Add security headers
-  const headers = new Headers(request.headers);
-  headers.set("x-user-country", country);
-
-  // A/B testing
-  const bucket = Math.random() < 0.5 ? "a" : "b";
-
-  const response = NextResponse.next({
-    request: {
-      headers,
-    },
-  });
-
-  response.cookies.set("ab-test", bucket);
-  return response;
+export async function middleware(request: NextRequest) {
+  // Don't query database in middleware - too expensive
+  // Use JWT claims or external cache instead
+  
+  const { userId } = await verifyAuth(request)
+  
+  if (!userId && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
-```
-
-## Database Optimization
-
-### Connection Pooling
-
-```typescript
-// lib/db.ts
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 10, // Limit connections for serverless
-});
-
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
-// For serverless environments
-if (process.env.VERCEL) {
-  // Properly close connections
-  process.on("beforeExit", async () => {
-    await pool.end();
-    await prisma.$disconnect();
-  });
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
-
-export { prisma };
-```
-
-### Query Optimization
-
-```typescript
-// Use Vercel Data Cache
-import { unstable_cache } from "next/cache";
-
-export const getCachedUser = unstable_cache(
-  async (userId: string) => {
-    return prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
-    });
-  },
-  ["user-cache"],
-  {
-    revalidate: 3600, // 1 hour
-    tags: ["user"],
-  }
-);
 ```
 
 ## Performance Patterns
 
-### Image Optimization
-
-```tsx
-import Image from "next/image";
-
-export function OptimizedImage() {
-  return (
-    <Image
-      src="/hero.jpg"
-      alt="Hero"
-      width={1200}
-      height={600}
-      priority // Load eagerly for LCP
-      placeholder="blur"
-      blurDataURL={shimmer(1200, 600)}
-      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-    />
-  );
-}
-```
-
-### Font Optimization
-
-```tsx
-// app/layout.tsx
-import { Inter, Roboto_Mono } from "next/font/google";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-roboto-mono",
-});
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
-      <body>{children}</body>
-    </html>
-  );
-}
-```
-
-### Dynamic Imports
-
-```tsx
-import dynamic from "next/dynamic";
-
-// Lazy load heavy components
-const HeavyChart = dynamic(() => import("@/components/HeavyChart"), {
-  loading: () => <ChartSkeleton />,
-  ssr: false, // Disable SSR for client-only components
-});
-
-// Conditional loading
-const AdminPanel = dynamic(() => import("@/components/AdminPanel"));
-
-export function Dashboard({ isAdmin }: { isAdmin: boolean }) {
-  return (
-    <>
-      {isAdmin && <AdminPanel />}
-      <HeavyChart />
-    </>
-  );
-}
-```
-
-## Monitoring & Analytics
-
-### Vercel Analytics
-
-```tsx
-// app/layout.tsx
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Analytics />
-        <SpeedInsights />
-      </body>
-    </html>
-  );
-}
-```
-
-### Custom Web Vitals
+### Incremental Static Regeneration with Database
 
 ```typescript
-// app/web-vitals.ts
-import { onCLS, onINP, onLCP, onFCP, onTTFB } from "web-vitals";
+// app/instructors/[id]/page.tsx
+import { notFound } from 'next/navigation'
+import { db } from '@/lib/db/connection'
+import { users, instructorProfiles } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
-export function reportWebVitals() {
-  onCLS(sendToAnalytics);
-  onINP(sendToAnalytics);
-  onLCP(sendToAnalytics);
-  onFCP(sendToAnalytics);
-  onTTFB(sendToAnalytics);
+// Generate static paths at build time
+export async function generateStaticParams() {
+  const instructors = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, 'INSTRUCTOR'))
+    .limit(100) // Pre-build top 100
+  
+  return instructors.map((instructor) => ({
+    id: instructor.id,
+  }))
 }
 
-function sendToAnalytics(metric: any) {
-  // Send to your analytics provider
-  if (window.gtag) {
-    window.gtag("event", metric.name, {
-      value: Math.round(metric.value),
-      metric_id: metric.id,
-      metric_value: metric.value,
-      metric_delta: metric.delta,
-    });
+// Revalidate every hour
+export const revalidate = 3600
+
+export default async function InstructorPage({ 
+  params 
+}: { 
+  params: { id: string } 
+}) {
+  const instructor = await db.query.users.findFirst({
+    where: eq(users.id, params.id),
+    with: {
+      instructorProfile: true,
+    },
+  })
+  
+  if (!instructor || instructor.role !== 'INSTRUCTOR') {
+    notFound()
+  }
+  
+  return <InstructorProfile instructor={instructor} />
+}
+```
+
+### Data Cache with Drizzle
+
+```typescript
+// lib/cache.ts
+import { unstable_cache } from 'next/cache'
+import { db } from '@/lib/db/connection'
+import { instructorProfiles } from '@/lib/db/schema'
+
+export const getCachedInstructors = unstable_cache(
+  async (city: string) => {
+    console.log('Cache miss - fetching from database')
+    
+    return await db.query.instructorProfiles.findMany({
+      where: eq(instructorProfiles.city, city),
+      with: {
+        user: true,
+      },
+      limit: 50,
+    })
+  },
+  ['instructors-by-city'],
+  {
+    revalidate: 300, // 5 minutes
+    tags: ['instructors'],
+  }
+)
+
+// Invalidate cache when data changes
+export async function updateInstructor(id: string, data: any) {
+  await db.update(instructorProfiles).set(data).where(eq(instructorProfiles.id, id))
+  
+  // Revalidate cache
+  revalidateTag('instructors')
+}
+```
+
+## Deployment Configuration
+
+### vercel.json with Drizzle
+
+```json
+{
+  "buildCommand": "pnpm vercel-build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/*/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/admin/*/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "DIRECT_URL": "@database-url-direct",
+    "PHASE_SERVICE_TOKEN": "@phase-service-token"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@database-url",
+      "DIRECT_URL": "@database-url-direct",
+      "PHASE_SERVICE_TOKEN": "@phase-service-token",
+      "NODE_ENV": "production"
+    }
   }
 }
 ```
 
-## Error Handling
+### Build Optimization
 
-### Global Error Boundary
+```bash
+# .vercelignore
+# Ignore test files
+**/*.test.ts
+**/*.spec.ts
+__tests__
+e2e
 
-```tsx
-// app/error.tsx
-"use client";
+# Ignore development files
+.env.development
+.env.local
+docker-compose.yml
 
-import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
+# Ignore documentation
+docs
+*.md
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    // Log to error reporting service
-    Sentry.captureException(error);
-  }, [error]);
+# Keep migrations
+!apps/web/lib/db/migrations
+```
 
-  return (
-    <div className="error-container">
-      <h2>Something went wrong!</h2>
-      <button onClick={reset}>Try again</button>
-    </div>
-  );
+## Monitoring & Error Handling
+
+### Sentry Integration with Drizzle
+
+```typescript
+// lib/monitoring.ts
+import * as Sentry from '@sentry/nextjs'
+
+// Wrap database operations
+export async function withMonitoring<T>(
+  operation: () => Promise<T>,
+  context: { operation: string; [key: string]: any }
+): Promise<T> {
+  const transaction = Sentry.startTransaction({
+    name: context.operation,
+    op: 'db.query',
+  })
+  
+  try {
+    const result = await operation()
+    transaction.setStatus('ok')
+    return result
+  } catch (error) {
+    transaction.setStatus('internal_error')
+    Sentry.captureException(error, {
+      contexts: {
+        database: context,
+      },
+    })
+    throw error
+  } finally {
+    transaction.finish()
+  }
 }
+
+// Usage
+const users = await withMonitoring(
+  () => db.select().from(users).limit(10),
+  { operation: 'list-users', limit: 10 }
+)
 ```
 
 ## Deployment Checklist
 
 ### Pre-deployment
 
-- [ ] Run `pnpm type-check`
-- [ ] Run `pnpm lint`
-- [ ] Run `pnpm build` locally
-- [ ] Test with production environment variables
+- [ ] Run `pnpm db:generate` to ensure latest schema
+- [ ] Test migrations locally with `pnpm db:migrate`
+- [ ] Run `pnpm type-check` - no TypeScript errors
+- [ ] Run `pnpm lint` - code quality check
+- [ ] Run `pnpm test:integration` - database tests pass
+- [ ] Run `pnpm build` locally - build succeeds
 - [ ] Check bundle size with `@next/bundle-analyzer`
-- [ ] Verify all environment variables are set in Vercel
+- [ ] Verify all environment variables in Vercel dashboard
+- [ ] Test with production database connection locally
+
+### Deployment Commands
+
+```bash
+# Local validation
+pnpm validate-all
+
+# Preview deployment
+vercel --env preview
+
+# Production deployment
+vercel --prod
+
+# Run migrations after deployment
+pnpm db:migrate:prod
+```
 
 ### Post-deployment
 
-- [ ] Check deployment logs for errors
-- [ ] Verify database migrations ran successfully
+- [ ] Check deployment logs for migration success
+- [ ] Verify database schema is updated
 - [ ] Test critical user paths
-- [ ] Monitor Web Vitals scores
-- [ ] Check error tracking for new issues
-- [ ] Verify edge functions are working
+- [ ] Monitor error rates in Sentry
+- [ ] Check Web Vitals scores
+- [ ] Verify Edge functions are working
+- [ ] Test database connection pooling
+- [ ] Monitor query performance
 
 ### Performance Targets
 
 - [ ] LCP < 2.5s
-- [ ] FID < 100ms
+- [ ] FID < 100ms  
 - [ ] CLS < 0.1
 - [ ] TTFB < 600ms
+- [ ] Database query p95 < 100ms
+- [ ] API route p95 < 200ms
 - [ ] Bundle size < 300KB (First Load JS)
+
+## Rollback Strategy
+
+### Database Rollback
+
+```bash
+# Create rollback script
+# scripts/rollback-migration.ts
+import { sql } from 'drizzle-orm'
+
+export async function rollbackLastMigration() {
+  // Get last migration
+  const lastMigration = await db.execute(sql`
+    SELECT id, hash FROM drizzle_migrations 
+    ORDER BY created_at DESC 
+    LIMIT 1
+  `)
+  
+  // Execute down migration
+  // ... implementation
+}
+```
+
+### Vercel Instant Rollback
+
+```bash
+# List deployments
+vercel list
+
+# Rollback to previous
+vercel rollback [deployment-url]
+
+# Rollback database if needed
+pnpm db:rollback
+```

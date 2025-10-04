@@ -1,3 +1,63 @@
 {
-    "typescript.autoClosingTags": false
+    "typescript.autoClosingTags": false,
+    
+    // Drizzle ORM specific settings
+    "files.associations": {
+        "*.sql": "sql",
+        "**/migrations/*.sql": "sql",
+        "**/schema/*.ts": "typescript"
+    },
+    
+    // SQL formatting
+    "sql-formatter.uppercase": true,
+    "sql-formatter.linesBetweenQueries": 2,
+    
+    // TypeScript settings for better Drizzle support
+    "typescript.preferences.importModuleSpecifier": "non-relative",
+    "typescript.suggest.autoImports": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    
+    // Editor settings for schema files
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    
+    "[sql]": {
+        "editor.defaultFormatter": "adpyke.vscode-sql-formatter",
+        "editor.formatOnSave": true
+    },
+    
+    // File nesting for better organization
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.ts": "${capture}.test.ts, ${capture}.spec.ts, ${capture}.d.ts",
+        "*.tsx": "${capture}.test.tsx, ${capture}.spec.tsx",
+        "schema.ts": "*.schema.ts",
+        "index.ts": "*.ts"
+    },
+    
+    // Search exclusions
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/dist": true,
+        "**/.turbo": true,
+        "**/coverage": true,
+        "**/.drizzle": true,
+        "**/migrations/meta": true
+    },
+    
+    // Recommended extensions for team
+    "recommendations": [
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "adpyke.vscode-sql-formatter",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+    ]
 }

@@ -208,13 +208,63 @@
     },
     "clean": {
       "cache": false
+    },
+    "db:generate": {
+      "inputs": [
+        "lib/db/schema/**/*.ts",
+        "drizzle.config.ts"
+      ],
+      "outputs": [
+        "lib/db/migrations/**"
+      ],
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL"
+      ]
+    },
+    "db:migrate": {
+      "dependsOn": ["db:generate"],
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "NODE_ENV"
+      ]
+    },
+    "db:push": {
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "NODE_ENV"
+      ]
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL"
+      ]
+    },
+    "db:introspect": {
+      "outputs": [
+        "lib/db/schema/**"
+      ],
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL"
+      ]
     }
   },
   "globalDependencies": [
     "package.json",
     "pnpm-workspace.yaml",
     "turbo.json",
-    ".env.example"
+    ".env.example",
+    "drizzle.config.ts"
   ],
   "globalEnv": [
     "NODE_ENV",

@@ -1,0 +1,31 @@
+{
+  "context": {
+    "includePatterns": [
+      "apps/web/lib/db/schema/**/*.ts",
+      "apps/web/lib/db/migrations/**/*.sql",
+      "apps/web/drizzle.config.ts",
+      "apps/web/lib/db/connection.ts"
+    ],
+    "excludePatterns": [
+      "node_modules",
+      ".next",
+      "dist",
+      "coverage",
+      ".turbo"
+    ]
+  },
+  "ai": {
+    "defaultPrompts": {
+      "database": "When working with database queries, always use Drizzle ORM syntax and ensure type safety. Reference the schema files in lib/db/schema/.",
+      "migrations": "For database migrations, use 'pnpm db:generate' to create migration files and 'pnpm db:migrate' to apply them. Never edit migration files directly.",
+      "schema": "When modifying database schema, update the TypeScript files in lib/db/schema/, not SQL files. Always export proper types using InferSelectModel and InferInsertModel."
+    }
+  },
+  "codeActions": {
+    "database": {
+      "preferDrizzleOverRaw": true,
+      "enforceTransactions": true,
+      "requireTypeExports": true
+    }
+  }
+}

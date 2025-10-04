@@ -1,0 +1,87 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate Drizzle Migration",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["db:generate"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Migrations",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["db:migrate"],
+      "dependsOn": ["Generate Drizzle Migration"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open Drizzle Studio",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["db:studio"],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(Drizzle Studio is up and running on).*",
+          "line": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Starting Drizzle Studio...",
+          "endsPattern": "^Drizzle Studio is up and running on.*"
+        }
+      }
+    },
+    {
+      "label": "Push Schema Changes",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["db:push"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Introspect Database",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["db:introspect"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check Database Status",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["--filter", "@c9d/web", "db:status"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

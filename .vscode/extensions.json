@@ -1,0 +1,35 @@
+{
+  "recommendations": [
+    // SQL and Database
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "adpyke.vscode-sql-formatter",
+    "cweijan.vscode-database-client2",
+    
+    // TypeScript and JavaScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    
+    // Tailwind CSS
+    "bradlc.vscode-tailwindcss",
+    
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    
+    // Development Tools
+    "christian-kohler.npm-intellisense",
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker",
+    
+    // Environment Variables
+    "mikestead.dotenv",
+    "clinyong.vscode-dotenv-snippet"
+  ],
+  "unwantedRecommendations": [
+    // Avoid Prisma extensions since we're using Drizzle
+    "prisma.prisma",
+    "prisma.prisma-insider"
+  ]
+}

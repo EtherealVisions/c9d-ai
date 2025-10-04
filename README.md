@@ -90,10 +90,16 @@ pnpm clean                 # Clean build outputs
 
 ## 📚 Documentation
 
+### 🤖 AI-Assisted Development
+- [**AI Development Guide**](AI_DEVELOPMENT_GUIDE.md) - How to effectively use AI agents for development
+- [**Agent Directory**](.cursor/agents/) - Specialized agents for different domains
+- [**Cursor AI Context**](AGENT.md) - Configuration for Cursor's AI system
+
 ### Setup Guides
 - [**Development Setup**](docs/development-setup.md) - Complete guide for local development
 - [**Environment Setup**](docs/environment-setup.md) - Environment variables and Phase.dev configuration
 - [**Authentication Setup**](docs/authentication-setup.md) - Clerk authentication configuration
+- [**Database Setup**](DRIZZLE_SETUP.md) - Drizzle ORM configuration and migrations
 
 ### Deployment
 - [**Vercel Deployment**](docs/vercel-deployment.md) - Production deployment guide

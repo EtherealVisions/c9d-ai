@@ -91,7 +91,7 @@ export default defineConfig({
   
   // Drizzle Studio configuration
   studio: {
-    port: 3008,
+    port: 4983,
     host: '127.0.0.1',
   },
 })
