@@ -65,11 +65,25 @@ let connectionStatus: ConnectionStatus = {
  * Get configuration value with fallback to process.env
  */
 function getConfigValue(key: string): string | undefined {
+  // During build time, use process.env directly
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    const value = process.env[key]
+    // Skip literal variable references
+    if (value && value.startsWith('$')) {
+      console.warn(`[Database Connection] Skipping literal variable ${key}: ${value}`)
+      return undefined
+    }
+    return value
+  }
+  
   try {
     // Try to get from configuration manager first if available
     if (getAppConfigSync) {
       const configValue = getAppConfigSync(key)
-      if (configValue) {
+      if (configValue && !configValue.startsWith('$')) {
         return configValue
       }
     }
@@ -78,16 +92,32 @@ function getConfigValue(key: string): string | undefined {
     console.warn(`[Database Connection] Failed to get config '${key}', using process.env fallback:`, error)
   }
   
-  return process.env[key]
+  const value = process.env[key]
+  // Skip literal variable references
+  if (value && value.startsWith('$')) {
+    console.warn(`[Database Connection] Skipping literal variable ${key}: ${value}`)
+    return undefined
+  }
+  
+  return value
 }
 
 /**
  * Get database URL with proper fallback logic
  */
 function getDatabaseUrl(): string {
+  // During build time, return a placeholder URL
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected, using placeholder URL')
+    return 'postgresql://postgres:password@localhost:5432/postgres'
+  }
+  
   // First try DATABASE_URL (direct PostgreSQL connection)
   const databaseUrl = getConfigValue('DATABASE_URL')
-  if (databaseUrl) {
+  if (databaseUrl && !databaseUrl.startsWith('$')) {
     return databaseUrl
   }
   
@@ -95,7 +125,7 @@ function getDatabaseUrl(): string {
   const supabaseUrl = getConfigValue('NEXT_PUBLIC_SUPABASE_URL')
   const serviceRoleKey = getConfigValue('SUPABASE_SERVICE_ROLE_KEY')
   
-  if (supabaseUrl && serviceRoleKey) {
+  if (supabaseUrl && serviceRoleKey && !supabaseUrl.startsWith('$')) {
     // Extract project reference from Supabase URL
     const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '')
     return `postgresql://postgres:${serviceRoleKey}@db.${projectRef}.supabase.co:5432/postgres`

@@ -11,9 +11,14 @@ import chalk from 'chalk'
  * This function is designed to work in both build and runtime contexts
  */
 export async function loadVercelPhaseSecrets(): Promise<void> {
-  // Skip if no Phase token is available
-  if (!process.env.PHASE_SERVICE_TOKEN) {
-    console.log(chalk.gray('No PHASE_SERVICE_TOKEN found, skipping Phase.dev integration'))
+  // Skip if no Phase token is available or if it's an unexpanded variable
+  const phaseToken = process.env.PHASE_SERVICE_TOKEN
+  if (!phaseToken || phaseToken.startsWith('$')) {
+    console.log(chalk.gray('No valid PHASE_SERVICE_TOKEN found, skipping Phase.dev integration'))
+    if (phaseToken && phaseToken.startsWith('$')) {
+      console.log(chalk.yellow('⚠️  PHASE_SERVICE_TOKEN appears to be an unexpanded variable:', phaseToken))
+      console.log(chalk.yellow('   Please ensure the environment variable is properly set in Vercel'))
+    }
     return
   }
 

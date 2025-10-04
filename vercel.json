@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "vercel-phase-prebuild && pnpm turbo build --filter=@c9d/web",
+  "buildCommand": "node apps/web/scripts/test-env-vars.js && vercel-phase-prebuild && pnpm turbo build --filter=@c9d/web",
   "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
@@ -9,34 +9,6 @@
     "apps/web/app/api/**/*.ts": {
       "maxDuration": 30,
       "memory": 1024
-    }
-  },
-  "env": {
-    "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
-    "PHASE_ENV": "production",
-    "DATABASE_URL": "$DATABASE_URL",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "CLERK_SECRET_KEY": "$CLERK_SECRET_KEY",
-    "NEXT_PUBLIC_SUPABASE_URL": "$NEXT_PUBLIC_SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY",
-    "REDIS_URL": "$REDIS_URL",
-    "REDIS_TOKEN": "$REDIS_TOKEN",
-    "OPENAI_API_KEY": "$OPENAI_API_KEY",
-    "SLACK_SIGNING_SECRET": "$SLACK_SIGNING_SECRET"
-  },
-  "build": {
-    "env": {
-      "PHASE_SERVICE_TOKEN": "$PHASE_SERVICE_TOKEN",
-      "PHASE_ENV": "production",
-      "DATABASE_URL": "$DATABASE_URL",
-      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-      "CLERK_SECRET_KEY": "$CLERK_SECRET_KEY",
-      "NEXT_PUBLIC_SUPABASE_URL": "$NEXT_PUBLIC_SUPABASE_URL",
-      "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY",
-      "REDIS_URL": "$REDIS_URL",
-      "REDIS_TOKEN": "$REDIS_TOKEN",
-      "OPENAI_API_KEY": "$OPENAI_API_KEY",
-      "SLACK_SIGNING_SECRET": "$SLACK_SIGNING_SECRET"
     }
   },
   "headers": [

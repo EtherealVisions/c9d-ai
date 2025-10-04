@@ -821,9 +821,29 @@ export class TypedSupabaseClient {
  * Get configuration value with comprehensive fallback logic
  */
 function getConfigWithFallback(key: string): string | undefined {
-  // Always use process.env for now to avoid module resolution issues
-  // TODO: Implement proper config manager integration when needed
-  return process.env[key];
+  // Build-time detection - return placeholder values
+  const isBuildTime = typeof process !== 'undefined' && (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.VERCEL === '1' && process.env.CI === '1')
+  )
+  
+  if (isBuildTime) {
+    // Return build-time placeholders
+    if (key === 'NEXT_PUBLIC_SUPABASE_URL') return 'https://build-placeholder.supabase.co';
+    if (key === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJidWlsZC1wbGFjZWhvbGRlciJ9.placeholder';
+    return 'build-placeholder';
+  }
+  
+  // Get value from environment
+  const value = process.env[key];
+  
+  // Check if value is an unexpanded variable (starts with $)
+  if (value && value.startsWith('$')) {
+    console.warn(`[Config] Unexpanded variable detected for ${key}: ${value}`);
+    return undefined;
+  }
+  
+  return value;
 }
 
 /**
