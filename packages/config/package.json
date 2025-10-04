@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build": "env-wrapper tsc",
-    "dev": "env-wrapper tsc --watch",
+    "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "env-wrapper eslint src/",
     "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",
     "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper vitest run",

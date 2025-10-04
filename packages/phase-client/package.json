@@ -18,8 +18,8 @@
     }
   },
   "scripts": {
-    "build": "env-wrapper tsup",
-    "dev": "env-wrapper tsup --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
     "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
     "test:ci": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --ci --coverage --watchAll=false --passWithNoTests --reporters=default --reporters=jest-junit --testResultsProcessor=jest-junit",

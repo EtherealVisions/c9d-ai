@@ -11,8 +11,8 @@
     "vercel-phase-prebuild": "./bin/vercel-prebuild.js"
   },
   "scripts": {
-    "build": "env-wrapper tsup",
-    "dev": "env-wrapper tsup --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "test": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
     "test:run": "NODE_OPTIONS=\"--max-old-space-size=8192\" env-wrapper jest --passWithNoTests",
