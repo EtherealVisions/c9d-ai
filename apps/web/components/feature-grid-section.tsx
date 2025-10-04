@@ -1,3 +1,4 @@
+import React from "react"
 import { ZapIcon, FileTextIcon, SearchIcon, Share2Icon, ShieldCheckIcon, BrainCircuit } from "lucide-react"
 import InteractiveCard from "./interactive-card" // Import the new component
 
