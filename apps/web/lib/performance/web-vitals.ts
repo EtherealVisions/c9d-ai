@@ -1,8 +1,8 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals'
 import { trackEvent } from '@/lib/analytics/events'
 
 export interface WebVitalsMetric {
-  name: 'CLS' | 'FID' | 'FCP' | 'LCP' | 'TTFB'
+  name: 'CLS' | 'INP' | 'FCP' | 'LCP' | 'TTFB'
   value: number
   rating: 'good' | 'needs-improvement' | 'poor'
   delta: number
@@ -12,7 +12,7 @@ export interface WebVitalsMetric {
 // Thresholds based on Google's Web Vitals recommendations
 const THRESHOLDS = {
   CLS: { good: 0.1, poor: 0.25 },
-  FID: { good: 100, poor: 300 },
+  INP: { good: 200, poor: 500 },
   FCP: { good: 1800, poor: 3000 },
   LCP: { good: 2500, poor: 4000 },
   TTFB: { good: 800, poor: 1800 }
@@ -65,11 +65,11 @@ export function reportWebVitals(onReport?: (metric: WebVitalsMetric) => void) {
     }
   }
 
-  getCLS(handleMetric)
-  getFID(handleMetric)
-  getFCP(handleMetric)
-  getLCP(handleMetric)
-  getTTFB(handleMetric)
+  onCLS(handleMetric)
+  onINP(handleMetric)
+  onFCP(handleMetric)
+  onLCP(handleMetric)
+  onTTFB(handleMetric)
 }
 
 // Resource loading performance utilities
