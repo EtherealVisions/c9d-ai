@@ -115,8 +115,6 @@ const nextConfig = {
     // Generate a unique build ID
     return Date.now().toString()
   },
-  // Skip generating static 404 page to avoid build errors
-  skipErrorGeneration: true,
   // Webpack configuration for optimization
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Optimize bundle size and performance
