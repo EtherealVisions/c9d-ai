@@ -42,7 +42,8 @@ export class PhaseTokenLoader {
       // Dynamic imports to avoid bundling in client code
       const path = await import('path');
       
-      const currentDir = process.cwd()
+      // Use a safe default in Edge Runtime
+      const currentDir = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'
       const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
       
       // 2. Check local .env.local
@@ -316,7 +317,8 @@ export class PhaseTokenLoader {
       const path = await import('path');
       const fs = await import('fs');
       
-      const currentDir = process.cwd()
+      // Use a safe default in Edge Runtime
+      const currentDir = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'
       const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
       const activeToken = await this.loadServiceToken(rootPath)
       

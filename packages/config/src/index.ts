@@ -7,8 +7,8 @@ export * from './app-config'
 
 // Check if we're in a Node.js environment
 const isNodeEnvironment = typeof process !== 'undefined' && 
-  process.versions && 
-  process.versions.node &&
+  process && 'versions' in process &&
+  process.versions && 'node' in process.versions &&
   typeof window === 'undefined'
 
 // Build-safe stubs for Phase.dev functionality
