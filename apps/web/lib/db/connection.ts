@@ -140,9 +140,15 @@ function createPostgresConnection() {
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
                      (process.env.VERCEL === '1' && process.env.CI === '1')
   
-  // In test environment or build time, return a mock connection to prevent real database attempts
-  if (nodeEnv === 'test' || isBuildTime) {
-    console.log('[Database] Test environment or build-time detected, using mock connection')
+  // In build time, return a mock connection to prevent real database attempts
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected, using mock connection')
+    return createMockConnection()
+  }
+  
+  // In test environment, return a mock connection to prevent real database attempts
+  if (nodeEnv === 'test') {
+    console.log('[Database] Test environment detected, using mock connection')
     return createMockConnection()
   }
   
@@ -308,9 +314,15 @@ export function createDrizzleDatabase() {
   const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
                      (process.env.VERCEL === '1' && process.env.CI === '1')
   
-  // In test environment or build time, return a mock database to prevent real database operations
-  if (nodeEnv === 'test' || isBuildTime) {
-    console.log('[Database] Test environment or build-time detected, using mock Drizzle database')
+  // In build time, return a mock database to prevent real database operations
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected, using mock Drizzle database')
+    return createMockDrizzleDatabase()
+  }
+  
+  // In test environment, return a mock database to prevent real database operations
+  if (nodeEnv === 'test') {
+    console.log('[Database] Test environment detected, using mock Drizzle database')
     return createMockDrizzleDatabase()
   }
   
