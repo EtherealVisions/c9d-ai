@@ -148,6 +148,14 @@ export class PhaseTokenLoader {
       return null;
     }
 
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
+      return null;
+    }
+
     try {
       // Dynamic imports to avoid bundling in client code
       const fs = await import('fs');
@@ -200,6 +208,14 @@ export class PhaseTokenLoader {
   private static async findWorkspaceRoot(startPath: string): Promise<string> {
     // Only run on server-side
     if (typeof window !== 'undefined') {
+      return startPath;
+    }
+
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
       return startPath;
     }
 
@@ -284,6 +300,14 @@ export class PhaseTokenLoader {
 
     // Only check file sources on server-side
     if (typeof window !== 'undefined') {
+      return sources;
+    }
+
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
       return sources;
     }
 

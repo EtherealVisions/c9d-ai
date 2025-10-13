@@ -411,6 +411,15 @@ export class EnvironmentFallbackManager {
       return result;
     }
 
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
+      console.log('[EnvironmentFallbackManager] Build-time detected - skipping file system access');
+      return result;
+    }
+
     // Determine which .env files to load based on environment
     const envFiles = this.getEnvFilesToLoad(environment)
     
