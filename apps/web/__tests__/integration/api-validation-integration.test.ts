@@ -26,10 +26,10 @@ import {
 import {
   createUserSchema,
   updateUserSchema,
-  userResponseSchema,
+  userApiResponseSchema,
   createOrganizationSchema,
   updateOrganizationSchema,
-  organizationResponseSchema,
+  organizationApiResponseSchema,
   apiResponseSchema,
   errorResponseSchema,
   paginationSchema,

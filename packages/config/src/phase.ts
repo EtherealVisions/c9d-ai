@@ -36,7 +36,7 @@ const DEFAULT_PHASE_CONFIG: Partial<PhaseConfig> = {
  * @param rootPath Root path to search for package.json
  * @returns Phase.dev app name or default
  */
-async function getPhaseAppNameFromPackageJson(rootPath: string = process.cwd()): Promise<string> {
+async function getPhaseAppNameFromPackageJson(rootPath: string = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'): Promise<string> {
   // Only run on server-side (Node.js environment)
   if (typeof window !== 'undefined') {
     console.warn('[Phase.dev] File system access not available in browser environment');

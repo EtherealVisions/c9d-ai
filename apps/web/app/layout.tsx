@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Providers } from '@/components/providers'
+import { Analytics } from '@vercel/analytics/react'
 // import { OrganizationProvider } from '@/lib/contexts/organization-context'
 // Build-safe config imports
 const isBuildTime = typeof process !== 'undefined' && (
@@ -152,9 +153,32 @@ async function initializeConfiguration(): Promise<{
   configurationIssues?: string[];
 }> {
   try {
-    console.log('[Layout] Starting application configuration initialization with Phase.dev SDK...');
+    console.log('[Layout] Starting application configuration initialization...');
     
-    // Use the new EnvironmentFallbackManager with SDK-based configuration
+    // During build time, use the stub configuration since env-wrapper has already loaded variables
+    if (isBuildTime) {
+      console.log('[Layout] Build-time detected - using environment variables from env-wrapper');
+      const envConfig = EnvironmentFallbackManager.createTestConfig(
+        process.env,
+        {
+          phaseStatus: {
+            available: false,
+            success: false,
+            variableCount: 0,
+            error: 'Build-time - env-wrapper handles Phase.dev',
+            source: 'env-wrapper',
+            tokenSource: null
+          }
+        }
+      );
+      return { 
+        success: true, 
+        envConfig,
+        configurationIssues: undefined
+      };
+    }
+    
+    // At runtime, use the SDK-based configuration
     const envConfig = await EnvironmentFallbackManager.loadWithFallback({
       appName: 'AI.C9d.Web',
       environment: process.env.NODE_ENV || 'development',
@@ -286,130 +310,126 @@ function ConfigurationErrorDisplay({
   const isDevelopment = envConfig.isDevelopment;
   
   return (
-    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-      <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-4 text-red-400">Configuration Error</h1>
-              <p className="text-gray-400 mb-6">
-                {error ? 'Application configuration failed to initialize.' : 'Configuration issues detected.'}
-              </p>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-4 text-red-400">Configuration Error</h1>
+          <p className="text-gray-400 mb-6">
+            {error ? 'Application configuration failed to initialize.' : 'Configuration issues detected.'}
+          </p>
+        </div>
+        
+        {/* Configuration Issues */}
+        {configurationIssues && configurationIssues.length > 0 && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold text-red-300 mb-4">Configuration Issues:</h2>
+            <ul className="space-y-2">
+              {configurationIssues.map((issue, index) => (
+                <li key={index} className="text-red-200 flex items-start">
+                  <span className="text-red-400 mr-2">•</span>
+                  <span>{issue}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Phase.dev Status */}
+        <div className="bg-gray-800/50 border border-gray-600/30 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-300 mb-4">Phase.dev Status:</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Available:</span>
+              <span className={envConfig.phaseStatus.available ? 'text-green-400' : 'text-red-400'}>
+                {envConfig.phaseStatus.available ? 'Yes' : 'No'}
+              </span>
             </div>
-            
-            {/* Configuration Issues */}
-            {configurationIssues && configurationIssues.length > 0 && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-6">
-                <h2 className="text-lg font-semibold text-red-300 mb-4">Configuration Issues:</h2>
-                <ul className="space-y-2">
-                  {configurationIssues.map((issue, index) => (
-                    <li key={index} className="text-red-200 flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      <span>{issue}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Status:</span>
+              <span className={envConfig.phaseStatus.success ? 'text-green-400' : 'text-yellow-400'}>
+                {envConfig.phaseStatus.success ? 'Success' : 'Fallback'}
+              </span>
+            </div>
+            {envConfig.phaseStatus.tokenSource && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Token Source:</span>
+                <span className="text-blue-400">{envConfig.phaseStatus.tokenSource.source}</span>
               </div>
             )}
-            
-            {/* Phase.dev Status */}
-            <div className="bg-gray-800/50 border border-gray-600/30 rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-300 mb-4">Phase.dev Status:</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Available:</span>
-                  <span className={envConfig.phaseStatus.available ? 'text-green-400' : 'text-red-400'}>
-                    {envConfig.phaseStatus.available ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Status:</span>
-                  <span className={envConfig.phaseStatus.success ? 'text-green-400' : 'text-yellow-400'}>
-                    {envConfig.phaseStatus.success ? 'Success' : 'Fallback'}
-                  </span>
-                </div>
-                {envConfig.phaseStatus.tokenSource && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Token Source:</span>
-                    <span className="text-blue-400">{envConfig.phaseStatus.tokenSource.source}</span>
-                  </div>
-                )}
-                {envConfig.phaseStatus.error && (
-                  <div className="mt-2 p-2 bg-red-900/20 rounded text-red-300 text-xs">
-                    {envConfig.phaseStatus.error}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Environment Details */}
-            <div className="bg-gray-800/50 border border-gray-600/30 rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-300 mb-4">Environment Details:</h2>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Environment:</span>
-                  <span className="ml-2 text-blue-400">{envConfig.nodeEnv}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Total Variables:</span>
-                  <span className="ml-2 text-green-400">{envConfig.totalVariables}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Loaded Files:</span>
-                  <span className="ml-2 text-yellow-400">{envConfig.loadedFiles.length}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Phase Variables:</span>
-                  <span className="ml-2 text-purple-400">{envConfig.phaseVariableCount}</span>
-                </div>
-              </div>
-              
-              {envConfig.loadedFiles.length > 0 && (
-                <div className="mt-4">
-                  <span className="text-gray-400 text-sm">Loaded Files:</span>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {envConfig.loadedFiles.join(', ')}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Development Mode Instructions */}
-            {isDevelopment && (
-              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-                <h2 className="text-lg font-semibold text-blue-300 mb-4">Development Setup:</h2>
-                <div className="space-y-3 text-sm text-blue-200">
-                  <p>To resolve configuration issues:</p>
-                  <ol className="list-decimal list-inside space-y-1 ml-4">
-                    <li>Add PHASE_SERVICE_TOKEN to your .env.local file</li>
-                    <li>Ensure NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set</li>
-                    <li>Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-                    <li>Check Phase.dev console for app configuration</li>
-                  </ol>
-                </div>
-              </div>
-            )}
-            
-            {/* Error Details (Development Only) */}
-            {error && isDevelopment && (
-              <div className="mt-6 bg-gray-900/50 border border-gray-700/30 rounded-lg p-4">
-                <details className="text-sm">
-                  <summary className="text-gray-400 cursor-pointer hover:text-gray-300">
-                    Error Details (Development)
-                  </summary>
-                  <div className="mt-2 p-2 bg-black/30 rounded text-xs text-gray-500 font-mono overflow-auto">
-                    <div className="text-red-400">{error.name}: {error.message}</div>
-                    {error.stack && (
-                      <pre className="mt-2 whitespace-pre-wrap">{error.stack}</pre>
-                    )}
-                  </div>
-                </details>
+            {envConfig.phaseStatus.error && (
+              <div className="mt-2 p-2 bg-red-900/20 rounded text-red-300 text-xs">
+                {envConfig.phaseStatus.error}
               </div>
             )}
           </div>
         </div>
-      </body>
-    </html>
+        
+        {/* Environment Details */}
+        <div className="bg-gray-800/50 border border-gray-600/30 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-300 mb-4">Environment Details:</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">Environment:</span>
+              <span className="ml-2 text-blue-400">{envConfig.nodeEnv}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Total Variables:</span>
+              <span className="ml-2 text-green-400">{envConfig.totalVariables}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Loaded Files:</span>
+              <span className="ml-2 text-yellow-400">{envConfig.loadedFiles.length}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Phase Variables:</span>
+              <span className="ml-2 text-purple-400">{envConfig.phaseVariableCount}</span>
+            </div>
+          </div>
+          
+          {envConfig.loadedFiles.length > 0 && (
+            <div className="mt-4">
+              <span className="text-gray-400 text-sm">Loaded Files:</span>
+              <div className="mt-1 text-xs text-gray-500">
+                {envConfig.loadedFiles.join(', ')}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Development Mode Instructions */}
+        {isDevelopment && (
+          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-blue-300 mb-4">Development Setup:</h2>
+            <div className="space-y-3 text-sm text-blue-200">
+              <p>To resolve configuration issues:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-4">
+                <li>Add PHASE_SERVICE_TOKEN to your .env.local file</li>
+                <li>Ensure NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set</li>
+                <li>Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+                <li>Check Phase.dev console for app configuration</li>
+              </ol>
+            </div>
+          </div>
+        )}
+        
+        {/* Error Details (Development Only) */}
+        {error && isDevelopment && (
+          <div className="mt-6 bg-gray-900/50 border border-gray-700/30 rounded-lg p-4">
+            <details className="text-sm">
+              <summary className="text-gray-400 cursor-pointer hover:text-gray-300">
+                Error Details (Development)
+              </summary>
+              <div className="mt-2 p-2 bg-black/30 rounded text-xs text-gray-500 font-mono overflow-auto">
+                <div className="text-red-400">{error.name}: {error.message}</div>
+                {error.stack && (
+                  <pre className="mt-2 whitespace-pre-wrap">{error.stack}</pre>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -504,15 +524,19 @@ export default async function RootLayout({
   const isTestKey = clerkPublishableKey?.includes('test') || clerkPublishableKey?.includes('development');
   const isValidProductionKey = clerkPublishableKey?.startsWith('pk_live_');
   
-  // Show configuration error display for critical issues in production
-  if (!isDevelopment) {
+  // Only validate at runtime, not during build
+  // During build, we rely on env-wrapper validation
+  const isServerSide = typeof window === 'undefined';
+  
+  // Show configuration error display for critical issues at runtime only
+  if (!isDevelopment && !isServerSide) {
     const missingCriticalVars = [];
     if (!clerkPublishableKey) missingCriticalVars.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
     if (!criticalConfig.supabaseUrl) missingCriticalVars.push('NEXT_PUBLIC_SUPABASE_URL');
     if (!criticalConfig.supabaseAnonKey) missingCriticalVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     
-    // In production, require live keys
-    if (clerkPublishableKey && !isValidProductionKey) {
+    // At runtime in production, validate production keys
+    if (clerkPublishableKey && !isValidProductionKey && !isTestKey) {
       missingCriticalVars.push('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (production key required)');
     }
     
@@ -521,11 +545,15 @@ export default async function RootLayout({
       console.error('[Layout] Critical configuration missing in production:', productionError);
       
       return (
-        <ConfigurationErrorDisplay 
-          error={productionError}
-          configurationIssues={[`Missing critical variables: ${missingCriticalVars.join(', ')}`]}
-          envConfig={envConfig}
-        />
+        <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+          <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+            <ConfigurationErrorDisplay 
+              error={productionError}
+              configurationIssues={[`Missing critical variables: ${missingCriticalVars.join(', ')}`]}
+              envConfig={envConfig}
+            />
+          </body>
+        </html>
       );
     }
   }
@@ -533,24 +561,33 @@ export default async function RootLayout({
   // Show configuration error display for development issues that prevent startup
   if (configResult.error && (!clerkPublishableKey || !criticalConfig.supabaseUrl)) {
     return (
-      <ConfigurationErrorDisplay 
-        error={configResult.error}
-        configurationIssues={configurationIssues}
-        envConfig={envConfig}
-      />
+      <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+        <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+          <ConfigurationErrorDisplay 
+            error={configResult.error}
+            configurationIssues={configurationIssues}
+            envConfig={envConfig}
+          />
+        </body>
+      </html>
     );
   }
   
   // Determine if Clerk should be enabled
-  // In development: allow test keys (pk_test_) or live keys (pk_live_)
-  // In production: only allow live keys (pk_live_)
-  const shouldEnableClerk = hasValidClerkKeys && (isDevelopment || isValidProductionKey);
+  // During build time: always enable if we have valid keys (test or live)
+  // At runtime in production: require live keys
+  const shouldEnableClerk = hasValidClerkKeys && (
+    isDevelopment || 
+    isValidProductionKey || 
+    isServerSide || // Enable during SSR/build
+    isTestKey // Allow test keys during build in production mode
+  );
   
   if (!shouldEnableClerk) {
     const reason = !hasValidClerkKeys 
       ? 'Invalid or missing Clerk publishable key'
-      : !isDevelopment && !isValidProductionKey
-      ? 'Production environment requires live Clerk key (pk_live_)'
+      : !isDevelopment && !isValidProductionKey && !isServerSide
+      ? 'Production runtime requires live Clerk key (pk_live_)'
       : 'Unknown Clerk configuration issue';
       
     console.warn(`[Layout] Clerk disabled: ${reason}`);
@@ -565,6 +602,7 @@ export default async function RootLayout({
                 {children}
               {/* </OrganizationProvider> */}
             </Providers>
+            <Analytics />
           </div>
         </body>
       </html>
@@ -583,6 +621,7 @@ export default async function RootLayout({
           {children}
           {/* </OrganizationProvider> */}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );

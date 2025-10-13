@@ -5,7 +5,9 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-  DATABASE_TABLES,
+  DATABASE_TABLES
+} from '../types'
+import {
   OnboardingSessionType,
   OnboardingSessionStatus,
   OnboardingStepType,
@@ -13,7 +15,7 @@ import {
   TeamInvitationStatus,
   OnboardingContentType,
   OnboardingMilestoneType
-} from '../types'
+} from '../onboarding-types'
 import type {
   User,
   Organization,

@@ -85,8 +85,19 @@ function getConfigValue(key: string): string | undefined {
  * Get database URL with proper fallback logic
  */
 function getDatabaseUrl(): string {
+  // Check if we're in build time
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
   // First try DATABASE_URL (direct PostgreSQL connection)
   const databaseUrl = getConfigValue('DATABASE_URL')
+  
+  // If we're at build time and the URL is a variable reference, return a mock URL
+  if (isBuildTime && databaseUrl && databaseUrl.startsWith('$')) {
+    console.log('[Database] Build-time detected with unexpanded variable, using mock URL')
+    return 'postgresql://mock:mock@localhost:5432/mock'
+  }
+  
   if (databaseUrl) {
     return databaseUrl
   }
@@ -95,10 +106,25 @@ function getDatabaseUrl(): string {
   const supabaseUrl = getConfigValue('NEXT_PUBLIC_SUPABASE_URL')
   const serviceRoleKey = getConfigValue('SUPABASE_SERVICE_ROLE_KEY')
   
+  // Check for unexpanded variables during build
+  if (isBuildTime && (
+    (supabaseUrl && supabaseUrl.startsWith('$')) || 
+    (serviceRoleKey && serviceRoleKey.startsWith('$'))
+  )) {
+    console.log('[Database] Build-time detected with unexpanded Supabase variables, using mock URL')
+    return 'postgresql://mock:mock@localhost:5432/mock'
+  }
+  
   if (supabaseUrl && serviceRoleKey) {
     // Extract project reference from Supabase URL
     const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '')
     return `postgresql://postgres:${serviceRoleKey}@db.${projectRef}.supabase.co:5432/postgres`
+  }
+  
+  // If we're at build time and no valid config, return mock URL
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected without database config, using mock URL')
+    return 'postgresql://mock:mock@localhost:5432/mock'
   }
   
   throw new Error(
@@ -111,6 +137,14 @@ function getDatabaseUrl(): string {
  */
 function createPostgresConnection() {
   const nodeEnv = getConfigValue('NODE_ENV') || 'development'
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  // In build time, return a mock connection to prevent real database attempts
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected, using mock connection')
+    return createMockConnection()
+  }
   
   // In test environment, return a mock connection to prevent real database attempts
   if (nodeEnv === 'test') {
@@ -277,6 +311,14 @@ export function getConnection(): postgres.Sql {
  */
 export function createDrizzleDatabase() {
   const nodeEnv = getConfigValue('NODE_ENV') || 'development'
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     (process.env.VERCEL === '1' && process.env.CI === '1')
+  
+  // In build time, return a mock database to prevent real database operations
+  if (isBuildTime) {
+    console.log('[Database] Build-time detected, using mock Drizzle database')
+    return createMockDrizzleDatabase()
+  }
   
   // In test environment, return a mock database to prevent real database operations
   if (nodeEnv === 'test') {

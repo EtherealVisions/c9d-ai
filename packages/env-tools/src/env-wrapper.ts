@@ -137,7 +137,7 @@ export async function loadPhaseSecrets(options: {
   appNamespace?: string;
   cwd?: string;
 } = {}): Promise<boolean> {
-  const token = process.env.PHASE_SERVICE_TOKEN;
+  let token = process.env.PHASE_SERVICE_TOKEN;
 
   if (!token || !token.trim()) {
     return false;
@@ -148,6 +148,26 @@ export async function loadPhaseSecrets(options: {
 
     // Debug: Log raw token info in CI
     const isCI = process.env.CI || process.env.VERCEL || process.env.GITHUB_ACTIONS;
+    
+    // Check if the token is a Vercel environment variable reference
+    if (token.startsWith('$') && token.length < 30) {
+      console.warn(chalk.yellow(`⚠️  Token appears to be an unexpanded Vercel variable: ${token}`));
+      
+      // In Vercel, environment variables might not be expanded properly during prebuild
+      // Try to get the actual value from a different source
+      const tokenVarName = token.substring(1); // Remove the $ prefix
+      const actualToken = process.env[tokenVarName];
+      
+      if (actualToken) {
+        console.log(chalk.gray(`  Found actual token value for ${tokenVarName}`));
+        token = actualToken;
+      } else {
+        console.error(chalk.red(`❌ Could not resolve Vercel environment variable ${token}`));
+        console.log(chalk.yellow('   Ensure the variable is set in Vercel dashboard'));
+        return false;
+      }
+    }
+    
     if (isCI) {
       console.log(chalk.gray(`  Raw token length: ${token.length}`));
       console.log(chalk.gray(`  Raw token starts with: "${token.substring(0, 15)}..."`));

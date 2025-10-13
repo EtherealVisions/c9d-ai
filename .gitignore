@@ -39,3 +39,9 @@ next-env.d.ts
 **/.tmp/
 
 **/coverage/
+# Test logs and evidence (may contain secrets)
+test-run-*.log
+test-evidence/
+*.test.log
+build-clean-cache-*.log
+typecheck-*.log

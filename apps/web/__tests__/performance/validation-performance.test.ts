@@ -20,9 +20,9 @@ import {
   createUserSchema,
   createOrganizationSchema,
   createRoleSchema,
-  createContentSchema,
+  CreateContent,
   createInvitationSchema,
-  businessRuleSchema,
+  // businessRuleSchema, // doesn't exist
   searchSchema,
   paginationSchema,
   apiResponseSchema
