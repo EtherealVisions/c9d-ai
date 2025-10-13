@@ -70,7 +70,7 @@ function getEnvFilesToLoad(nodeEnv: string): string[] {
  * @param rootPath Root path to search for .env files
  * @returns Result object with loaded config, files, and errors
  */
-async function loadEnvFiles(rootPath: string = process.cwd()): Promise<EnvLoadResult> {
+async function loadEnvFiles(rootPath: string = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'): Promise<EnvLoadResult> {
   const result: EnvLoadResult = {
     config: {},
     loadedFiles: [],

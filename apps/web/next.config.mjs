@@ -31,6 +31,8 @@ const nextConfig = {
 
     // Enable partial prerendering for better performance
     ppr: false, // Disabled for now, enable when stable
+    // Disable middleware prefetch to avoid edge runtime issues
+    middlewarePrefetch: 'flexible',
   },
   images: {
     unoptimized: false,
@@ -108,6 +110,11 @@ const nextConfig = {
   },
   // Output configuration for Vercel
   output: 'standalone',
+  // Disable static export for error pages to avoid Html import issues
+  generateBuildId: async () => {
+    // Generate a unique build ID
+    return Date.now().toString()
+  },
   // Webpack configuration for optimization
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Optimize bundle size and performance

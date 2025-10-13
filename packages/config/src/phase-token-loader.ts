@@ -42,7 +42,8 @@ export class PhaseTokenLoader {
       // Dynamic imports to avoid bundling in client code
       const path = await import('path');
       
-      const currentDir = process.cwd()
+      // Use a safe default in Edge Runtime
+      const currentDir = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'
       const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
       
       // 2. Check local .env.local
@@ -148,6 +149,14 @@ export class PhaseTokenLoader {
       return null;
     }
 
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
+      return null;
+    }
+
     try {
       // Dynamic imports to avoid bundling in client code
       const fs = await import('fs');
@@ -200,6 +209,14 @@ export class PhaseTokenLoader {
   private static async findWorkspaceRoot(startPath: string): Promise<string> {
     // Only run on server-side
     if (typeof window !== 'undefined') {
+      return startPath;
+    }
+
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
       return startPath;
     }
 
@@ -287,12 +304,21 @@ export class PhaseTokenLoader {
       return sources;
     }
 
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
+      return sources;
+    }
+
     try {
       // Dynamic imports to avoid bundling in client code
       const path = await import('path');
       const fs = await import('fs');
       
-      const currentDir = process.cwd()
+      // Use a safe default in Edge Runtime
+      const currentDir = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'
       const workspaceRoot = rootPath || await this.findWorkspaceRoot(currentDir)
       const activeToken = await this.loadServiceToken(rootPath)
       

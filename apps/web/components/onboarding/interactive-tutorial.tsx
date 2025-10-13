@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -376,14 +377,18 @@ export function InteractiveTutorial({
                   </Button>
                 )}
                 {tutorial.id === 'auth-basics' && (
-                  <Button onClick={() => window.location.href = '/sign-in'} data-testid="continue-to-signin-button">
-                    Continue to Sign In
-                  </Button>
+                  <Link href="/sign-in">
+                    <Button data-testid="continue-to-signin-button">
+                      Continue to Sign In
+                    </Button>
+                  </Link>
                 )}
                 {tutorial.id === 'signup-process' && (
-                  <Button onClick={() => window.location.href = '/sign-up'} data-testid="continue-to-signup-button">
-                    Continue to Sign Up
-                  </Button>
+                  <Link href="/sign-up">
+                    <Button data-testid="continue-to-signup-button">
+                      Continue to Sign Up
+                    </Button>
+                  </Link>
                 )}
               </div>
             </div>

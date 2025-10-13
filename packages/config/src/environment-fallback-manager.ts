@@ -109,7 +109,7 @@ export class EnvironmentFallbackManager {
     const {
       appName = 'AI.C9d.Web',
       environment = process.env.NODE_ENV || 'development',
-      rootPath = process.cwd(),
+      rootPath = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/',
       forceReload = false,
       enablePhaseIntegration = true,
       fallbackToLocal = true,
@@ -394,7 +394,7 @@ export class EnvironmentFallbackManager {
    * @param rootPath Root path to search for .env files
    * @returns Local environment configuration
    */
-  static async loadLocalEnvironment(environment: string = 'development', rootPath: string = process.cwd()): Promise<{
+  static async loadLocalEnvironment(environment: string = 'development', rootPath: string = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'): Promise<{
     variables: Record<string, string>
     loadedFiles: string[]
     errors: Array<{ file: string; error: string }>
@@ -408,6 +408,15 @@ export class EnvironmentFallbackManager {
     // Only run on server-side (Node.js environment)
     if (typeof window !== 'undefined') {
       console.warn('[EnvironmentFallbackManager] File system access not available in browser environment');
+      return result;
+    }
+
+    // Skip file loading during build time
+    if (typeof process !== 'undefined' && (
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      (process.env.VERCEL === '1' && process.env.CI === '1')
+    )) {
+      console.log('[EnvironmentFallbackManager] Build-time detected - skipping file system access');
       return result;
     }
 
@@ -425,7 +434,7 @@ export class EnvironmentFallbackManager {
       const { expand: dotenvExpand } = await import('dotenv-expand');
 
       // Get workspace root for loading root .env files
-      const currentDir = process.cwd()
+      const currentDir = typeof process !== 'undefined' && process.cwd ? process.cwd() : '/'
       let workspaceRoot: string
       
       try {

@@ -562,8 +562,10 @@ export function UserProfile({ className }: UserProfileProps) {
                       Your password is managed by Clerk. Use the button below to change your password or update security settings.
                     </p>
                     <div className="mt-4">
-                      <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
-                        Manage Password
+                      <Button variant="outline" asChild>
+                        <a href="https://accounts.clerk.dev" target="_blank" rel="noopener noreferrer">
+                          Manage Password
+                        </a>
                       </Button>
                     </div>
                   </div>
@@ -574,8 +576,10 @@ export function UserProfile({ className }: UserProfileProps) {
                       View and manage your active sessions across different devices.
                     </p>
                     <div className="mt-4">
-                      <Button variant="outline" onClick={() => window.open('https://accounts.clerk.dev', '_blank')}>
-                        Manage Sessions
+                      <Button variant="outline" asChild>
+                        <a href="https://accounts.clerk.dev" target="_blank" rel="noopener noreferrer">
+                          Manage Sessions
+                        </a>
                       </Button>
                     </div>
                   </div>

@@ -5,17 +5,168 @@
  * and middleware for easy importing throughout the application.
  */
 
-// Export all schemas
-export * from './schemas'
+import { z } from 'zod'
 
-// Export validation utilities
-export * from './utils'
+// Export schemas - explicit exports to avoid conflicts
+export {
+  // User schemas
+  createUserSchema,
+  updateUserSchema,
+  userApiResponseSchema,
+  selectUserSchema,
+  insertUserSchema,
+  userListResponseSchema,
+  createUserWithMembershipSchema,
+  bulkCreateUsersSchema,
+  userSearchSchema,
+  userPreferencesSchema,
+  
+  // Organization schemas
+  baseOrganizationSchema,
+  createOrganizationSchema,
+  updateOrganizationSchema,
+  organizationApiResponseSchema,
+  selectOrganizationSchema,
+  insertOrganizationSchema,
+  selectOrganizationMembershipSchema,
+  insertOrganizationMembershipSchema,
+  createOrganizationMembershipSchema,
+  updateOrganizationMembershipSchema,
+  
+  // Role schemas
+  selectRoleSchema,
+  insertRoleSchema,
+  createRoleSchema,
+  updateRoleSchema,
+  roleApiResponseSchema,
+  baseRoleSchema,
+  
+  // Permission schemas
+  selectPermissionSchema,
+  insertPermissionSchema,
+  createPermissionSchema,
+  updatePermissionSchema,
+  
+  // Invitation schemas
+  baseInvitationSchema,
+  createInvitationSchema,
+  updateInvitationSchema,
+  invitationApiResponseSchema,
+  
+  // Onboarding schemas
+  createOnboardingPathSchema,
+  updateOnboardingPathSchema,
+  createOnboardingStepSchema,
+  updateOnboardingStepSchema,
+  createOnboardingSessionSchema,
+  updateOnboardingSessionSchema,
+  updateUserProgressSchema,
+  createOnboardingContentSchema,
+  updateOnboardingContentSchema,
+  createOrganizationOnboardingConfigSchema,
+  updateOrganizationOnboardingConfigSchema,
+  
+  // Content schemas
+  CreateContent,
+  UpdateContent,
+  
+  // Auth schemas
+  signInSchema,
+  signUpSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  verifyEmailSchema,
+  twoFactorSchema,
+  
+  // Common schemas
+  paginationSchema,
+  sortSchema,
+  dateRangeSchema,
+  
+  // Response schemas
+  errorResponseSchema,
+  successResponseSchema,
+  apiResponseSchema,
+  
+  // Search schemas
+  UserSearch,
+  OrganizationSearch,
+  RoleSearch,
+  PermissionSearch,
+  
+  // Type exports
+  type User,
+  type Organization,
+  type Role,
+  type Permission,
+  type Invitation,
+  type UserInsert,
+  type UserUpdate,
+  type OrganizationInsert,
+  type OrganizationUpdate,
+  type RoleInsert,
+  type RoleUpdate,
+  type ApiResponse,
+  type SuccessResponse,
+  type ErrorResponse
+} from './schemas'
+
+// Export validation utilities - explicit exports to avoid conflicts
+export {
+  ValidationError,
+  ValidationResult,
+  ValidationErrorDetail,
+  safeValidate,
+  validateWithSchema,
+  createValidationError,
+  createValidationErrorResponse,
+  formatValidationErrors,
+  isValidationError,
+  mergeSchemas,
+  createApiResponseSchema,
+  createPaginatedResponseSchema,
+  transformZodError,
+  // Use utils version of these to avoid conflicts
+  createErrorResponse as createErrorResponseUtil,
+  createSuccessResponse as createSuccessResponseUtil
+} from './utils'
 
 // Export error handling
-export * from './errors'
+export {
+  AppError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ConflictError,
+  RateLimitError,
+  ExternalServiceError,
+  errorResponseSchema as errorSchema,
+  ErrorDetail,
+  BusinessRuleError,
+  PermissionError,
+  handleApiError,
+  isAppError,
+  createErrorResponse,
+  createNotFoundError,
+  createUnauthorizedError,
+  createForbiddenError,
+  createValidationErrorResponse,
+  createInternalServerError
+} from './errors'
 
 // Export middleware
-export * from './middleware'
+export {
+  validateRequest,
+  validateApiRequest,
+  withValidation,
+  RequestContext,
+  ValidationMiddlewareOptions,
+  ValidatedApiHandler,
+  createValidatedHandler,
+  validateSearchParams,
+  validateBody,
+  validateParams
+} from './middleware'
 
 // Re-export commonly used Zod utilities
 export { z } from 'zod'
@@ -23,13 +174,19 @@ export { z } from 'zod'
 // Re-export key types and classes for convenience
 export type {
   ValidationResult,
-  ValidationErrorDetail,
+  ValidationErrorDetail
+} from './utils'
+
+export type {
   ErrorDetail,
-  ErrorResponse,
+  ErrorResponse
+} from './errors'
+
+export type {
   RequestContext,
   ValidationMiddlewareOptions,
   ValidatedApiHandler
-} from './utils'
+} from './middleware'
 
 export {
   ValidationError,
