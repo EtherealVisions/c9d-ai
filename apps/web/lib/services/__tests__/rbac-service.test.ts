@@ -77,25 +77,6 @@ vi.mock('@/lib/db/schema/users', () => ({
     permissions: 'permissions'
   }
 }))
-    getRolesByOrganization: vi.fn(),
-    createRole: vi.fn(),
-    getAllPermissions: vi.fn(),
-    createPermission: vi.fn()
-  })),
-  database: {
-    getClient: () => ({
-      from: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      single: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis()
-    })
-  }
-}))
 
 // Mock the schemas module
 vi.mock('../../models/schemas', () => ({

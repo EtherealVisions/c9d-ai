@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals'
 import { 
   reportWebVitals, 
   measureResourceTiming,

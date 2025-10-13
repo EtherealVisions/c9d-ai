@@ -1,5 +1,29 @@
-import { vi } from 'vitest'
+import { vi, beforeAll, afterAll, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
+import { setupClerkMocks, cleanupTestData, createTestSupabaseClient } from './test-utils/setup-integration'
+
+// Setup Clerk mocks globally
+setupClerkMocks()
+
+// Global test client
+let testSupabaseClient: ReturnType<typeof createTestSupabaseClient>
+
+beforeAll(() => {
+  // Initialize test client
+  testSupabaseClient = createTestSupabaseClient()
+})
+
+afterAll(async () => {
+  // Cleanup test data
+  if (testSupabaseClient) {
+    await cleanupTestData(testSupabaseClient)
+  }
+})
+
+beforeEach(() => {
+  // Reset all mocks before each test
+  vi.clearAllMocks()
+})
 
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({

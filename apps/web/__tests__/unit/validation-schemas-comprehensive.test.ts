@@ -26,35 +26,35 @@ import {
   // User schemas
   createUserSchema,
   updateUserSchema,
-  userResponseSchema,
+  userApiResponseSchema,
   userPreferencesSchema,
   
   // Organization schemas
   createOrganizationSchema,
   updateOrganizationSchema,
-  organizationResponseSchema,
-  organizationMembershipSchema,
+  organizationApiResponseSchema,
+  selectOrganizationMembershipSchema,
   
   // Role schemas
   createRoleSchema,
   updateRoleSchema,
-  roleResponseSchema,
-  permissionSchema,
+  roleApiResponseSchema,
+  PermissionSearch,
   
   // Content schemas
-  createContentSchema,
-  updateContentSchema,
-  contentResponseSchema,
-  onboardingStepSchema,
+  CreateContent,
+  UpdateContent,
+  // contentResponseSchema, // This doesn't exist - remove
+  createOnboardingStepSchema,
   
   // Invitation schemas
   createInvitationSchema,
-  invitationResponseSchema,
-  teamInvitationSchema,
+  invitationApiResponseSchema,
+  baseInvitationSchema,
   
-  // Business rule schemas
-  businessRuleSchema,
-  validationRuleSchema,
+  // Business rule schemas - these don't exist, removing
+  // businessRuleSchema,
+  // validationRuleSchema,
   
   // Common schemas
   uuidSchema,
