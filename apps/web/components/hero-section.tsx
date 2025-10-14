@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowRightIcon, GitHubLogoIcon } from "@radix-ui/react-icons"
+import { ArrowRightIcon, GithubIcon } from "lucide-react"
 import Link from "next/link"
 import { trackHeroInteraction, trackCTA } from "@/lib/analytics/events"
 
@@ -34,7 +34,7 @@ export default function HeroSection() {
 
             {/* GitHub stars badge */}
             <div className="flex items-center justify-center gap-2 mt-6 mb-8">
-              <GitHubLogoIcon className="w-5 h-5 text-dify-gray-600" />
+              <GithubIcon className="w-5 h-5 text-dify-gray-600" />
               <span className="text-dify-gray-600">
                 <span className="font-semibold text-dify-gray-900">116.4k</span> stars on{" "}
                 <Link href="https://github.com/c9d-ai" className="text-dify-blue hover:underline">
