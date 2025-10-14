@@ -6,7 +6,7 @@ export default function AnnouncementBar() {
   // This component is simple enough to be a server component without dismissal.
 
   return (
-    <div className="bg-gradient-to-r from-dify-accent-primary to-dify-accent-secondary text-white py-2 px-4 sm:px-6 lg:px-8">
+    <div className="bg-dify-blue-light text-dify-blue py-3 px-4 sm:px-6 lg:px-8 border-b border-dify-gray-200">
       <div className="container mx-auto flex items-center justify-between">
         <p className="text-sm font-medium text-center flex-grow">
           Introducing the new C9D.AI platform - built for limitless insights.{" "}

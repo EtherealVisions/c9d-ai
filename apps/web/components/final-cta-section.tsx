@@ -4,7 +4,7 @@ import { CalendarCheckIcon } from "lucide-react"
 
 export default function FinalCtaSection() {
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-dify-bg-primary to-dify-bg-secondary relative overflow-hidden">
+    <section className="py-16 md:py-24 bg-dify-blue text-white relative overflow-hidden">
       {/* Subtle gradient orb */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-dify-gradient-radial opacity-10 blur-3xl pointer-events-none" />
       

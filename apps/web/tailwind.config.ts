@@ -54,33 +54,32 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
         // Dify-inspired Color Palette
-        "dify-bg-primary": "#0F0F1A", // Deep dark background
-        "dify-bg-secondary": "#1A1A2E", // Secondary dark background
-        "dify-bg-card": "#16161F", // Card background
-        "dify-bg-gradient-start": "#4F46E5", // Gradient start (indigo)
-        "dify-bg-gradient-end": "#7C3AED", // Gradient end (purple)
+        "dify-white": "#FFFFFF", // Primary background
+        "dify-gray-50": "#F9FAFB", // Light gray background
+        "dify-gray-100": "#F3F4F6", // Section backgrounds
+        "dify-gray-200": "#E5E7EB", // Borders
+        "dify-gray-300": "#D1D5DB", // Disabled states
+        "dify-gray-400": "#9CA3AF", // Muted text
+        "dify-gray-500": "#6B7280", // Secondary text
+        "dify-gray-600": "#4B5563", // Primary text light
+        "dify-gray-700": "#374151", // Primary text medium
+        "dify-gray-800": "#1F2937", // Primary text dark
+        "dify-gray-900": "#111827", // Primary text darkest
         
-        // Text colors
-        "dify-text-primary": "#FFFFFF", // Primary text
-        "dify-text-secondary": "#9CA3AF", // Secondary text (gray)
-        "dify-text-muted": "#6B7280", // Muted text
+        // Brand colors
+        "dify-blue": "#0055FF", // Primary blue accent
+        "dify-blue-light": "#E6F0FF", // Light blue background
+        "dify-blue-dark": "#0044CC", // Dark blue hover
         
-        // Accent colors
-        "dify-accent-primary": "#6366F1", // Primary accent (indigo)
-        "dify-accent-secondary": "#8B5CF6", // Secondary accent (purple)
-        "dify-accent-success": "#10B981", // Success green
-        "dify-accent-warning": "#F59E0B", // Warning amber
-        "dify-accent-error": "#EF4444", // Error red
+        // Status colors
+        "dify-green": "#10B981", // Success
+        "dify-amber": "#F59E0B", // Warning
+        "dify-red": "#EF4444", // Error
         
-        // Border and surface colors
-        "dify-border": "#2D2D3F", // Border color
-        "dify-surface-hover": "#1F1F2E", // Hover state
-        "dify-surface-active": "#2A2A3E", // Active state
-        
-        // Legacy colors (for backward compatibility)
-        "c9n-blue-dark": "#0F0F1A",
-        "c9n-blue-mid": "#1A1A2E",
-        "c9n-teal": "#10B981"
+        // Legacy colors (updated to match new scheme)
+        "c9n-blue-dark": "#111827",
+        "c9n-blue-mid": "#1F2937",
+        "c9n-teal": "#0055FF"
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -117,11 +116,9 @@ const config = {
         "gentle-float-3": "gentle-float 22s ease-in-out infinite",
       },
       backgroundImage: {
-        "dify-gradient": "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-        "dify-gradient-radial": "radial-gradient(circle at top left, #4F46E5, #7C3AED, #0F0F1A)",
-        "dify-card-gradient": "linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)",
-        "dify-text-gradient": "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-        "dify-hover-gradient": "linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)",
+        "dify-gradient": "linear-gradient(135deg, #0055FF 0%, #0044CC 100%)",
+        "dify-gradient-subtle": "linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%)",
+        "dify-section-gradient": "linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%)",
       },
       backgroundSize: {
         "200%": "200% 200%",

@@ -35,74 +35,74 @@
 
 @layer base {
   :root {
-    /* Dify-inspired design system */
-    --background: 240 33% 8%; /* #0F0F1A */
-    --foreground: 0 0% 100%; /* White text */
+    /* Dify-inspired light design system */
+    --background: 0 0% 100%; /* White */
+    --foreground: 224 71% 4%; /* Dark text */
 
-    --card: 240 21% 11%; /* #16161F */
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 224 71% 4%;
 
-    --popover: 240 21% 11%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 239 84% 67%; /* #6366F1 */
+    --primary: 221 100% 50%; /* #0055FF */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 252 83% 67%; /* #8B5CF6 */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%; /* #F3F4F6 */
+    --secondary-foreground: 224 71% 4%;
 
-    --muted: 240 21% 15%;
-    --muted-foreground: 220 9% 65%; /* #9CA3AF */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%; /* #6B7280 */
 
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%; /* #EF4444 */
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 17% 25%; /* #2D2D3F */
-    --input: 240 17% 25%;
-    --ring: 239 84% 67%;
-
-    --radius: 0.75rem;
-
-    /* Interactive card variables */
-    --mouse-x: 50%;
-    --mouse-y: 50%;
-    --glow-color: rgba(99, 102, 241, 0.15);
-  }
-
-  /* Ensure .dark class applies these variables if you plan to toggle themes.
-     If always dark, these can be merged into :root. */
-  .dark {
-    /* Same as root since we're using dark theme by default */
-    --background: 240 33% 8%;
-    --foreground: 0 0% 100%;
-
-    --card: 240 21% 11%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 240 21% 11%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 252 83% 67%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 240 21% 15%;
-    --muted-foreground: 220 9% 65%;
-
-    --accent: 239 84% 67%;
+    --accent: 221 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 17% 25%;
-    --input: 240 17% 25%;
-    --ring: 239 84% 67%;
+    --border: 220 13% 91%; /* #E5E7EB */
+    --input: 220 13% 91%;
+    --ring: 221 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Interactive variables */
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --glow-color: rgba(0, 85, 255, 0.1);
+  }
+
+  /* Ensure .dark class applies these variables if you plan to toggle themes.
+     If always dark, these can be merged into :root. */
+  /* Dark mode support (optional) */
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 221 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 213 31% 91%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 221 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 221 100% 50%;
   }
 }
 
@@ -112,8 +112,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Apply Dify-inspired dark background */
-    @apply bg-dify-bg-primary text-white;
+    /* Apply Dify-inspired light background */
+    @apply bg-white text-dify-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -125,19 +128,23 @@
   background-image: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
 }
 
-/* Animated Gradient Background */
-.animated-gradient-bg {
-  background: linear-gradient(-45deg, #0F0F1A, #1A1A2E, #4F46E5, #7C3AED);
-  background-size: 400% 400%;
-  animation: gradient-wave 15s ease infinite;
+/* Section styles */
+.section-padding {
+  @apply py-16 md:py-24 lg:py-32;
+}
+
+.section-alt {
+  @apply bg-dify-gray-50;
 }
 
 /* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .animated-gradient-bg {
-    animation: none;
-    background: #0F0F1A;
-  }
+/* Button styles */
+.btn-primary {
+  @apply bg-dify-blue text-white hover:bg-dify-blue-dark transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-white text-dify-gray-700 border border-dify-gray-200 hover:bg-dify-gray-50 transition-colors;
 }
 
 /* Styles for the interactive card glow effect */

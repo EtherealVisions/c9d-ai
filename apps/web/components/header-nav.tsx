@@ -49,12 +49,12 @@ export default function HeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 bg-dify-bg-primary/95 backdrop-blur-xl border-b border-dify-border">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-dify-gray-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0">
-              <C9DLogo className="h-8 w-auto text-white" />
+              <C9DLogo className="h-8 w-auto text-dify-gray-900" />
             </Link>
           </div>
           <nav className="hidden md:flex md:items-center md:space-x-2 lg:space-x-4">
@@ -64,18 +64,18 @@ export default function HeaderNav() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="text-sm font-medium text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover px-3 py-2 rounded-lg transition-all"
+                      className="text-sm font-medium text-dify-gray-600 hover:text-dify-gray-900 px-3 py-2 rounded-lg transition-all hover:bg-dify-gray-50"
                     >
                       {item.name}
                       <ChevronDownIcon className="ml-1 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-dify-bg-card border-dify-border text-white backdrop-blur-xl min-w-[180px]">
+                  <DropdownMenuContent className="bg-white border-dify-gray-200 shadow-lg min-w-[180px]">
                     {item.subItems.map((subItem) => (
                       <DropdownMenuItem
                         key={subItem.name}
                         asChild
-                        className="hover:bg-dify-surface-hover focus:bg-dify-surface-hover text-dify-text-secondary hover:text-white transition-colors"
+                        className="hover:bg-dify-gray-50 focus:bg-dify-gray-50 text-dify-gray-600 hover:text-dify-gray-900 transition-colors"
                       >
                         <Link href={subItem.href}>{subItem.name}</Link>
                       </DropdownMenuItem>
@@ -86,7 +86,7 @@ export default function HeaderNav() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-sm font-medium text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover px-3 py-2 rounded-lg transition-all"
+                  className="text-sm font-medium text-dify-gray-600 hover:text-dify-gray-900 px-3 py-2 rounded-lg transition-all hover:bg-dify-gray-50"
                 >
                   {item.name}
                 </Link>
@@ -97,7 +97,7 @@ export default function HeaderNav() {
             <Button
               variant="ghost"
               asChild
-              className="hidden md:inline-flex text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover"
+              className="hidden md:inline-flex text-dify-gray-600 hover:text-dify-gray-900 hover:bg-dify-gray-50 border border-dify-gray-200"
             >
               <Link href="/sign-in">
                 Sign In
@@ -105,7 +105,7 @@ export default function HeaderNav() {
             </Button>
             <Button 
               asChild
-              className="hidden md:inline-flex bg-gradient-to-r from-dify-accent-primary to-dify-accent-secondary text-white hover:opacity-90 font-medium shadow-lg hover:shadow-xl transition-all"
+              className="hidden md:inline-flex bg-dify-blue text-white hover:bg-dify-blue-dark font-medium transition-all"
             >
               <Link href="/sign-up">
                 Sign Up
@@ -116,7 +116,7 @@ export default function HeaderNav() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover"
+                className="text-dify-gray-600 hover:text-dify-gray-900 hover:bg-dify-gray-50"
               >
                 <MenuIcon className="h-6 w-6" />
                 <span className="sr-only">Open menu</span>
@@ -127,7 +127,7 @@ export default function HeaderNav() {
       </div>
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-dify-border bg-dify-bg-secondary">
+        <div className="md:hidden border-t border-dify-gray-200 bg-white">
           <nav className="space-y-1 px-2 py-3 sm:px-3">
             {navItems.map((item) => (
               <div key={item.name}>
@@ -136,18 +136,18 @@ export default function HeaderNav() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-base font-medium text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover"
+                        className="w-full justify-start text-base font-medium text-dify-gray-600 hover:text-dify-gray-900 hover:bg-dify-gray-50"
                       >
                         {item.name}
                         <ChevronDownIcon className="ml-auto h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[calc(100vw-2rem)] bg-dify-bg-card border-dify-border text-white backdrop-blur-xl">
+                    <DropdownMenuContent className="w-[calc(100vw-2rem)] bg-white border-dify-gray-200 shadow-lg">
                       {item.subItems.map((subItem) => (
                         <DropdownMenuItem
                           key={subItem.name}
                           asChild
-                          className="hover:bg-dify-surface-hover focus:bg-dify-surface-hover text-dify-text-secondary hover:text-white transition-colors"
+                          className="hover:bg-dify-gray-50 focus:bg-dify-gray-50 text-dify-gray-600 hover:text-dify-gray-900 transition-colors"
                         >
                           <Link href={subItem.href}>{subItem.name}</Link>
                         </DropdownMenuItem>
@@ -157,7 +157,7 @@ export default function HeaderNav() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="block rounded-lg px-3 py-2 text-base font-medium text-dify-text-secondary hover:text-white hover:bg-dify-surface-hover transition-all"
+                    className="block rounded-lg px-3 py-2 text-base font-medium text-dify-gray-600 hover:text-dify-gray-900 hover:bg-dify-gray-50 transition-all"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
@@ -165,7 +165,7 @@ export default function HeaderNav() {
                 )}
               </div>
             ))}
-            <div className="border-t border-dify-border pt-4 mt-4 space-y-2">
+            <div className="border-t border-dify-gray-200 pt-4 mt-4 space-y-2">
               <Button
                 variant="ghost"
                 asChild
@@ -178,7 +178,7 @@ export default function HeaderNav() {
               </Button>
               <Button 
                 asChild
-                className="w-full bg-gradient-to-r from-dify-accent-primary to-dify-accent-secondary text-white hover:opacity-90 font-medium shadow-lg"
+                className="w-full bg-dify-blue text-white hover:bg-dify-blue-dark font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Link href="/sign-up">
