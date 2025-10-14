@@ -59,7 +59,7 @@ const C9_CAPABILITIES: C9Capability[] = [
     tagline: 'Coordinating patterns across time, space, and data',
     description: 'Turn raw data into foresight with APIs for correlation, forecasting, and anomaly detection',
     icon: BrainCircuitIcon,
-    gradient: { from: '#7B2CBF', to: '#E71D73', direction: 'to-br' },
+    gradient: { from: '#6366F1', to: '#8B5CF6', direction: 'to-br' },
     keyFeatures: [
       'Entity & temporal correlation APIs',
       'Contextual forecasting & predictive models',
@@ -93,7 +93,7 @@ const C9_CAPABILITIES: C9Capability[] = [
     tagline: 'AI that represents your brand, your way',
     description: 'Create branded AI entities that embody your organization with configurable tone and knowledge',
     icon: UserCheckIcon,
-    gradient: { from: '#00B2FF', to: '#2CE4B8', direction: 'to-br' },
+    gradient: { from: '#8B5CF6', to: '#6366F1', direction: 'to-br' },
     keyFeatures: [
       'Personified AI models for individuals or organizations',
       'Brand-configurable tone, style, and knowledge base',
@@ -127,7 +127,7 @@ const C9_CAPABILITIES: C9Capability[] = [
     tagline: 'Smarter AI, built for your industry',
     description: 'Industry-specific AI models with deep vertical knowledge and compliance awareness',
     icon: BuildingIcon,
-    gradient: { from: '#FFD700', to: '#AFFF3C', direction: 'to-br' },
+    gradient: { from: '#6366F1', to: '#10B981', direction: 'to-br' },
     keyFeatures: [
       'Pre-trained models for specific industries',
       'Compliance-aware reasoning and outputs',
@@ -161,7 +161,7 @@ const C9_CAPABILITIES: C9Capability[] = [
     tagline: 'Coordinate people, processes, and AI',
     description: 'Multi-agent collaboration APIs that bring together human and AI intelligence',
     icon: WorkflowIcon,
-    gradient: { from: '#7B2CBF', to: '#00B2FF', direction: 'to-br' },
+    gradient: { from: '#10B981', to: '#6366F1', direction: 'to-br' },
     keyFeatures: [
       'Multi-agent task coordination and delegation',
       'Human-in-the-loop workflow automation',
@@ -195,7 +195,7 @@ const C9_CAPABILITIES: C9Capability[] = [
     tagline: 'Turn your data into stories and strategy',
     description: 'Transform complex data into compelling narratives and strategic insights',
     icon: BookOpenIcon,
-    gradient: { from: '#E71D73', to: '#FFD700', direction: 'to-br' },
+    gradient: { from: '#F59E0B', to: '#EF4444', direction: 'to-br' },
     keyFeatures: [
       'Automated report generation from data',
       'Scenario simulation and what-if analysis',

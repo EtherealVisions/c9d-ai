@@ -15,7 +15,7 @@ import PerformanceMonitor from "@/components/performance-monitor"
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen bg-c9n-blue-dark text-gray-200">
+    <div className="flex flex-col min-h-screen bg-dify-bg-primary text-white">
       <PerformanceMonitor />
       <AnnouncementBar />
       <HeaderNav />
