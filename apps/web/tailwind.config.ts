@@ -53,22 +53,33 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // C9D.AI Specific Colors (keeping existing for reference, can be merged/aliased)
-        "c9n-blue-dark": "#0A192F", // Existing dark background
-        "c9n-blue-mid": "#0F203A", // Existing slightly lighter dark blue
-        "c9n-teal": "#2CE4B8", // Existing accent teal
-
-        // Windsurf Inspired Palette
-        "windsurf-purple-deep": "#300D4F", // Deep purple for backgrounds or text
-        "windsurf-purple-vibrant": "#7B2CBF", // A vibrant purple
-        "windsurf-pink-hot": "#E71D73", // Hot pink accent
-        "windsurf-pink-light": "#FDEFF5", // Very light pink for backgrounds
-        "windsurf-blue-electric": "#00B2FF", // Electric blue accent
-        "windsurf-yellow-bright": "#FFD700", // Bright yellow accent
-        "windsurf-green-lime": "#AFFF3C", // Lime green accent
-        "windsurf-off-white": "#F7F9FA", // Off-white/light beige
-        "windsurf-gray-light": "#E0E6ED", // Light gray for borders or subtle text
-        "windsurf-gray-medium": "#9FB3C8", // Medium gray
+        // Dify-inspired Color Palette
+        "dify-white": "#FFFFFF", // Primary background
+        "dify-gray-50": "#F9FAFB", // Light gray background
+        "dify-gray-100": "#F3F4F6", // Section backgrounds
+        "dify-gray-200": "#E5E7EB", // Borders
+        "dify-gray-300": "#D1D5DB", // Disabled states
+        "dify-gray-400": "#9CA3AF", // Muted text
+        "dify-gray-500": "#6B7280", // Secondary text
+        "dify-gray-600": "#4B5563", // Primary text light
+        "dify-gray-700": "#374151", // Primary text medium
+        "dify-gray-800": "#1F2937", // Primary text dark
+        "dify-gray-900": "#111827", // Primary text darkest
+        
+        // Brand colors
+        "dify-blue": "#0055FF", // Primary blue accent
+        "dify-blue-light": "#E6F0FF", // Light blue background
+        "dify-blue-dark": "#0044CC", // Dark blue hover
+        
+        // Status colors
+        "dify-green": "#10B981", // Success
+        "dify-amber": "#F59E0B", // Warning
+        "dify-red": "#EF4444", // Error
+        
+        // Legacy colors (updated to match new scheme)
+        "c9n-blue-dark": "#111827",
+        "c9n-blue-mid": "#1F2937",
+        "c9n-teal": "#0055FF"
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -105,10 +116,9 @@ const config = {
         "gentle-float-3": "gentle-float 22s ease-in-out infinite",
       },
       backgroundImage: {
-        "purple-pink-gradient": "linear-gradient(to right, #7B2CBF, #E71D73)",
-        "blue-teal-gradient": "linear-gradient(to right, #00B2FF, #2CE4B8)",
-        "yellow-lime-gradient": "linear-gradient(to right, #FFD700, #AFFF3C)",
-        "colorful-feature-gradient": "linear-gradient(135deg, #7B2CBF 0%, #E71D73 33%, #FFD700 66%, #2CE4B8 100%)",
+        "dify-gradient": "linear-gradient(135deg, #0055FF 0%, #0044CC 100%)",
+        "dify-gradient-subtle": "linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%)",
+        "dify-section-gradient": "linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%)",
       },
       backgroundSize: {
         "200%": "200% 200%",

@@ -35,73 +35,74 @@
 
 @layer base {
   :root {
-    /* Define light theme variables if needed, or keep dark as default */
-    --background: 220 40% 5%; /* #0A192F approx */
-    --foreground: 210 20% 90%; /* Light gray for text */
+    /* Dify-inspired light design system */
+    --background: 0 0% 100%; /* White */
+    --foreground: 224 71% 4%; /* Dark text */
 
-    --card: 220 30% 10%;
-    --card-foreground: 210 20% 90%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 224 71% 4%;
 
-    --popover: 220 40% 5%;
-    --popover-foreground: 210 20% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 160 70% 50%; /* Teal #2CE4B8 approx */
-    --primary-foreground: 220 40% 5%; /* Dark blue for text on teal */
+    --primary: 221 100% 50%; /* #0055FF */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 20%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 220 14% 96%; /* #F3F4F6 */
+    --secondary-foreground: 224 71% 4%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 210 20% 60%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%; /* #6B7280 */
 
-    --accent: 160 70% 50%;
-    --accent-foreground: 220 40% 5%;
+    --accent: 221 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 25%; /* Slightly lighter border for dark theme */
-    --input: 220 20% 25%;
-    --ring: 160 70% 50%; /* Teal for rings */
+    --border: 220 13% 91%; /* #E5E7EB */
+    --input: 220 13% 91%;
+    --ring: 221 100% 50%;
 
     --radius: 0.5rem;
 
-    /* Default mouse position for cards if JS hasn't run or for SSR */
+    /* Interactive variables */
     --mouse-x: 50%;
     --mouse-y: 50%;
-    --glow-color: rgba(255, 255, 255, 0.1);
+    --glow-color: rgba(0, 85, 255, 0.1);
   }
 
   /* Ensure .dark class applies these variables if you plan to toggle themes.
      If always dark, these can be merged into :root. */
+  /* Dark mode support (optional) */
   .dark {
-    --background: 220 40% 5%; /* #0A192F approx */
-    --foreground: 210 20% 90%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 220 30% 10%;
-    --card-foreground: 210 20% 90%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 220 40% 5%;
-    --popover-foreground: 210 20% 90%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 160 70% 50%;
-    --primary-foreground: 220 40% 5%;
+    --primary: 221 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 20%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 210 20% 60%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 160 70% 50%;
-    --accent-foreground: 220 40% 5%;
+    --accent: 221 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72.2% 50.6%; /* Brighter destructive for dark theme */
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 25%;
-    --input: 220 20% 25%;
-    --ring: 160 70% 50%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 221 100% 50%;
   }
 }
 
@@ -111,8 +112,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Apply a default dark background directly if not using ThemeProvider */
-    @apply bg-c9n-blue-dark text-gray-200;
+    /* Apply Dify-inspired light background */
+    @apply bg-white text-dify-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -124,19 +128,23 @@
   background-image: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
 }
 
-/* Animated Gradient Background */
-.animated-gradient-bg {
-  background: linear-gradient(-45deg, #0a192f, #300d4f, #0f203a, #7b2cbf);
-  background-size: 400% 400%;
-  animation: gradient-wave 15s ease infinite;
+/* Section styles */
+.section-padding {
+  @apply py-16 md:py-24 lg:py-32;
+}
+
+.section-alt {
+  @apply bg-dify-gray-50;
 }
 
 /* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .animated-gradient-bg {
-    animation: none;
-    background: #0a192f;
-  }
+/* Button styles */
+.btn-primary {
+  @apply bg-dify-blue text-white hover:bg-dify-blue-dark transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-white text-dify-gray-700 border border-dify-gray-200 hover:bg-dify-gray-50 transition-colors;
 }
 
 /* Styles for the interactive card glow effect */

@@ -545,8 +545,8 @@ export default async function RootLayout({
       console.error('[Layout] Critical configuration missing in production:', productionError);
       
       return (
-        <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-          <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+        <html lang="en">
+          <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
             <ConfigurationErrorDisplay 
               error={productionError}
               configurationIssues={[`Missing critical variables: ${missingCriticalVars.join(', ')}`]}
@@ -561,8 +561,8 @@ export default async function RootLayout({
   // Show configuration error display for development issues that prevent startup
   if (configResult.error && (!clerkPublishableKey || !criticalConfig.supabaseUrl)) {
     return (
-      <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-        <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+      <html lang="en">
+        <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
           <ConfigurationErrorDisplay 
             error={configResult.error}
             configurationIssues={configurationIssues}
@@ -593,8 +593,8 @@ export default async function RootLayout({
     console.warn(`[Layout] Clerk disabled: ${reason}`);
     
     return (
-      <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-        <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+      <html lang="en">
+        <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
           <div className="min-h-screen">
             <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
             <Providers>
@@ -613,8 +613,8 @@ export default async function RootLayout({
   console.log(`[Layout] Enabling Clerk authentication with ${isTestKey ? 'test' : 'live'} key`);
   
   return (
-    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-      <body className={`${inter.className} bg-c9n-blue-dark text-gray-200 antialiased`}>
+    <html lang="en">
+      <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
         <DevelopmentBanner envConfig={envConfig} configurationIssues={configurationIssues} />
         <Providers clerkPublishableKey={clerkPublishableKey}>
           {/* <OrganizationProvider> */}

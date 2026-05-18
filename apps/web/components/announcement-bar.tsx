@@ -6,12 +6,12 @@ export default function AnnouncementBar() {
   // This component is simple enough to be a server component without dismissal.
 
   return (
-    <div className="bg-[#2CE4B8] text-[#0A192F] py-2 px-4 sm:px-6 lg:px-8">
+    <div className="bg-dify-blue-light text-dify-blue py-3 px-4 sm:px-6 lg:px-8 border-b border-dify-gray-200">
       <div className="container mx-auto flex items-center justify-between">
         <p className="text-sm font-medium text-center flex-grow">
           Introducing the new C9D.AI platform - built for limitless insights.{" "}
-          <Link href="/learn-more" className="font-bold underline hover:opacity-80">
-            LEARN MORE
+          <Link href="/learn-more" className="font-semibold underline underline-offset-4 hover:no-underline transition-all">
+            Learn More →
           </Link>
         </p>
         {/* <Button variant="ghost" size="sm" className="text-[#0A192F] hover:bg-teal-400/50 -mr-2">

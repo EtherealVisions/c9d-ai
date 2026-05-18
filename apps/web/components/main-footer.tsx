@@ -34,33 +34,33 @@ const footerLinks = {
 
 export default function MainFooter() {
   return (
-    <footer className="bg-[#061222] text-gray-400 border-t border-gray-700/50">
+    <footer className="bg-dify-gray-50 text-dify-gray-600 border-t border-dify-gray-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 xl:gap-12">
           <div className="col-span-2 lg:col-span-1 mb-8 lg:mb-0">
             <Link href="/" className="inline-block mb-4">
-              <C9DLogo className="h-8 w-auto text-white" />
+              <C9DLogo className="h-8 w-auto text-dify-gray-900" />
             </Link>
-            <p className="text-sm">Leveraging AI to bring you relevant information and better analysis.</p>
+            <p className="text-sm text-dify-gray-500">Leveraging AI to bring you relevant information and better analysis.</p>
             <div className="flex space-x-4 mt-6">
-              <Link href="#" className="hover:text-[#2CE4B8]">
+              <Link href="#" className="hover:text-dify-blue transition-colors">
                 <GithubIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="hover:text-[#2CE4B8]">
+              <Link href="#" className="hover:text-dify-blue transition-colors">
                 <TwitterIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="hover:text-[#2CE4B8]">
+              <Link href="#" className="hover:text-dify-blue transition-colors">
                 <LinkedinIcon className="h-5 w-5" />
               </Link>
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase">Product</h3>
+            <h3 className="text-sm font-semibold text-dify-gray-900 tracking-wider uppercase">Product</h3>
             <ul role="list" className="mt-4 space-y-2">
               {footerLinks.product.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm hover:text-[#2CE4B8]">
+                  <Link href={item.href} className="text-sm hover:text-dify-gray-900 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -69,11 +69,11 @@ export default function MainFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase">Company</h3>
+            <h3 className="text-sm font-semibold text-dify-gray-900 tracking-wider uppercase">Company</h3>
             <ul role="list" className="mt-4 space-y-2">
               {footerLinks.company.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm hover:text-[#2CE4B8]">
+                  <Link href={item.href} className="text-sm hover:text-dify-gray-900 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -82,11 +82,11 @@ export default function MainFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase">Resources</h3>
+            <h3 className="text-sm font-semibold text-dify-gray-900 tracking-wider uppercase">Resources</h3>
             <ul role="list" className="mt-4 space-y-2">
               {footerLinks.resources.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm hover:text-[#2CE4B8]">
+                  <Link href={item.href} className="text-sm hover:text-dify-gray-900 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -95,11 +95,11 @@ export default function MainFooter() {
           </div>
 
           <div className="mt-8 md:mt-0 col-span-2 md:col-span-1">
-            <h3 className="text-sm font-semibold text-gray-200 tracking-wider uppercase">Legal</h3>
+            <h3 className="text-sm font-semibold text-dify-gray-900 tracking-wider uppercase">Legal</h3>
             <ul role="list" className="mt-4 space-y-2">
               {footerLinks.legal.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm hover:text-[#2CE4B8]">
+                  <Link href={item.href} className="text-sm hover:text-dify-gray-900 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -108,7 +108,7 @@ export default function MainFooter() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-gray-700 pt-8 text-sm text-center">
+        <div className="mt-12 border-t border-dify-gray-200 pt-8 text-sm text-center text-dify-gray-500">
           <p>&copy; {new Date().getFullYear()} C9D.AI Corporation. All rights reserved.</p>
         </div>
       </div>
