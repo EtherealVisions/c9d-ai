@@ -89,19 +89,24 @@
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
 - [ ] 11. Optimize performance for Core Web Vitals and Vercel deployment
+  - Configure Next.js App Router for landing page with proper metadata and SEO
+  - Implement Vercel edge functions for analytics tracking (app/api/analytics/track/route.ts)
   - Audit and optimize existing Next.js Image components for better LCP scores
   - Implement lazy loading for below-the-fold sections and components including C9 capability showcase
-  - Add performance monitoring with Web Vitals tracking and reporting
+  - Add performance monitoring with Web Vitals tracking and reporting using @vercel/analytics
   - Optimize animation performance using CSS transforms and will-change properties for capability cards
   - Implement resource hints (preload, prefetch) for critical assets and capability-specific resources
+  - Configure vercel.json for proper function timeouts and headers
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 12. Create dynamic content management system with C9 capability content support
-  - Build content management utilities for updating landing page sections without code changes
+- [ ] 12. Create dynamic content management system with Supabase integration and C9 capability content support
+  - Create Supabase schema for landing_content and landing_content_versions tables with RLS policies
+  - Build LandingContentService for content CRUD operations using real Supabase client
+  - Implement Redis caching layer with LandingCacheService for performance optimization
   - Create TypeScript interfaces for content models (hero content, C9 capabilities, features, testimonials)
   - Implement content validation and type safety for dynamic content updates including capability-specific content
   - Add content versioning system for A/B testing different messaging and capability presentations
-  - Create admin interface for content management using existing admin components
+  - Build content preview and rollback functionality
   - Include capability-specific taglines, use cases, and API documentation management
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
@@ -131,11 +136,54 @@
   - Test different approaches to presenting the coordinated AI capabilities message
   - _Requirements: 6.1, 6.2, 6.4, 7.4_
 
-- [ ] 16. Implement comprehensive testing and quality assurance with C9 capability coverage
-  - Create unit tests for all landing page components using Vitest and Testing Library including C9 capability showcase
-  - Build integration tests for conversion tracking and analytics functionality across capability interactions
-  - Implement E2E tests for critical user journeys (hero CTA, capability exploration, contact forms, API documentation access)
-  - Add visual regression testing for design consistency across devices and capability presentations
-  - Create performance testing suite for Core Web Vitals monitoring including capability-heavy sections
-  - Test capability-specific user flows and conversion paths
+- [ ] 16. Implement comprehensive testing and quality assurance with 100% pass rate requirement
+- [ ] 16.1 Create unit tests for landing page services and components
+  - Write unit tests for LandingContentService with mocked Supabase client
+  - Write unit tests for LandingCacheService with mocked Redis client
+  - Test all C9 capability showcase components with Testing Library
+  - Test hero section, CTA components, and conversion tracking utilities
+  - Achieve 100% coverage for service layer (lib/services/landing-content-service.ts)
+  - Achieve 85% coverage for component layer
+  - All unit tests MUST pass at 100% success rate
+  - _Requirements: 6.3, 9.5_
+
+- [ ] 16.2 Build integration tests with real Supabase and proper data lifecycle management
+  - Create TestDataManager class for seed data creation and cleanup
+  - Write integration tests for LandingContentService using REAL Supabase connection
+  - Test content creation, retrieval, update, and deletion with real database
+  - Test content versioning and rollback functionality with real data
+  - Implement beforeAll hooks to seed test data with unique identifiers
+  - Implement afterAll hooks to clean up ALL test data (no datastore tainting)
+  - Ensure tests are idempotent and support parallel execution
+  - All integration tests MUST pass at 100% success rate
+  - All integration tests MUST use real services (Supabase), NOT mocks
+  - _Requirements: 6.3, 11.5_
+
+- [ ] 16.3 Implement E2E tests with Clerk authentication and complete data lifecycle
+  - Setup Clerk testing using @clerk/testing/playwright following official guidelines
+  - Create E2E test for complete landing page user journey (view all capabilities, click CTAs)
+  - Create E2E test for capability-specific engagement paths (Insight, Persona, etc.)
+  - Create E2E test for conversion tracking and analytics integration
+  - Each E2E test MUST manage its own seed data in beforeEach hook
+  - Each E2E test MUST clean up its seed data in afterEach hook
+  - Ensure E2E tests are idempotent and can run in parallel
+  - All E2E tests MUST follow Clerk authentication methodology
+  - All E2E tests MUST pass at 100% success rate
+  - _Requirements: 6.3, 6.5_
+
+- [ ] 16.4 Add visual regression and performance testing
+  - Create visual regression tests for design consistency across devices
+  - Test all five C9 capability card presentations
+  - Create performance testing suite for Core Web Vitals monitoring
+  - Test animation performance and frame rates
+  - Test bundle size and loading performance
+  - _Requirements: 9.5_
+
+- [ ] 16.5 Validate test infrastructure and success criteria
+  - Verify all tests pass at 100% success rate
+  - Verify integration tests use real Supabase (no mocks)
+  - Verify E2E tests use Clerk authentication properly
+  - Verify all tests clean up their own data
+  - Verify tests support parallel execution
+  - Run full test suite to confirm 100% pass rate
   - _Requirements: 6.3, 6.5, 9.5_

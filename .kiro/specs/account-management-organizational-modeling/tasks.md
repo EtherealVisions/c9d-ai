@@ -176,13 +176,120 @@ The feature is production-ready and meets all requirements specified in the requ
   - Write component tests for persona-specific UI variations
   - _Requirements: 1.4, 2.4, 4.3, 7.4_
 
-## Final Implementation Status
+## Additional Tasks for Architectural Alignment
 
-🎉 **FEATURE COMPLETE** - All tasks for the Account Management & Organizational Modeling feature have been successfully implemented and tested.
+- [ ] 21. Implement Vercel-optimized deployment architecture
+  - Configure edge middleware for authentication checks at Vercel Edge Network
+  - Optimize serverless functions with proper runtime and timeout settings
+  - Integrate Phase.dev for environment variable management in Vercel
+  - Set up Redis (Upstash) for caching in serverless environment
+  - Configure Vercel deployment settings (vercel.json) for optimal performance
+  - _Requirements: All requirements (deployment infrastructure)_
 
-### ✅ **Comprehensive Implementation Achieved**
+- [ ] 22. Implement Redis caching layer with Upstash
+  - Install and configure Upstash Redis client for Vercel compatibility
+  - Implement CacheService with get/set/invalidate operations
+  - Add permission caching with 5-minute TTL and event-based invalidation
+  - Add resource caching (agents/datasets) with 10-minute TTL
+  - Add membership caching with 15-minute TTL
+  - Write unit tests for cache operations and invalidation logic
+  - _Requirements: 4.1, 6.4, 7.1, 7.2 (performance optimization)_
 
-The Account Management & Organizational Modeling feature is now production-ready with:
+- [ ] 23. Implement permission refresh mechanism
+  - Create PermissionRefreshService for real-time permission updates
+  - Implement WebSocket or polling-based permission change notifications
+  - Add cache invalidation on role assignment/revocation
+  - Update OrganizationContextProvider with refreshContext method
+  - Ensure permission changes apply immediately without re-authentication
+  - Write integration tests for permission refresh scenarios
+  - _Requirements: 4.1, 4.2, 6.4_
+
+- [ ] 24. Implement resource access management service
+  - Create ResourceAccessService for agent and dataset filtering
+  - Implement getAvailableAgents based on organizational context
+  - Implement getAvailableDatasets based on organizational context
+  - Add resource association with organizations on creation
+  - Implement immediate resource access revocation on membership changes
+  - Write unit tests for resource filtering logic
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+- [ ] 25. Enhance audit logging with security event detection
+  - Add severity levels (info, warning, error, critical) to audit logs
+  - Implement security event flagging for tenant violations
+  - Create database indexes for efficient audit log queries
+  - Add alert generation for critical security events
+  - Implement audit log resilience (service continues if logging fails)
+  - Write tests for audit logging under failure conditions
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
+- [ ] 26. Implement test data lifecycle management utilities
+  - Create TestContext factory with unique identifier generation
+  - Implement createTestContext with user/org/membership creation
+  - Implement cleanup functions for complete test data removal
+  - Add timestamp and random string generation for parallel execution safety
+  - Create test utilities for idempotent test design
+  - Write verification tests for test data lifecycle
+  - _Requirements: All requirements (testing infrastructure)_
+
+- [ ] 27. Refactor integration tests to use real services
+  - Update all integration tests to use real Supabase instance
+  - Remove mocks for Supabase, use actual database operations
+  - Implement test data lifecycle in beforeEach/afterEach hooks
+  - Ensure tests use unique identifiers for parallel execution
+  - Verify 100% test pass rate with real services
+  - Add test data cleanup verification
+  - _Requirements: All requirements (integration testing)_
+
+- [ ] 28. Refactor E2E tests to follow Clerk guidelines
+  - Implement Clerk's official E2E authentication methodology
+  - Use @clerk/testing/playwright for test setup
+  - Create seed data management for each E2E test
+  - Implement unique email/org generation for idempotent tests
+  - Add cleanup for all E2E test data
+  - Verify tests can run multiple times without conflicts
+  - _Requirements: 1.2, 1.5, 2.1, 2.5, 3.1, 3.2, 4.1, 6.1_
+
+- [ ] 29. Implement database schema alignment verification
+  - Verify all tables follow snake_case naming convention
+  - Ensure UUID primary keys are used consistently
+  - Add indexes for audit log queries (user_id, org_id, created_at, security events)
+  - Verify integration with existing agent and dataset tables
+  - Add referential integrity constraints
+  - Write migration scripts for schema updates
+  - _Requirements: 5.1, 5.2, 5.3, 7.1, 7.2, 8.3_
+
+- [ ] 30. Implement tenant isolation verification tests
+  - Write security tests for cross-tenant access prevention
+  - Test RLS policies with multiple user/org combinations
+  - Verify security event logging for tenant violations
+  - Test organization switching prevents cross-tenant data access
+  - Verify resource access respects tenant boundaries
+  - Achieve 100% pass rate on all security tests
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+
+- [ ] 31. Optimize database queries with PostgreSQL functions
+  - Create check_user_permission database function for efficient permission checks
+  - Implement database-level permission validation
+  - Add query optimization for resource filtering
+  - Create indexes for frequently queried columns
+  - Measure and verify query performance improvements
+  - Write performance tests for permission checks
+  - _Requirements: 4.1, 6.2, 7.1, 7.2 (performance optimization)_
+
+- [ ] 32. Final validation and quality assurance
+  - Run complete test suite and verify 100% pass rate
+  - Verify tiered coverage requirements (Services 100%, Models 95%, API 90%, Global 85%)
+  - Test deployment to Vercel staging environment
+  - Verify Phase.dev environment variable integration
+  - Perform load testing for concurrent users
+  - Validate all requirements are met with passing tests
+  - _Requirements: All requirements (final validation)_
+
+## Implementation Status
+
+### 🔄 **Phase 1: Core Implementation Complete (Tasks 1-20)**
+
+The foundational Account Management & Organizational Modeling feature has been implemented:
 
 **Core Infrastructure:**
 - Complete database schema with proper indexing and RLS policies
@@ -217,15 +324,41 @@ The Account Management & Organizational Modeling feature is now production-ready
 - Monitoring and observability with structured logging
 - Scalable architecture supporting multi-tenant operations
 
-### 🚀 **Ready for Production Use**
+### 🎯 **Phase 2: Architectural Enhancement (Tasks 21-32)**
 
-Users can now:
-- ✅ Create and manage individual accounts with Clerk authentication
-- ✅ Create and manage organizations with proper tenant isolation
-- ✅ Invite and manage members with role-based permissions
-- ✅ Switch between organizational contexts seamlessly
-- ✅ Access comprehensive audit logs and security monitoring
-- ✅ Complete guided onboarding flows with interactive tutorials
-- ✅ Manage account preferences and security settings
+Additional tasks address updated design requirements:
 
-The feature meets all requirements specified in the requirements document and is ready for production deployment.
+**Deployment & Infrastructure:**
+- Task 21: Vercel-optimized deployment architecture
+- Task 22: Redis caching layer with Upstash
+- Task 29: Database schema alignment verification
+- Task 31: PostgreSQL query optimization
+
+**Enhanced Functionality:**
+- Task 23: Real-time permission refresh mechanism
+- Task 24: Resource access management service
+- Task 25: Enhanced audit logging with security events
+
+**Testing Excellence:**
+- Task 26: Test data lifecycle management utilities
+- Task 27: Integration tests with real services
+- Task 28: E2E tests following Clerk guidelines
+- Task 30: Tenant isolation verification tests
+- Task 32: Final validation and quality assurance
+
+### 📋 **Next Steps**
+
+To complete the feature implementation:
+
+1. **Execute Tasks 21-32** in sequence to align with updated design
+2. **Verify 100% test pass rate** with real services (Supabase, Clerk, Phase.dev)
+3. **Validate deployment** to Vercel staging environment
+4. **Confirm all requirements** are met through comprehensive testing
+
+**Critical Requirements for Task Completion:**
+- ✅ All tests must pass (100% pass rate)
+- ✅ Integration tests use real services (no mocks for Supabase/Clerk)
+- ✅ Test data lifecycle managed (create → use → cleanup)
+- ✅ Tests are idempotent and support parallel execution
+- ✅ E2E tests follow Clerk's official authentication methodology
+- ✅ Tiered coverage maintained (Services 100%, Models 95%, API 90%, Global 85%)

@@ -1,121 +1,213 @@
 # Implementation Plan
 
-- [ ] 1. Set up React application foundation optimized for Vercel deployment
-  - Create Next.js 14+ application with TypeScript, App Router, and Tailwind CSS optimized for Vercel
-  - Set up component library structure with shared UI components and design system using Vercel's build optimizations
-  - Configure state management using Zustand or Redux Toolkit with Vercel edge runtime compatibility
-  - Set up routing with Next.js App Router and configure Vercel deployment settings and environment variables
+- [ ] 1. Set up Next.js application foundation with Vercel deployment configuration
+  - Create Next.js 15+ application with TypeScript, App Router, and Tailwind CSS in apps/web
+  - Configure Turbo monorepo build orchestration with proper caching strategies
+  - Set up Phase.dev integration for environment variable management (no .env files)
+  - Configure Vercel deployment settings (vercel.json) with edge functions and proper headers
+  - Set up Zustand for client state management and React Query for server state
   - Configure Vercel Analytics and Web Vitals monitoring for performance tracking
+  - Set up shadcn/ui component library with Radix UI primitives
+  - Configure memory management (NODE_OPTIONS) for builds and tests
   - _Requirements: 1.1, 10.1_
 
-- [ ] 2. Implement core UI services and API integration layer
-  - Create AgentUIService for interfacing with the existing Agent Management API
-  - Build API client with proper error handling, retry logic, and request/response transformation
-  - Implement caching layer for agent data and execution results to improve performance
-  - Add WebSocket client for real-time updates during agent execution and collaboration
-  - Write unit tests for UI services and API integration functionality
-  - _Requirements: 3.1, 3.2, 3.4, 5.4_
+- [ ] 2. Set up database integration and schema extensions
+  - Configure Supabase client with Row Level Security (RLS) policies using Clerk user IDs
+  - Create UI-specific database tables (agent_shares, agent_comments, agent_versions, agent_templates, organization_policies, audit_logs)
+  - Implement RLS policies for all new tables with organization-level isolation
+  - Set up Supabase real-time subscriptions for collaboration features
+  - Configure Redis client for caching frequently accessed data
+  - Write database migration scripts and seed data for development
+  - _Requirements: 5.1, 5.2, 5.3, 7.4_
 
-- [ ] 3. Build agent dashboard with search, filtering, and sorting
-  - Create AgentDashboard component with grid and table view modes for agent display
-  - Implement comprehensive search functionality with full-text search across agent properties
-  - Add filtering system with multi-select filters for status, tags, dates, and custom criteria
-  - Build sorting capabilities with multiple sort options and persistent user preferences
-  - Write component tests for dashboard functionality and user interactions
+- [ ] 3. Implement core UI services and API integration layer
+  - Create AgentUIService with methods for CRUD, execution, analytics, templates, and personas
+  - Create ExecutionMonitor service for real-time execution tracking via Supabase subscriptions
+  - Create CollaborationService for sharing, comments, versions, and conflict resolution
+  - Build API client with proper error handling, retry logic, and React Query integration
+  - Implement Redis caching layer for agent data and execution results
+  - Write unit tests for all services (100% coverage required for services)
+  - _Requirements: 3.1, 3.2, 3.4, 4.1, 4.2, 5.4, 8.2_
+
+- [ ] 4. Build agent dashboard with search, filtering, and sorting
+  - Create AgentDashboard page component with grid and table view modes
+  - Implement AgentCard and AgentTable components for different view modes
+  - Add SearchBar component with full-text search across agent names, descriptions, and tags
+  - Create FilterPanel component with multi-select filters (status, persona, tags, dates, created by)
+  - Implement sorting functionality with persistent user preferences in local storage
+  - Add empty state component with helpful suggestions and quick actions
+  - Write component tests for dashboard, search, filtering, and sorting (Property 2, 3, 4)
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 4. Create agent creation and editing interface
-  - Build AgentEditor component with tabbed interface for configuration, schema, and testing
-  - Implement guided agent creation wizard with step-by-step configuration and validation
-  - Add form validation with real-time feedback and error highlighting
-  - Create agent duplication functionality with configuration modification options
-  - Write component tests for agent editor workflows and validation logic
+- [ ] 5. Create agent creation and editing interface with wizard mode
+  - Build AgentEditor page component with tabbed interface (config, schema, testing, collaboration, versions)
+  - Implement guided wizard mode for non-technical users with step-by-step configuration
+  - Create persona library integration with pre-built personas and use case examples
+  - Add form validation with Zod schemas and real-time feedback using React Hook Form
+  - Implement agent duplication functionality with configuration modification options
+  - Add visual preview mode for agent configuration
+  - Write component tests for editor workflows, wizard mode, and validation (Property 1)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 8.1_
 
-- [ ] 5. Implement visual schema builder for input/output configuration
-  - Create SchemaBuilder component with drag-and-drop field creation and configuration
-  - Build visual schema editor with support for nested objects, arrays, and complex types
-  - Add schema validation with real-time preview and example generation
-  - Implement schema import/export functionality for reusability across agents
-  - Write component tests for schema building functionality and validation
+- [ ] 6. Implement visual schema builder for input/output configuration
+  - Create SchemaBuilder component with drag-and-drop field creation using React DnD
+  - Build field configuration panel for field types, validation rules, and descriptions
+  - Add support for nested objects, arrays, and complex type hierarchies
+  - Implement real-time schema preview with example data generation
+  - Add schema validation with error highlighting and suggestions
+  - Implement schema import/export functionality for reusability
+  - Write component tests for drag-and-drop, validation, and nested field handling
   - _Requirements: 1.4, 8.2_
 
-- [ ] 6. Build real-time agent execution and monitoring system
-  - Create ExecutionViewer component with real-time progress tracking and status updates
-  - Implement WebSocket integration for live execution logs and progress indicators
-  - Add execution input form generation based on agent input schemas with validation
-  - Build result display with formatting, download options, and sharing capabilities
-  - Write integration tests for real-time execution monitoring and WebSocket connectivity
+- [ ] 7. Build real-time agent execution and monitoring system
+  - Create ExecutionViewer component with tabbed interface (results, logs, metrics, timeline)
+  - Implement real-time progress tracking using Supabase real-time subscriptions
+  - Add dynamic input form generation based on agent input schemas with Zod validation
+  - Build result display with syntax highlighting, formatting, and copy functionality
+  - Add download functionality for results in multiple formats (JSON, CSV, TXT)
+  - Implement result sharing and "use as input" functionality for chaining
+  - Add error details panel with troubleshooting suggestions and documentation links
+  - Add retry and cancel execution functionality
+  - Write integration tests using real Supabase subscriptions (Property 5, 6)
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 7. Create execution history and analytics dashboard
-  - Build comprehensive execution history viewer with chronological display and filtering
-  - Implement analytics dashboard with charts for performance metrics and usage patterns
-  - Add execution comparison functionality with side-by-side result and configuration analysis
-  - Create data export functionality for execution history and analytics in multiple formats
-  - Write component tests for analytics visualization and data export features
+- [ ] 8. Create execution history and analytics dashboard
+  - Build ExecutionHistory component with chronological display, pagination, and filtering
+  - Create AnalyticsDashboard component with performance metrics and charts using Recharts
+  - Implement charts for success rates, execution times, usage patterns, and trends
+  - Add execution comparison functionality with side-by-side diff view
+  - Create optimization recommendation system based on performance analysis
+  - Implement data export functionality in multiple formats (JSON, CSV, Excel)
+  - Write component tests for analytics calculations and visualizations (Property 7, 8, 9)
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 8. Implement collaboration features and team sharing
-  - Create collaboration system with real-time commenting and discussion threads
-  - Build agent sharing interface with granular permission controls and user management
-  - Add version control with diff visualization and rollback capabilities
-  - Implement edit locking system to prevent concurrent modification conflicts
-  - Write integration tests for collaboration features and multi-user scenarios
+- [ ] 9. Implement collaboration features and team sharing
+  - Create ShareDialog component with user selection and granular permission controls
+  - Build CommentPanel component with real-time commenting and discussion threads
+  - Implement VersionHistory component with diff visualization and rollback functionality
+  - Add edit locking system using Supabase real-time presence
+  - Create conflict detection and resolution UI for concurrent edits
+  - Add notification system for collaboration events (comments, shares, locks)
+  - Implement annotation system for agent configurations
+  - Write integration tests using real Supabase for multi-user scenarios (Property 10, 11, 12, 13)
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 9. Build visual workflow builder for agent chains
-  - Create ChainBuilder component with drag-and-drop canvas for workflow design
-  - Implement node-based workflow editor with visual connections and data flow mapping
-  - Add chain validation with compatibility checking and error highlighting
-  - Build chain testing functionality with step-by-step execution and result inspection
-  - Write component tests for workflow builder functionality and chain validation
+- [ ] 10. Build visual workflow builder for agent chains
+  - Create ChainBuilder page component with React Flow canvas for workflow design
+  - Implement WorkflowCanvas component with drag-and-drop node placement
+  - Build custom node components for agents, conditions, merge, and split operations
+  - Add visual data flow mapping with connection validation
+  - Implement conditional logic and branching configuration UI
+  - Add error handling configuration for each node (retry, skip, fallback, terminate)
+  - Build step-by-step testing mode with intermediate result inspection
+  - Add chain validation with type compatibility checking and error highlighting
+  - Write component tests for workflow building and validation (Property 14, 15, 16)
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 10. Create agent templating and sharing system
-  - Build template creation interface for saving reusable agent configurations
-  - Implement template gallery with search, filtering, and preview capabilities
-  - Add agent configuration export/import functionality for cross-organization sharing
-  - Create template parameter system with placeholder replacement and validation
-  - Write unit tests for templating system and configuration sharing features
+- [ ] 11. Create agent templating and sharing system
+  - Build TemplateCreationDialog for saving agents as reusable templates with parameters
+  - Create TemplateGallery component with grid view, search, and filtering
+  - Implement template preview functionality with parameter visualization
+  - Add template parameter configuration UI with validation rules
+  - Build template application workflow with parameter input and validation
+  - Implement agent configuration export/import functionality (JSON format)
+  - Add template rating and usage tracking
+  - Write unit tests for template parameter replacement and validation (Property 21, 22)
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 11. Implement organization administration and access controls
-  - Create admin dashboard for organization-wide agent management and monitoring
-  - Build role-based permission system with granular access controls for agent operations
-  - Add usage monitoring with resource consumption tracking and quota management
-  - Implement audit logging interface with detailed activity tracking and user attribution
-  - Write admin workflow tests for permission management and organizational controls
+- [ ] 12. Implement organization administration and access controls
+  - Create OrganizationAdminPanel page with tabs for members, usage, policies, and audit logs
+  - Build MemberManagement component with role assignment and permission controls
+  - Implement UsageStatistics component with charts for resource consumption and quotas
+  - Create PolicyConfiguration component for creation limits, execution quotas, and approval workflows
+  - Build AuditLogViewer component with filtering, search, and export functionality
+  - Add policy violation alerts and enforcement UI
+  - Implement quota warning system with visual indicators
+  - Write integration tests for RBAC enforcement using real Supabase (Property 17, 18, 19, 20)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 12. Build integrated help system and contextual assistance
-  - Create contextual help system with tooltips, guided tours, and interactive tutorials
-  - Implement inline documentation with links to relevant guides and troubleshooting resources
-  - Add error handling with helpful error messages and suggested resolution steps
-  - Build support integration with ticket creation and escalation workflows
-  - Write accessibility tests for help system and documentation integration
+- [ ] 13. Build integrated help system and contextual assistance
+  - Create HelpSystem component with context-aware tooltip and documentation display
+  - Implement GuidedTour component using React Joyride for interactive feature tours
+  - Build InteractiveTutorial component with step-by-step examples and configurations
+  - Add contextual help tooltips throughout the application using Radix UI Tooltip
+  - Implement inline error help with documentation links and troubleshooting suggestions
+  - Create support ticket integration with form and escalation workflow
+  - Add help feedback system for documentation improvement suggestions
+  - Write accessibility tests for help system (keyboard navigation, screen readers) (Property 23, 24)
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 13. Implement mobile-responsive design and PWA capabilities
-  - Create responsive design with mobile-optimized layouts and touch-friendly interactions
-  - Build Progressive Web App (PWA) with offline capabilities and mobile app-like experience
-  - Add mobile push notifications for agent execution status and important events
-  - Implement mobile-specific navigation and simplified interfaces for complex features
-  - Write mobile-specific tests for responsive design and touch interactions
+- [ ] 14. Implement mobile-responsive design and PWA capabilities
+  - Create responsive layouts with Tailwind CSS breakpoints for all components
+  - Build MobileAgentView component with simplified interface for monitoring and execution
+  - Implement touch-optimized interactions with larger touch targets (min 44x44px)
+  - Configure PWA with service worker, manifest, and offline capabilities
+  - Add mobile push notifications using Web Push API for execution events
+  - Create mobile navigation with bottom tab bar and hamburger menu
+  - Add feature availability indicators for desktop-only features
+  - Implement mobile-specific gestures (swipe, long-press) where appropriate
+  - Write mobile-specific tests using Playwright mobile emulation (Property 25, 26, 27, 28)
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [ ] 14. Add comprehensive error handling and user feedback systems
-  - Implement global error boundary with graceful error handling and recovery options
-  - Create notification system with toast messages, alerts, and status indicators
-  - Add form validation with real-time feedback and user-friendly error messages
-  - Build retry mechanisms and offline support for network connectivity issues
-  - Write error handling tests for various failure scenarios and recovery workflows
+- [ ] 15. Add comprehensive error handling and user feedback systems
+  - Implement global ErrorBoundary component with fallback UI and error reporting
+  - Create NotificationSystem using Sonner for toast messages and alerts
+  - Build error recovery UI with retry, refresh, and navigation options
+  - Add form validation error display with field-level error messages
+  - Implement offline detection and queue for network requests
+  - Add loading states and skeleton screens for all async operations
+  - Create error tracking integration with Sentry for production monitoring
+  - Write error handling tests for various failure scenarios
   - _Requirements: 1.5, 3.5, 4.5, 6.5_
 
-- [ ] 15. Create comprehensive testing suite and performance optimization
-  - Write integration tests for complete agent management workflows and user journeys
-  - Implement end-to-end tests for collaboration features, execution monitoring, and workflow building
-  - Add accessibility tests for WCAG 2.1 compliance and assistive technology compatibility
-  - Create performance tests for component rendering, data loading, and real-time updates
-  - Write user documentation for agent management best practices and feature usage guides
-  - _Requirements: All requirements validation through comprehensive testing_
+- [ ] 16. Set up comprehensive testing infrastructure
+  - Configure Vitest with memory optimization (NODE_OPTIONS) and tiered coverage thresholds
+  - Set up @clerk/testing for Clerk integration (never custom mocks)
+  - Create TestDataManager utility for test data lifecycle management
+  - Configure test database with proper isolation and cleanup
+  - Set up Playwright for E2E testing with Clerk authentication
+  - Create test utilities for common operations (create agent, execute, share, etc.)
+  - Configure CI/CD pipeline with parallel test execution
+  - _Requirements: All requirements - testing infrastructure_
+
+- [ ] 17. Write integration tests with real services
+  - Write integration tests for AgentUIService using real Supabase (100% coverage)
+  - Write integration tests for ExecutionMonitor using real Supabase subscriptions
+  - Write integration tests for CollaborationService with multi-user scenarios
+  - Write integration tests for real-time features using actual WebSocket connections
+  - Write integration tests for Redis caching behavior
+  - Ensure all tests manage their own data lifecycle and support parallel execution
+  - Verify 100% test pass rate with no skipped tests
+  - _Requirements: All requirements - integration testing_
+
+- [ ] 18. Write end-to-end tests following Clerk guidelines
+  - Write E2E test for complete agent creation workflow (wizard mode)
+  - Write E2E test for agent execution with real-time monitoring
+  - Write E2E test for collaboration workflow (share, comment, version control)
+  - Write E2E test for chain building and testing
+  - Write E2E test for template creation and application
+  - Write E2E test for organization administration workflows
+  - Write E2E test for mobile responsive design and PWA features
+  - Ensure all E2E tests use Clerk's official authentication methodology
+  - Ensure all E2E tests manage seed data and are idempotent
+  - _Requirements: All requirements - E2E testing_
+
+- [ ] 19. Write accessibility and performance tests
+  - Write accessibility tests for WCAG 2.1 AA compliance using axe-core
+  - Write keyboard navigation tests for all interactive elements
+  - Write screen reader tests using Playwright with NVDA/JAWS simulation
+  - Write performance tests for component rendering with large datasets
+  - Write performance tests for real-time update latency
+  - Write performance tests for mobile devices and slow networks
+  - Verify all performance targets met (< 2s initial load, < 500ms list rendering)
+  - _Requirements: All requirements - accessibility and performance_
+
+- [ ] 20. Final validation and documentation
+  - Verify 100% test pass rate across all test suites
+  - Verify coverage thresholds met (100% services, 95% models, 90% API, 85% global)
+  - Verify no database pollution or orphaned test data
+  - Verify all correctness properties validated through tests
+  - Run full test suite in parallel to verify idempotency
+  - Create user documentation for agent management features
+  - Create developer documentation for component usage and testing
+  - _Requirements: All requirements - final validation_

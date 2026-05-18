@@ -1,26 +1,56 @@
 # Implementation Plan
 
 - [ ] 1. Set up agent management database schema and core infrastructure
-  - Create database tables for agents, agent_versions, agent_executions, agent_chains, chain_executions, execution_logs, agent_permissions, scheduled_executions, and agent_resource_usage
+  - Create database tables for agents, agent_versions, agent_executions, agent_chains, chain_executions, execution_logs, agent_permissions, scheduled_executions, agent_resource_usage, agent_documentation, agent_deployments, agent_audit_logs, and agent_performance_metrics
   - Set up job queue infrastructure using Redis or database-based queue system
-  - Create database migrations with proper indexes for agent lookup and execution queries
+  - Create database migrations with proper indexes for agent lookup, execution queries, and audit log searches
   - Install and configure JSON Schema validation libraries for agent input/output schemas
-  - _Requirements: 1.1, 3.1, 6.1_
+  - Set up document indexing infrastructure for FRD/Docusaurus integration
+  - _Requirements: 1.1, 3.1, 6.1, 7.4, 8.1_
 
 - [ ] 2. Implement core agent service and CRUD operations
   - Create AgentService class with full CRUD operations for agent lifecycle management
   - Implement agent configuration validation using JSON Schema for input/output definitions
   - Add agent visibility and permission checking integrated with organizational RBAC
   - Create agent filtering, pagination, and search functionality for listing operations
+  - Implement token permission validation for agent creation scope
+  - Add organizational quota checking and enforcement for agent creation
   - Write unit tests for agent service operations and validation logic
-  - _Requirements: 1.1, 1.2, 3.1, 3.2, 3.3, 3.4, 7.1, 7.2_
+- [ ] 2.1 Write property test for agent creation
+  - **Property 1: Agent Creation Returns Valid Configuration**
+  - **Validates: Requirements 1.1, 1.2**
+- [ ] 2.2 Write property test for invalid configuration rejection
+  - **Property 2: Invalid Configuration Rejection**
+  - **Validates: Requirements 1.3, 2.5**
+- [ ] 2.3 Write property test for token permission enforcement
+  - **Property 3: Token Permission Enforcement**
+  - **Validates: Requirements 1.4**
+- [ ] 2.4 Write property test for quota limit enforcement
+  - **Property 4: Quota Limit Enforcement**
+  - **Validates: Requirements 1.5**
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 7.1, 7.2_
 
 - [ ] 3. Build agent versioning and deployment system
   - Create VersionService class for managing agent versions with semantic versioning
   - Implement version creation, publishing, and rollback functionality
   - Add version comparison and diff generation for configuration changes
   - Create version history tracking and changelog management
+  - Implement DeploymentService for multi-environment deployment (development, staging, production)
+  - Add environment-specific configuration overrides and isolation
+  - Implement promotion workflow from staging to production
   - Write unit tests for versioning operations and version conflict resolution
+- [ ] 3.1 Write property test for version history preservation
+  - **Property 15: Version History Preservation**
+  - **Validates: Requirements 6.1**
+- [ ] 3.2 Write property test for environment deployment isolation
+  - **Property 16: Environment Deployment Isolation**
+  - **Validates: Requirements 6.2**
+- [ ] 3.3 Write property test for version rollback consistency
+  - **Property 17: Version Rollback Consistency**
+  - **Validates: Requirements 6.3**
+- [ ] 3.4 Write property test for version comparison accuracy
+  - **Property 18: Version Comparison Accuracy**
+  - **Validates: Requirements 6.4**
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 4. Implement agent execution service and orchestration
@@ -28,55 +58,113 @@
   - Build job queue system for asynchronous agent execution with worker pool
   - Implement execution context management and input/output processing
   - Add execution status tracking, cancellation, and timeout handling
+  - Implement trigger mode support (manual, event-based, scheduled)
   - Write unit tests for execution service and job queue operations
-  - _Requirements: 1.1, 2.3, 5.1, 5.2_
+- [ ] 4.1 Write property test for schema validation consistency
+  - **Property 5: Schema Validation Consistency**
+  - **Validates: Requirements 2.1, 2.4**
+- [ ] 4.2 Write property test for trigger mode configuration
+  - **Property 6: Trigger Mode Configuration**
+  - **Validates: Requirements 2.2**
+  - _Requirements: 1.1, 2.2, 2.3, 5.1, 5.2_
 
 - [ ] 5. Create agent runtime and execution engine
   - Build AgentRuntime class for executing individual agents with proper isolation
   - Implement input validation against agent schemas and output formatting
-  - Add resource monitoring and usage tracking during agent execution
+  - Add resource monitoring and usage tracking during agent execution (CPU, memory, API calls, tokens)
   - Create error handling and recovery mechanisms for failed executions
+  - Integrate DocumentContextService for providing documentation context during execution
   - Write integration tests for agent runtime and execution engine
-  - _Requirements: 2.1, 2.2, 2.4, 5.1, 10.1_
+- [ ] 5.1 Write property test for resource usage tracking
+  - **Property 25: Resource Usage Tracking**
+  - **Validates: Requirements 10.1**
+  - _Requirements: 2.1, 2.2, 2.4, 5.1, 8.3, 10.1_
 
 - [ ] 6. Build agent chaining and composition system
   - Create ChainService class for managing agent chains and workflow orchestration
-  - Implement chain validation to ensure compatibility between linked agents
+  - Implement chain validation to ensure compatibility between linked agents (schema compatibility)
   - Add data flow management and input/output mapping between chain steps
   - Create chain execution engine with error handling and rollback capabilities
+  - Implement chain execution monitoring with per-step status tracking
   - Write unit tests for chain validation, execution, and error handling
+- [ ] 6.1 Write property test for chain compatibility validation
+  - **Property 9: Chain Compatibility Validation**
+  - **Validates: Requirements 4.1, 4.2**
+- [ ] 6.2 Write property test for chain execution data flow
+  - **Property 10: Chain Execution Data Flow**
+  - **Validates: Requirements 4.3**
+- [ ] 6.3 Write property test for chain failure handling
+  - **Property 11: Chain Failure Handling**
+  - **Validates: Requirements 4.5**
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
 - [ ] 7. Implement execution logging and monitoring system
-  - Create comprehensive logging system for agent executions with structured logs
+  - Create comprehensive logging system for agent executions with structured logs (timestamps, inputs, outputs, duration)
   - Build execution metrics collection for performance monitoring and analytics
-  - Add log filtering, searching, and export functionality for debugging and analysis
+  - Implement performance metrics aggregation (hourly, daily, monthly) with success rates and execution times
+  - Add log filtering, searching, and export functionality in JSON and CSV formats
   - Implement real-time execution monitoring with status updates and progress tracking
+  - Create token-based permission enforcement for log visibility
   - Write unit tests for logging system and metrics collection
+- [ ] 7.1 Write property test for execution log completeness
+  - **Property 12: Execution Log Completeness**
+  - **Validates: Requirements 5.1**
+- [ ] 7.2 Write property test for performance metrics accuracy
+  - **Property 13: Performance Metrics Accuracy**
+  - **Validates: Requirements 5.2**
+- [ ] 7.3 Write property test for log export format consistency
+  - **Property 14: Log Export Format Consistency**
+  - **Validates: Requirements 5.4**
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
 - [ ] 8. Create REST API endpoints and controllers
   - Build AgentController with full CRUD endpoints for agent management (/api/agents)
-  - Implement ExecutionController for agent execution and monitoring (/api/executions)
-  - Add VersionController for version management operations (/api/agents/{id}/versions)
+  - Implement ExecutionController for agent execution, monitoring, log export, and performance metrics (/api/executions)
+  - Add VersionController for version management and environment deployment operations (/api/agents/{id}/versions)
   - Create ChainController for agent chain management (/api/chains)
+  - Implement proper error responses with detailed messages and suggested actions
   - Write API integration tests for all endpoints with authentication and authorization
-  - _Requirements: 1.1, 3.1, 3.2, 3.3, 3.4, 6.1, 6.2, 6.3_
+- [ ] 8.1 Write property test for CRUD operation completeness
+  - **Property 7: CRUD Operation Completeness**
+  - **Validates: Requirements 3.1, 3.2, 3.3**
+- [ ] 8.2 Write property test for organizational context filtering
+  - **Property 8: Organizational Context Filtering**
+  - **Validates: Requirements 3.4, 7.1**
+  - _Requirements: 1.1, 3.1, 3.2, 3.3, 3.4, 3.5, 6.1, 6.2, 6.3_
 
 - [ ] 9. Implement resource monitoring and quota enforcement
-  - Create ResourceMonitor service for tracking CPU, memory, and API usage during execution
+  - Create ResourceMonitor service for tracking CPU, memory, API calls, and token usage during execution
   - Build quota enforcement system integrated with subscription plans and organizational limits
   - Add automatic throttling and suspension for agents exceeding resource limits
   - Implement cost tracking and attribution for agent executions and resource usage
+  - Create resource utilization analytics and reporting for administrators
+  - Implement notification system for quota limit warnings and exceeded limits
   - Write unit tests for resource monitoring and quota enforcement logic
+- [ ] 9.1 Write property test for quota enforcement consistency
+  - **Property 26: Quota Enforcement Consistency**
+  - **Validates: Requirements 10.2**
+- [ ] 9.2 Write property test for resource abuse detection
+  - **Property 27: Resource Abuse Detection**
+  - **Validates: Requirements 10.3**
+- [ ] 9.3 Write property test for cost attribution accuracy
+  - **Property 28: Cost Attribution Accuracy**
+  - **Validates: Requirements 10.4**
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
 - [ ] 10. Build agent permission and access control system
   - Extend agent service with granular permission management for team collaboration
   - Implement agent sharing controls between teams and organizations
-  - Add audit logging for all agent operations with user and token attribution
+  - Create AuditService for logging all agent operations with user, token, IP, and timestamp attribution
+  - Implement immutable audit trail with configurable retention policies
+  - Add security event detection for suspicious access patterns
   - Create permission inheritance and override mechanisms for organizational hierarchies
   - Write unit tests for permission system and access control validation
+- [ ] 10.1 Write property test for permission-based access control
+  - **Property 19: Permission-Based Access Control**
+  - **Validates: Requirements 7.2, 7.5**
+- [ ] 10.2 Write property test for audit log completeness
+  - **Property 20: Audit Log Completeness**
+  - **Validates: Requirements 7.4**
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
 - [ ] 11. Implement scheduled execution and trigger system
@@ -88,11 +176,19 @@
   - _Requirements: 2.2, 2.3_
 
 - [ ] 12. Create FRD integration and documentation context system
-  - Build DocumentContextService for integrating FRD documentation with agent execution
-  - Implement automatic context refresh when documentation is updated
-  - Add document attachment and context management for agents
-  - Create context search and retrieval system for agent runtime access
+  - Build DocumentContextService for integrating FRD and Docusaurus documentation with agent execution
+  - Implement document attachment configuration (source type, paths, auto-refresh settings)
+  - Create document parsing and indexing system for fast search and retrieval
+  - Implement automatic context refresh with configurable intervals and webhook support
+  - Add context search and retrieval system for agent runtime access
+  - Implement graceful degradation when documentation is unavailable
   - Write integration tests for documentation context and FRD integration
+- [ ] 12.1 Write property test for documentation context availability
+  - **Property 21: Documentation Context Availability**
+  - **Validates: Requirements 8.3, 8.5**
+- [ ] 12.2 Write property test for documentation auto-refresh
+  - **Property 22: Documentation Auto-Refresh**
+  - **Validates: Requirements 8.4**
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
 - [ ] 13. Build comprehensive error handling and validation system
@@ -104,17 +200,48 @@
   - _Requirements: 1.3, 2.4, 3.5, 4.5_
 
 - [ ] 14. Implement API documentation and SDK generation
-  - Create comprehensive OpenAPI specifications for all agent management endpoints
-  - Build JavaScript/TypeScript and Python SDK libraries with proper typing
+  - Create comprehensive OpenAPI 3.0 specifications for all agent management endpoints with request/response schemas
+  - Document all authentication requirements, error codes, and response formats
+  - Build JavaScript/TypeScript SDK with full type definitions and error handling
+  - Build Python SDK with type hints and proper error classes
+  - Implement SDK features: retry logic, pagination handling, streaming support, client-side validation
   - Add code examples and tutorials for common agent management workflows
-  - Create interactive API documentation with testing capabilities
+  - Create interactive API documentation with Swagger UI and testing capabilities
+  - Implement semantic versioning strategy with backward compatibility guarantees
   - Write SDK integration tests and example applications
+- [ ] 14.1 Write property test for API documentation completeness
+  - **Property 23: API Documentation Completeness**
+  - **Validates: Requirements 9.1, 9.4**
+- [ ] 14.2 Write property test for SDK type safety
+  - **Property 24: SDK Type Safety**
+  - **Validates: Requirements 9.2**
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 15. Create comprehensive testing suite and performance optimization
-  - Write integration tests for complete agent lifecycle and execution flows
-  - Implement end-to-end tests for agent chains, versioning, and permission management
-  - Add performance tests for concurrent executions and resource usage under load
-  - Create load tests for API endpoints and execution scaling
-  - Write user documentation for agent management best practices and troubleshooting
+- [ ] 15. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 16. Create comprehensive integration and end-to-end testing
+  - Write integration tests for complete agent lifecycle (create, configure, execute, version, delete)
+  - Implement end-to-end tests for agent chains with multiple steps and error scenarios
+  - Add integration tests for version management, deployment, and rollback workflows
+  - Create integration tests for permission system and organizational access controls
+  - Write integration tests for FRD documentation integration and context refresh
+  - Test audit logging across all operations with proper attribution
   - _Requirements: All requirements validation through comprehensive testing_
+
+- [ ] 17. Performance testing and optimization
+  - Add performance tests for concurrent agent executions with worker pool scaling
+  - Create load tests for API endpoints under high request volumes
+  - Test database query performance for agent listing and execution history
+  - Monitor memory usage and garbage collection during load testing
+  - Optimize resource usage and execution performance based on test results
+  - _Requirements: 10.1, 10.2, 10.3_
+
+- [ ] 18. Create user documentation and migration guides
+  - Write getting started guide with quickstart examples
+  - Create comprehensive API reference documentation
+  - Write SDK reference documentation for TypeScript and Python
+  - Add guides for common workflows (creating agents, chains, versioning, monitoring)
+  - Create troubleshooting guide with common errors and solutions
+  - Write migration guides for API version upgrades
+  - _Requirements: 9.3, 9.4, 9.5_
