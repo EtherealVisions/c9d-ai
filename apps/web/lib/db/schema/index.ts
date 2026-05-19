@@ -18,6 +18,7 @@ export * from './roles'
 export * from './content'
 export * from './invitations'
 export * from './audit'
+export * from './service-heartbeats'
 
 // Re-export all table schemas for Drizzle ORM
 import { users } from './users'
@@ -43,6 +44,7 @@ import {
   systemMetrics, 
   errorLogs 
 } from './audit'
+import { serviceHeartbeats, serviceHeartbeatEvents } from './service-heartbeats'
 
 // Import relations
 import { allRelations } from './relations'
@@ -75,6 +77,8 @@ export const schema = {
   onboardingAnalytics,
   systemMetrics,
   errorLogs,
+  serviceHeartbeats,
+  serviceHeartbeatEvents,
   
   // Relations
   ...allRelations
@@ -103,7 +107,9 @@ export const TABLE_NAMES = {
   AUDIT_LOGS: 'audit_logs',
   ONBOARDING_ANALYTICS: 'onboarding_analytics',
   SYSTEM_METRICS: 'system_metrics',
-  ERROR_LOGS: 'error_logs'
+  ERROR_LOGS: 'error_logs',
+  SERVICE_HEARTBEATS: 'service_heartbeats',
+  SERVICE_HEARTBEAT_EVENTS: 'service_heartbeat_events'
 } as const
 
 export type TableName = keyof typeof TABLE_NAMES

@@ -23,6 +23,8 @@ const routeProtection = new Map<RegExp, ProtectionLevel>([
   [/^\/verify-email/, ProtectionLevel.PUBLIC],
   [/^\/reset-password/, ProtectionLevel.PUBLIC],
   [/^\/api\/health/, ProtectionLevel.PUBLIC],
+  [/^\/api\/status/, ProtectionLevel.PUBLIC],
+  [/^\/api\/internal\/heartbeat/, ProtectionLevel.PUBLIC],
   [/^\/api\/webhooks/, ProtectionLevel.PUBLIC],
   [/^\/api\/example-error-handling/, ProtectionLevel.PUBLIC],
   
@@ -88,6 +90,8 @@ const isPublicRoute = createRouteMatcher([
   '/verify-email(.*)',
   '/reset-password(.*)',
   '/api/health(.*)',
+  '/api/status',
+  '/api/internal/heartbeat',
   '/api/webhooks(.*)',
   '/api/example-error-handling(.*)'
 ])
