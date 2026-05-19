@@ -60,7 +60,12 @@
       "permanent": true
     }
   ],
-  "crons": [],
+  "crons": [
+    {
+      "path": "/api/internal/heartbeat",
+      "schedule": "0 5 * * *"
+    }
+  ],
   "regions": ["iad1"],
   "cleanUrls": true,
   "trailingSlash": false
