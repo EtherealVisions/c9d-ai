@@ -7,7 +7,19 @@ import {
 
 export async function GET() {
   const checkedAt = new Date().toISOString()
-  const row = await getLatestHeartbeat()
+
+  let row
+  try {
+    row = await getLatestHeartbeat()
+  } catch (error) {
+    console.error('[Status] failed to read heartbeat', error)
+    return NextResponse.json({
+      overall: 'fail',
+      checkedAt,
+      services: [],
+      error: 'Unable to read heartbeat status',
+    })
+  }
 
   if (!row) {
     return NextResponse.json({
